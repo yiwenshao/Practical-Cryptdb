@@ -1,0 +1,6 @@
+[mysql-proxy]
+plugins = proxy
+event-threads = 4
+proxy-lua-script = /t/cryt/tutorial-basic.lua
+proxy-address = 127.0.0.1:3399
+proxy-backen-addresses = 127.0.0.1:3306

@@ -1,0 +1,2 @@
+find -name "*.cc" -o -name "*.hh" -o -name "*.tt" -o -name "*.c" -o -name "*.h" -o -name "*.cpp" > cscope.files
+cscope -R -b -i cscope.files
