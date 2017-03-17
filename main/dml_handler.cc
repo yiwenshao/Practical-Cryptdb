@@ -513,7 +513,6 @@ static void
 process_field_value_pairs(List_iterator<Item> fd_it,
                           List_iterator<Item> val_it, Analysis &a)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (;;) {
         const Item *const field_item = fd_it++;
         const Item *const value_item = val_it++;
@@ -524,7 +523,6 @@ process_field_value_pairs(List_iterator<Item> fd_it,
         assert(field_item->type() == Item::FIELD_ITEM);
         const Item_field *const ifd =
             static_cast<const Item_field *>(field_item);
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         gatherAndAddAnalysisRewritePlanForFieldValuePair(*ifd,
                                                          *value_item, a);
     }

@@ -106,7 +106,6 @@ static Item_null *
 make_null(const std::string &name = "")
 {
     char *const n = current_thd->strdup(name.c_str());
-    std::cout<<"test_make_null in"<<__FILE__<<std::string(n) <<std::endl;
     return new Item_null(n);
 }
 
@@ -124,11 +123,8 @@ xlua_pushlstring(lua_State *const l, const std::string &s)
     lua_pushlstring(l, s.data(), s.length());
 }
 
-static int myvariable = 1;
 static int
 connect(lua_State *const L) {
-    std::cout<<myvariable++<<std::endl;
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
 //TODO: added, why test here?
     assert(test64bitZZConversions());
 
@@ -136,6 +132,7 @@ connect(lua_State *const L) {
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
 
+    //来自lua脚本的参数.
     const std::string client = xlua_tolstring(L, 1);
     const std::string server = xlua_tolstring(L, 2);
     const uint port = luaL_checkint(L, 3);
@@ -158,10 +155,9 @@ connect(lua_State *const L) {
                      << "password = " << psswd;
 
         const std::string &false_str = "FALSE";
-        //const std::string &mkey      = "113341234";  // XXX do not change as
+        const std::string &mkey      = "113341234";  // XXX do not change as
                                                      // it's used for tpcc exps
-		const std::string &mkey = "887766908";
-		std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! !!!!!!!!!master key: "<<mkey<<std::endl;
+		//const std::string &mkey = "887766908";
         shared_ps =
             new SharedProxyState(ci, embed_dir, mkey,
                                  determineSecurityRating());
@@ -228,7 +224,6 @@ connect(lua_State *const L) {
 
 static int
 disconnect(lua_State *const L) {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     ANON_REGION(__func__, &perf_cg);
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
@@ -253,12 +248,10 @@ disconnect(lua_State *const L) {
 
 static int
 rewrite(lua_State *const L) {
-
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     ANON_REGION(__func__, &perf_cg);
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
-
+         
     const std::string client = xlua_tolstring(L, 1);
     if (clients.find(client) == clients.end()) {
         lua_pushnil(L);
@@ -286,6 +279,7 @@ rewrite(lua_State *const L) {
                 ps->getSchemaInfo();
             c_wrapper->schema_info_refs.push_back(schema);
 
+            //parse, rewrite, delta, adjust, returnMeta, 
             std::unique_ptr<QueryRewrite> qr =
                 std::unique_ptr<QueryRewrite>(new QueryRewrite(
                     Rewriter::rewrite(query, *schema.get(),

@@ -289,17 +289,23 @@ rewrite_key(const TableMeta &tm, const Key &key, const Analysis &a)
 {
     std::vector<Key *> output_keys;
 
+    //从左到右分别是三种类型: oOPE, oDET, oPLAIN, 对于每个语句的index都是这样
+    //比如自己要alter table add 的index, 其对应index的名字, 以及相关的column信息
+    //比如create的时候, 产生的index, 其对应的名字以及相关的columns, 这样包含在key里面了
     const std::vector<onion> key_onions = getOnionIndexTypes();
     for (auto onion_it : key_onions) {
         const onion o = onion_it;
+        //原始key的拷贝
         Key *const new_key = key.clone(current_thd->mem_root);
-
+        //通过key的原始名字+onion+tm哈希获得新的key名字,用的是std::hash<string>算法.
         // Set anonymous name.
         const std::string new_name =
             a.getAnonIndexName(tm, getOriginalKeyName(key), o);
+        //设置key的新名字, 以及新的key对应的column清空??
         new_key->name = string_to_lex_str(new_name);
         new_key->columns.empty();
 
+        //遍历原始的key的columns, 改写, 变成新key的colukns
         // Set anonymous columns.
         auto col_it =
             RiboldMYSQL::constList_iterator<Key_part_spec>(key.columns);
@@ -309,10 +315,12 @@ rewrite_key(const TableMeta &tm, const Key &key, const Analysis &a)
                 output_keys.push_back(new_key);
                 break;
             }
-
+            //复制一个column信息
             Key_part_spec *const new_key_part = copyWithTHD(key_part);
+            //原始的key_part, 也就是一个column, 里面取一个field_name出来
             const std::string field_name =
                 convert_lex_str(new_key_part->field_name);
+            //通过column查tablemeta, 然后差当前的onion在不在那个tablemeta里面
             // > the onion may not exist; ie oPLAIN with SENSITIVE and not
             // an AUTO INCREMENT column
             const FieldMeta &fm = a.getFieldMeta(tm, field_name);
@@ -320,13 +328,17 @@ rewrite_key(const TableMeta &tm, const Key &key, const Analysis &a)
             if (NULL == om) {
                 break;
             }
-
+            //如果存在, 那么新的column的名字就是洋葱的名字, 然后new_key的column就确定了
+            //可以看到, 对于索引里面的每个field, 都选择一个洋葱, 如果没有合适的, 则不选择.
             new_key_part->field_name =
                 string_to_lex_str(om->getAnonOnionName());
             new_key->columns.push_back(new_key_part);
         }
     }
 
+    //上面, 对于一个key来说, 可以查三个洋葱
+    //对于每个洋葱,都可能构造一个key, 这是根据这个key对应的columns里面有没有洋葱, 有则选进来. 所以, 列扩展了以后, 索引也扩展了.
+    //主键特殊处理, 之根据一个洋葱构造.
     // Only create one PRIMARY KEY.
     if (Key::PRIMARY == key.type) {
         if (output_keys.size() > 0) {

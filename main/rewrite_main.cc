@@ -1335,13 +1335,10 @@ const std::unique_ptr<SQLDispatcher> Rewriter::ddl_dispatcher =
 AbstractQueryExecutor *
 Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::unique_ptr<query_parse> p;
-
     try {
         p = std::unique_ptr<query_parse>(
                 new query_parse(a.getDatabaseName(), query));
-        std::cout<<"query_parse: "<<query<<std::endl;
     } catch (const CryptDBError &e) {
         FAIL_TextMessageError("Bad Query: [" + query + "]\n"
                               "Error Data: " + e.msg);
@@ -1358,7 +1355,6 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
             lex->select_lex.table_list.first) {
             const std::string &db = lex->select_lex.table_list.first->db;
             if (equalsIgnoreCase("INFORMATION_SCHEMA", db)) {
-		std::cout<<"we return SimpleExecutor here"<<__FILE__<<":"<<__LINE__<<std::endl;   
                 return new SimpleExecutor();
             }
         }

@@ -109,9 +109,10 @@ query_parse::query_parse(const std::string &db, const std::string &q)
     } else {
         //annot = NULL;
     }
-
     try {
+        //set db
         t->set_db(db.data(), db.length());
+        //reset tdb, what does cur_thd conrespond to??
         mysql_reset_thd_for_next_command(t);
         t->stmt_arena->state = Query_arena::STMT_INITIALIZED;
 

@@ -477,6 +477,7 @@ embeddedTHDCleanup(THD *thd)
 void
 ProxyState::safeCreateEmbeddedTHD()
 {
+    //THD is created by new, so there is no Lex or other things in it.    
     THD *thd = static_cast<THD *>(create_embedded_thd(0));
     assert(thd);
     thds.push_back(std::unique_ptr<THD,

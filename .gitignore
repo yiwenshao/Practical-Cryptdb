@@ -1,0 +1,5 @@
+mysql-src/
+normal.sh
+obj/
+tags
+shadow/

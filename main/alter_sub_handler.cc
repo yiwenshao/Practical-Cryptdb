@@ -98,6 +98,7 @@ class DropColumnSubHandler : public AlterSubHandler {
     }
 };
 
+
 class ChangeColumnSubHandler : public AlterSubHandler {
     virtual LEX *
         rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &preamble)
