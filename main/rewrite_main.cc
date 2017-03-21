@@ -1575,7 +1575,6 @@ std::pair<AbstractQueryExecutor::ResultType, AbstractAnything *>
 OnionAdjustmentExecutor::
 nextImpl(const ResType &res, const NextParams &nparams)
 {
-     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     reenter(this->corot) {
         yield {
             assert(this->adjust_queries.size() == 1
@@ -1670,7 +1669,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
             }
         }
     }
-
     assert(false);
 }
 

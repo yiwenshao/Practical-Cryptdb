@@ -103,6 +103,7 @@ class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
                            constr.o);
         const SECLEVEL onion_level = a.getOnionLevel(om);
         assert(onion_level != SECLEVEL::INVALID);
+
         if (constr.l < onion_level) {
             //need adjustment, throw exception
             const TableMeta &tm =

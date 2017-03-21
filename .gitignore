@@ -3,3 +3,12 @@ normal.sh
 obj/
 tags
 shadow/
+core
+curMysql
+mysql-proxy.cnf
+mysql-proxy1.cnf
+reset.sh
+reset.sql
+startMM.sh
+test
+tutorial-basic.lua
