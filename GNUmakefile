@@ -64,13 +64,14 @@ always:
 
 $(OBJDIR)/%.o: %.cc
 	@mkdir -p $(@D)
-	$(CXX) -MD $(CXXFLAGS) -c $< -o $@
-	echo "11111111111111111111111"
+	$(CXX) -MMD $(CXXFLAGS) -c $< -o $@
+	echo $@ $<
+	@echo "11111111111111111111111"
 
 $(OBJDIR)/%.o: $(OBJDIR)/%.cc
 	@mkdir -p $(@D)
-	$(CXX) -MD $(CXXFLAGS) -c $< -o $@
-	echo "2222222222222222222222"
+	$(CXX) -MMD $(CXXFLAGS) -c $< -o $@
+	@echo "2222222222222222222222"
 
 include crypto/Makefrag
 include parser/Makefrag
@@ -83,9 +84,11 @@ include mysqlproxy/Makefrag
 #include tools/learn/Makefrag
 #include scripts/Makefrag
 
+##OBJDIRS = crypto parser main util udf mysqlproxy
 $(OBJDIR)/.deps: $(foreach dir, $(OBJDIRS), $(wildcard $(OBJDIR)/$(dir)/*.d))
 	@mkdir -p $(@D)
 	perl mergedep.pl $@ $^
 	echo "after merge"
+	echo $^
 -include $(OBJDIR)/.deps
 

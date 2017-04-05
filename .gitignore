@@ -12,3 +12,9 @@ reset.sql
 startMM.sh
 test
 tutorial-basic.lua
+GNUmakefile
+cscope.files
+cscope.out
+cscope.files
+cscope.out
+tags
