@@ -96,14 +96,29 @@ private:
 
 class ShowTablesExecutor : public AbstractQueryExecutor {
     const std::vector<std::unique_ptr<Delta> > deltas;
-
+    std::string query;
 public:
-    ShowTablesExecutor() {}
+    ShowTablesExecutor(){}
     ~ShowTablesExecutor() {}
 
     std::pair<ResultType, AbstractAnything *>
         nextImpl(const ResType &res, const NextParams &nparams);
+
 };
+
+
+//added
+class ShowCreateTableExecutor: public AbstractQueryExecutor{
+    std::string query;
+public:
+    ShowCreateTableExecutor(const LEX &lex):query(lexToQuery(lex)){}
+    ~ShowCreateTableExecutor(){}
+
+    std::pair<ResultType, AbstractAnything *>
+        nextImpl(const ResType &res, const NextParams &nparams);
+};
+
+
 
 // Abstract base class for query handler.
 class DMLHandler : public SQLHandler {

@@ -1,4 +1,4 @@
-# CryptdbModify
+# Newcryptdb
 
 Cryptdb originated from MIT. This is a modified version try to add new features and fix bugs we meet in our environment. 
 Introduction to the features included will be posted at yiwenshao.github.io.
@@ -21,4 +21,12 @@ make
 4. install MySQL-proxy
 
 If you meet any problems installing it, contact me via shaoyiwenetATgmailDotcom.
+
+
+
+new features added
+
++ set user variable
++ timestamp
++ show create table
 

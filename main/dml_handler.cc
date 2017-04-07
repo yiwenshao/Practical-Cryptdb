@@ -1289,10 +1289,39 @@ class ShowTablesHandlers : public DMLHandler {
 
     virtual AbstractQueryExecutor *rewrite(Analysis &a, LEX *lex) const
     {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         return new ShowTablesExecutor();
     }
 };
+
+
+//add show create table handler
+class ShowCreateTableHandler: public DMLHandler{
+    virtual void gather(Analysis &a, LEX *const lex) const
+    {
+
+    }
+    virtual AbstractQueryExecutor *rewrite(Analysis &a, LEX *lex) const
+    {
+
+        int elements = lex->select_lex.table_list.elements;
+        assert(elements==1);
+
+        TABLE_LIST *tbl = lex->select_lex.table_list.first;
+        std::string db(tbl->db);
+        std::string tbn(tbl->table_name);
+
+        TableMeta &tbm = a.getTableMeta(db,tbn);
+
+        //rewrite the table list here        
+        LEX *const new_lex = copyWithTHD(lex);
+        tbl =  rewrite_table_list(new_lex->select_lex.table_list.first,tbm.getAnonTableName());
+        new_lex->select_lex.table_list = *oneElemListWithTHD<TABLE_LIST>(tbl);        
+
+        return new ShowCreateTableExecutor(*new_lex);
+    }
+};
+
+
 
 // FIXME: Add test to make sure handlers added successfully.
 SQLDispatcher *buildDMLDispatcher()
@@ -1324,6 +1353,11 @@ SQLDispatcher *buildDMLDispatcher()
     h = new ShowTablesHandlers;
     dispatcher->addHandler(SQLCOM_SHOW_TABLES, h);
 
+    //added
+    h = new ShowCreateTableHandler;
+    dispatcher->addHandler(SQLCOM_SHOW_CREATE,h);
+
+
     return dispatcher;
 }
 
@@ -1332,13 +1366,9 @@ DMLQueryExecutor::
 nextImpl(const ResType &res, const NextParams &nparams)
 {
     reenter(this->corot) {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;      
         std::cout<<RED_BEGIN<<"rewritten DML: "<<this->query<<COLOR_END<<std::endl;
         yield return CR_QUERY_AGAIN(this->query);
         TEST_ErrPkt(res.success(), "DML query failed against remote database");
-
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
-
         yield {
             try {
                 return CR_RESULTS(Rewriter::decryptResults(res, this->rmeta));
@@ -1701,12 +1731,10 @@ ShowTablesExecutor::
 nextImpl(const ResType &res, const NextParams &nparams)
 {
     reenter(this->corot) {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         yield return CR_QUERY_AGAIN(nparams.original_query);
         TEST_ErrPkt(res.success(), "show tables failed");
 
         yield {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
             const std::shared_ptr<const SchemaInfo> &schema =
                 nparams.ps.getSchemaInfo();
             const DatabaseMeta *const dm =
@@ -1716,10 +1744,8 @@ nextImpl(const ResType &res, const NextParams &nparams)
             std::vector<std::vector<Item *> > new_rows;
 
             for (const auto &it : res.rows) {
-//                std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;                
                 assert(1 == it.size());
                 for (const auto &table : dm->getChildren()) {    
-//                    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
                     assert(table.second);
                     if (table.second->getAnonTableName()
                         == ItemToString(*it.front())) {
@@ -1731,10 +1757,54 @@ nextImpl(const ResType &res, const NextParams &nparams)
                     }
                 }
             }
+            return CR_RESULTS(ResType(res, new_rows));
+        }
+    }
+    assert(false);
+}
+
+
+
+
+std::pair<AbstractQueryExecutor::ResultType, AbstractAnything *>
+ShowCreateTableExecutor::
+nextImpl(const ResType &res, const NextParams &nparams){
+    std::cout<<"showCreateTableExecutor"<<std::endl;
+    //return CR_QUERY_AGAIN(nparams.original_query);
+    reenter(this->corot) {
+        yield return CR_QUERY_AGAIN(this->query);
+        TEST_ErrPkt(res.success(), "show create table tables failed");
+
+        yield {
+            //how to find schemaInfo?? we can get it directly
+            const std::shared_ptr<const SchemaInfo> &schema =
+                nparams.ps.getSchemaInfo();
+            const DatabaseMeta *const dm =
+                schema->getChild(IdentityMetaKey(nparams.default_db));
+            TEST_ErrPkt(dm, "failed to find the database '"
+                            + nparams.default_db + "'");
+            
+            std::vector<std::vector<Item *> > new_rows;
+
+            //adapted from show tables;
+            /*for (const auto &it : res.rows) {
+                assert(1 == it.size());
+                for (const auto &table : dm->getChildren()) {    
+                    assert(table.second);
+                    if (table.second->getAnonTableName()
+                        == ItemToString(*it.front())) {
+
+                        const IdentityMetaKey &plain_table_name
+                            = dm->getKey(*table.second.get());
+                        new_rows.push_back(std::vector<Item *>
+                            {make_item_string(plain_table_name.getValue())});
+                    }
+                }
+            }*/
 
             return CR_RESULTS(ResType(res, new_rows));
         }
     }
-
+    //avoid reach the end
     assert(false);
 }

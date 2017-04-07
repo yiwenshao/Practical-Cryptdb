@@ -940,7 +940,19 @@ operator<<(std::ostream &out, LEX &lex)
         /* placeholders to make analysis work.. */
         out << ".. type " << lex.sql_command << " query ..";
         break;
-
+        //ADDED
+    case SQLCOM_SHOW_CREATE:{
+        int elements = lex.select_lex.table_list.elements;
+        if(elements==1){
+            TABLE_LIST *tbl = lex.select_lex.table_list.first;
+            std::string db(tbl->db);
+            std::string tbn(tbl->table_name);
+            out<< "SHOW CREATE TABLE "+db+"."+tbn;
+        }else{
+            out<<"ONLY SUPPORT ONE TABLE";
+        }
+        break;
+    }
     default:
         thrower() << "unhandled sql command " << lex.sql_command;
     }

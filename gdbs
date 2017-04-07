@@ -1,0 +1,1 @@
+sudo gdb `which mysql-proxy` `ps aux | grep 'mysql-proxy.cnf' |grep -v  grep | awk '{print $2}'`

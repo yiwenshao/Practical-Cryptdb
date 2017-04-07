@@ -33,8 +33,7 @@ rewrite(const Item &i, const EncSet &req_enc, Analysis &a) {
 }
 
 TABLE_LIST *
-rewrite_table_list(const TABLE_LIST * const t, const Analysis &a)
-{
+rewrite_table_list(const TABLE_LIST * const t, const Analysis &a) {
     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // Table name can only be empty when grouping a nested join.
     assert(t->table_name || t->nested_join);
@@ -153,14 +152,12 @@ gather(const Item &i, Analysis &a)
 void
 gatherAndAddAnalysisRewritePlan(const Item &i, Analysis &a)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     a.rewritePlans[&i] = std::unique_ptr<RewritePlan>(gather(i, a));
 }
 
 std::vector<std::tuple<std::vector<std::string>, Key::Keytype> >
 collectKeyData(const LEX &lex)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::vector<std::tuple<std::vector<std::string>, Key::Keytype> > output;
 
     auto key_it =
@@ -295,8 +292,9 @@ rewrite_key(const TableMeta &tm, const Key &key, const Analysis &a)
     const std::vector<onion> key_onions = getOnionIndexTypes();
     for (auto onion_it : key_onions) {
         const onion o = onion_it;
+        THD* cthd = current_thd;
         //原始key的拷贝
-        Key *const new_key = key.clone(current_thd->mem_root);
+        Key *const new_key = key.clone(cthd->mem_root);
         //通过key的原始名字+onion+tm哈希获得新的key名字,用的是std::hash<string>算法.
         // Set anonymous name.
         const std::string new_name =

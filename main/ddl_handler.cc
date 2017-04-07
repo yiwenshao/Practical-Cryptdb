@@ -60,7 +60,7 @@ class CreateTableHandler : public DDLHandler {
             TABLE_LIST *const tbl =
                 rewrite_table_list(new_lex->select_lex.table_list.first,
                                    tm->getAnonTableName());
-
+            //new table_list only contain one element
             new_lex->select_lex.table_list =
                 *oneElemListWithTHD<TABLE_LIST>(tbl);
 

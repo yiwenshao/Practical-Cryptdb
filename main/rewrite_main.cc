@@ -665,7 +665,6 @@ translatorHelper(std::vector<std::string> texts,
 static bool
 buildTypeTextTranslator()
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // Onions.
     const std::vector<std::string> onion_strings
     {
@@ -988,7 +987,7 @@ static void optimize_select_lex(st_select_lex *select_lex, Analysis & a);
 
 static Item *getLeftExpr(const Item_in_subselect &i)
 {
-    Item *const left_expr =
+        Item *const left_expr =
         i.*rob<Item_in_subselect, Item*,
                 &Item_in_subselect::left_expr>::ptr();
     assert(left_expr);
@@ -1194,38 +1193,6 @@ static class ANON : public CItemSubtypeIT<Item_cache, Item::Type::CACHE_ITEM> {
         UNIMPLEMENTED;
         return NULL;
 
-        /*
-        TEST_TextMessageError(false ==
-                                i->field()->orig_table->alias_name_used,
-                              "Can not mix CACHE_ITEM and table alias.");
-        const std::string table_name =
-            std::string(i->field()->orig_table->alias);
-        const std::string field_name =
-            std::string(i->field()->field_name);
-        OnionMeta *const om =
-            a.getOnionMeta(table_name, field_name, oPLAIN);
-        if (a.getOnionLevel(om) != SECLEVEL::PLAINVAL) {
-            const FieldMeta *const fm =
-                a.getFieldMeta(table_name, field_name);
-
-            throw OnionAdjustExcept(oPLAIN, fm, SECLEVEL::PLAINVAL,
-                                    table_name);
-        }
-
-        const EncSet out_es = PLAIN_EncSet;
-        tr = reason(out_es, "is cache item", i);
-
-        return new RewritePlan(out_es, tr);
-        */
-
-        /*
-        Item *example = i->*rob<Item_cache, Item*, &Item_cache::example>::ptr();
-        if (example)
-            return gather(example, tr, a);
-        return tr.encset;
-        UNIMPLEMENTED;
-        return NULL;
-        */
     }
 
     virtual Item * do_optimize_type(Item_cache *i, Analysis & a) const
@@ -1347,7 +1314,6 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
 
     // optimization: do not process queries that we will not rewrite
     if (noRewrite(*lex)) {
-	    std::cout<<"we return SimpleExecutor here"<<__FILE__<<":"<<__LINE__<<std::endl;
         return new SimpleExecutor();
     } else if (dml_dispatcher->canDo(lex)) {        
         // HACK: We don't want to process INFORMATION_SCHEMA queries

@@ -494,6 +494,7 @@ next(lua_State *const L) {
         nilBuffer(L, 1);
         return 5;
     }
+
     WrapperState *const c_wrapper = clients[client];
 
     assert(EXECUTE_QUERIES);

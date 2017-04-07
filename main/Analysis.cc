@@ -861,7 +861,6 @@ Analysis::getDatabaseMeta(const std::string &db) const
 bool Analysis::tableMetaExists(const std::string &db,
                                const std::string &table) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     return this->nonAliasTableMetaExists(db, unAliasTable(db, table));
 }
 
@@ -885,7 +884,6 @@ std::string Analysis::getAnonTableName(const std::string &db,
                                        const std::string &table,
                                        bool *const is_alias) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // tell the caller if you are giving him an alias
     if (is_alias) {
         *is_alias = this->isAlias(db, table);
