@@ -11,6 +11,10 @@
 
 #include <util/yield.hpp>
 
+
+//a list of ddl handlers, buildddlhandler, and ddlexecutor
+
+//################################################################Create table handler#########################################################################################
 class CreateTableHandler : public DDLHandler {
     virtual AbstractQueryExecutor *
         rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &pre) const
@@ -75,6 +79,7 @@ class CreateTableHandler : public DDLHandler {
 	    //对现有的每个field, 如id,name, 都在内部通过createAndRewriteField函数扩展成多个洋葱+salt.
 	    //其中洋葱有多个层, 其通过newCreateField函数, 决定了类型, 而新的field的名字, 就是洋葱的名字传过去的.
             //扩展以后, 就是新的Create_field类型了, 这了返回的list是被继续传到引用参数里面的, 很奇怪的用法.
+            //key data在这里的作用是, 决定是不是unique, 从而选择和是的洋葱层次.
             new_lex->alter_info.create_list =
                 accumList<Create_field>(it,
                     [&a, &tm, &key_data] (List<Create_field> out_list,
@@ -87,6 +92,7 @@ class CreateTableHandler : public DDLHandler {
             //         Rewrite INDEX
             // -----------------------------
             highLevelRewriteKey(*tm.get(), *lex, new_lex, a);
+            highLevelRewriteForeignKey();
 
             // -----------------------------
             //         Update TABLE
@@ -128,6 +134,10 @@ class CreateTableHandler : public DDLHandler {
     }
 };
 
+
+
+
+//################################################################Alter table handler#########################################################################################
 // mysql does not support indiscriminate add-drops
 // ie,
 //      mysql> create table pk (x integer);
@@ -176,6 +186,11 @@ public:
     AlterTableHandler() : sub_dispatcher(buildAlterSubDispatcher()) {}
 };
 
+
+
+//################################################################drop table handler#########################################################################################
+
+
 class DropTableHandler : public DDLHandler {
     virtual AbstractQueryExecutor *
         rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &pre) const
@@ -219,6 +234,9 @@ class DropTableHandler : public DDLHandler {
     }
 };
 
+
+//################################################################Create db handler#########################################################################################
+
 class CreateDBHandler : public DDLHandler {
     virtual AbstractQueryExecutor *
         rewriteAndUpdate(Analysis &a, LEX *const lex, const Preamble &pre)
@@ -248,6 +266,9 @@ class CreateDBHandler : public DDLHandler {
     }
 };
 
+
+//################################################################change db handler#########################################################################################
+
 class ChangeDBHandler : public DDLHandler {
     virtual AbstractQueryExecutor *
         rewriteAndUpdate(Analysis &a, LEX *const lex, const Preamble &pre)
@@ -258,6 +279,8 @@ class ChangeDBHandler : public DDLHandler {
     }
 };
 
+
+//################################################################drop db handler#########################################################################################
 class DropDBHandler : public DDLHandler {
     virtual AbstractQueryExecutor *
         rewriteAndUpdate(Analysis &a, LEX *const lex, const Preamble &pre)
@@ -274,6 +297,8 @@ class DropDBHandler : public DDLHandler {
     }
 };
 
+
+//################################################################lock table handler#########################################################################################
 class LockTablesHandler : public DDLHandler {
     virtual AbstractQueryExecutor *
         rewriteAndUpdate(Analysis &a, LEX *const lex, const Preamble &pre)
@@ -289,6 +314,8 @@ class LockTablesHandler : public DDLHandler {
     }
 };
 
+
+//################################################################Create index handler#########################################################################################
 class CreateIndexHandler : public DDLHandler {
     virtual AbstractQueryExecutor *
         rewriteAndUpdate(Analysis &a, LEX *const lex, const Preamble &pre)
@@ -311,6 +338,7 @@ class CreateIndexHandler : public DDLHandler {
     }
 };
 
+
 static std::string
 empty_if_null(const char *const p)
 {
@@ -323,7 +351,6 @@ AbstractQueryExecutor *DDLHandler::
 transformLex(Analysis &a, LEX *lex) const
 {
 
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     assert(a.deltas.size() == 0);
 
     AssignOnce<std::string> db;
@@ -393,7 +420,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
                     "deltaOutputBeforeQuery failed for DDL");
                 this->embedded_completion_id = embedded_completion_id;
             }
-            std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl;
 	    std::cout<<RED_BEGIN<<"rewritten DDL: "<<this->new_query<<COLOR_END<<std::endl;
             return CR_QUERY_AGAIN(this->new_query);
         }
@@ -402,7 +428,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
         this->ddl_res = res;
 
         yield {
-            std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
             return CR_QUERY_AGAIN(
                 " INSERT INTO " + MetaData::Table::remoteQueryCompletion() +
                 "   (embedded_completion_id, completion_type) VALUES"
@@ -421,7 +446,7 @@ nextImpl(const ResType &res, const NextParams &nparams)
         TEST_ErrPkt(deltaOutputAfterQuery(nparams.ps.getEConn(), this->deltas,
                                           this->embedded_completion_id.get()),
                    "deltaOuputAfterQuery failed for DDL");
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+//        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         yield return CR_RESULTS(this->ddl_res.get());
     }
 
