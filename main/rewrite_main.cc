@@ -58,7 +58,6 @@ std::string global_crash_point = "";
 
 void
 crashTest(const std::string &current_point) {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     if (current_point == global_crash_point) {
       throw CrashTestException();
     }
@@ -67,7 +66,6 @@ crashTest(const std::string &current_point) {
 static inline std::string
 extract_fieldname(Item_field *const i)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::stringstream fieldtemp;
     fieldtemp << *i;
     return fieldtemp.str();
@@ -76,7 +74,6 @@ extract_fieldname(Item_field *const i)
 static bool
 sanityCheck(FieldMeta &fm)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &it : fm.getChildren()) {
         OnionMeta *const om = it.second.get();
         const onion o = it.first.getValue();
@@ -93,9 +90,7 @@ sanityCheck(FieldMeta &fm)
 static bool
 sanityCheck(TableMeta &tm)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &it : tm.getChildren()) {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         const auto &fm = it.second;
         assert(sanityCheck(*fm.get()));
     }
@@ -105,9 +100,7 @@ sanityCheck(TableMeta &tm)
 static bool
 sanityCheck(DatabaseMeta &dm)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &it : dm.getChildren()) {
-//         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         const auto &tm = it.second;
         assert(sanityCheck(*tm.get()));
     }
@@ -117,9 +110,7 @@ sanityCheck(DatabaseMeta &dm)
 static bool
 sanityCheck(SchemaInfo &schema)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &it : schema.getChildren()) {
-//        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         const auto &dm = it.second;
         assert(sanityCheck(*dm.get()));
     }
@@ -130,7 +121,6 @@ static std::map<std::string, int>
 collectTableNames(const std::string &db_name,
                   const std::unique_ptr<Connect> &c)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::map<std::string, int> name_map;
 
     assert(c->execute("USE " + quoteText(db_name)));
@@ -158,7 +148,6 @@ tablesSanityCheck(SchemaInfo &schema,
                   const std::unique_ptr<Connect> &e_conn,
                   const std::unique_ptr<Connect> &conn)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &dm_it : schema.getChildren()) {
         const auto &db_name = dm_it.first.getValue();
         std::cout<<"db_name: "<<db_name<<std::endl;
@@ -215,7 +204,6 @@ collectRecoveryDetails(const std::unique_ptr<Connect> &conn,
                        unsigned long unfinished_id,
                        std::unique_ptr<RecoveryDetails> *details)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // collect completion data
     std::unique_ptr<DBResult> dbres;
     const std::string &embedded_completion_q =
@@ -1355,21 +1343,17 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
 
 QueryRewrite
 Rewriter::rewrite(const std::string &q, const SchemaInfo &schema,
-                  const std::string &default_db, const ProxyState &ps)
-{
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+                  const std::string &default_db, const ProxyState &ps){
     LOG(cdb_v) << "q " << q;
     assert(0 == mysql_thread_init());
-
     Analysis analysis(default_db, schema, ps.getMasterKey(),
                       ps.defaultSecurityRating());
-
     // NOTE: Care what data you try to read from Analysis
     // at this height.
     AbstractQueryExecutor *const executor =
         Rewriter::dispatchOnLex(analysis, q);
     if (!executor) {
-	    std::cout<<"we return noopexecutor here"<<__FILE__<<":"<<__LINE__<<std::endl;
+
         return QueryRewrite(true, analysis.rmeta, analysis.kill_zone,
                             new NoOpExecutor());       
     }

@@ -92,7 +92,7 @@ class CreateTableHandler : public DDLHandler {
             //         Rewrite INDEX
             // -----------------------------
             highLevelRewriteKey(*tm.get(), *lex, new_lex, a);
-            highLevelRewriteForeignKey();
+            highLevelRewriteForeignKey(*tm.get(), *lex, new_lex, a);
 
             // -----------------------------
             //         Update TABLE

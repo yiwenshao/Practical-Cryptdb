@@ -444,10 +444,64 @@ highLevelRewriteKey(const TableMeta &tm, const LEX &seed_lex,
 }
 
 void 
-highLevelRewriteForeignKey(){
+highLevelRewriteForeignKey( const TableMeta &tm, const LEX &seed_lex,
+            LEX *const out_lex, const Analysis &a ){
 
+    auto it =
+             List_iterator<Key>(out_lex->alter_info.key_list);
+    std::vector<Key *> output_keys;
 
+    while(auto cur = it++){
+        if(cur->type== Key::FOREIGN_KEY){
+            THD* cthd = current_thd;
+            //process current names
+            Key* const new_key = cur->clone(cthd->mem_root);
+            std::string new_name = "newfk";
+            new_key->name = string_to_lex_str(new_name);
+            //process current columns
+          auto col_it_cur = List_iterator<Key_part_spec>((cur->columns));
+            new_key->columns.empty();
+/*           while(1){
+                const Key_part_spec *const key_part = col_it_cur++;
+                if(NULL == key_part){
+                    break;
+                }
+                Key_part_spec *const new_key_part = copyWithTHD(key_part);
+                std::string field_name =
+                convert_lex_str(new_key_part->field_name);
+                field_name=std::string("curadd+")+field_name;
+                new_key_part->field_name = string_to_lex_str(field_name);
+                new_key->columns.push_back(new_key_part);
+            }
+            //process ref columns
+            auto col_it =
+            List_iterator<Key_part_spec>(((Foreign_key*)cur)->ref_columns);
+            ((Foreign_key*)new_key)->ref_columns.empty();
+            while(1){
+                const Key_part_spec *const key_part = col_it++;
+                if(NULL == key_part){
+                    break;
+                }
+                Key_part_spec *const new_key_part = copyWithTHD(key_part);
+                std::string field_name =
+                convert_lex_str(new_key_part->field_name);
+                field_name=std::string("refadd")+field_name;
+                new_key_part->field_name = string_to_lex_str(field_name);
+                ((Foreign_key*)new_key)->ref_columns.push_back(new_key_part);
+            }
 
+            //process ref tables
+            Table_ident* ref_table = ((Foreign_key*)cur)->ref_table;
+            //Table_ident* new_ref_table = ref_table->clone(cthd->mem_root);
+            ref_table->table = string_to_lex_str(std::string("hehe_ref"));
+            //((Foreign_key*)new_key)->ref_table = new_ref_table;
+            output_keys.push_back(new_key);
+*/
+        }
+    }
+        
+    lex->alter_info.key_list = *vectorToListWithTHD(output_keys);
+    return lex;
 
 }
 

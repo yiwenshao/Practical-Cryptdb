@@ -55,7 +55,8 @@ highLevelRewriteKey(const TableMeta &tm, const LEX &seed_lex,
 
 //added
 void 
-highLevelRewriteForeignKey();
+highLevelRewriteForeignKey(const TableMeta &tm, const LEX &seed_lex,
+                    LEX *const out_lex, const Analysis &a);
 
 
 std::string
