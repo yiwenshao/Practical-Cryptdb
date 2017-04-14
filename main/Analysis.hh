@@ -300,15 +300,24 @@ public:
     OnionMeta &getOnionMeta(const std::string &db,
                             const std::string &table,
                             const std::string &field, onion o) const;
+
+    OnionMeta* getOnionMeta2(const std::string &db,
+                            const std::string &table,
+                            const std::string &field, onion o) const;
+
     OnionMeta &getOnionMeta(const FieldMeta &fm, onion o) const;
+    OnionMeta* getOnionMeta2(const FieldMeta &fm, onion o) const;
+
     FieldMeta &getFieldMeta(const std::string &db,
                             const std::string &table,
                             const std::string &field) const;
     FieldMeta &getFieldMeta(const TableMeta &tm,
                             const std::string &field) const;
+
     TableMeta &getTableMeta(const std::string &db,
                             const std::string &table) const;
     DatabaseMeta &getDatabaseMeta(const std::string &db) const;
+
     bool tableMetaExists(const std::string &db,
                          const std::string &table) const;
     bool nonAliasTableMetaExists(const std::string &db,
@@ -317,10 +326,12 @@ public:
     std::string getAnonTableName(const std::string &db,
                                  const std::string &table,
                                  bool *const is_alias=NULL) const;
+
     std::string
         translateNonAliasPlainToAnonTableName(const std::string &db,
                                               const std::string &table)
         const;
+
     std::string getAnonIndexName(const std::string &db,
                                  const std::string &table,
                                  const std::string &index_name,
@@ -328,16 +339,20 @@ public:
     std::string getAnonIndexName(const TableMeta &tm,
                                  const std::string &index_name,
                                  onion o) const;
+
     static const EncLayer &getBackEncLayer(const OnionMeta &om);
     static SECLEVEL getOnionLevel(const OnionMeta &om);
     SECLEVEL getOnionLevel(const FieldMeta &fm, onion o);
+
     static const std::vector<std::unique_ptr<EncLayer> > &
         getEncLayers(const OnionMeta &om);
+
     const SchemaInfo &getSchema() const {return schema;}
 
     std::vector<std::unique_ptr<Delta> > deltas;
 
     std::string getDatabaseName() const {return db_name;}
+
     const std::unique_ptr<AES_KEY> &getMasterKey() const {return master_key;}
     SECURITY_RATING getDefaultSecurityRating() const
         {return default_sec_rating;}

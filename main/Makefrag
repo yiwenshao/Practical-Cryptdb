@@ -7,7 +7,7 @@ CRYPTDB_SRCS := schema.cc Translator.cc Connect.cc \
 		rewrite_func.cc rewrite_sum.cc metadata_tables.cc \
 		error.cc stored_procedures.cc rewrite_ds.cc rewrite_main.cc
 
-CRYPTDB_PROGS:= cdb_test MyBack
+CRYPTDB_PROGS:= 
 
 
 CRYPTDBPROGOBJS	:= $(patsubst %,$(OBJDIR)/main/%,$(CRYPTDB_PROGS))
@@ -27,7 +27,7 @@ $(OBJDIR)/libcryptdb.so: $(CRYPTDB_OBJS) \
 			 $(OBJDIR)/libedbcrypto.so \
 			 $(OBJDIR)/libedbutil.so \
 			 $(OBJDIR)/libedbparser.so 
-	$(CXX) -shared -o $@ $(CRYPTDB_OBJS) $(LDFLAGS) $(LDRPATH) \
+	$(CXX) -shared -g -o $@ $(CRYPTDB_OBJS) $(LDFLAGS) $(LDRPATH) \
 	       -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
 install: install_main

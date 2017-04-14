@@ -388,12 +388,10 @@ SharedProxyState::SharedProxyState(ConnectionInfo ci,
       cache(std::move(SchemaCache()))
 {
 
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // make sure the server was not started in SQL_SAFE_UPDATES mode
     // > it might not even be possible to start the server in this mode;
     //   better to be safe
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         std::unique_ptr<DBResult> dbres;
         assert(conn->execute("SELECT @@sql_safe_updates", &dbres));
         assert(1 == mysql_num_rows(dbres->n));
@@ -799,36 +797,48 @@ OnionMeta &Analysis::getOnionMeta(const std::string &db,
                                   const std::string &field,
                                   onion o) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     return this->getOnionMeta(this->getFieldMeta(db, table, field), o);
 }
 
 OnionMeta &Analysis::getOnionMeta(const FieldMeta &fm,
                                   onion o) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     OnionMeta *const om = fm.getOnionMeta(o);
-    TEST_IdentifierNotFound(om, TypeText<onion>::toText(o));
-
+    //TEST_IdentifierNotFound(om, TypeText<onion>::toText(o));    
     return *om;
 }
+
+OnionMeta *Analysis::getOnionMeta2(const FieldMeta &fm,
+                                  onion o) const
+{
+    OnionMeta *const om = fm.getOnionMeta(o);
+    //TEST_IdentifierNotFound(om, TypeText<onion>::toText(o));    
+    return om;
+}
+
+
+OnionMeta *Analysis::getOnionMeta2(const std::string &db,
+                                  const std::string &table,
+                                  const std::string &field,
+                                  onion o) const
+{
+    return this->getOnionMeta2(this->getFieldMeta(db, table, field), o);
+}
+
 
 FieldMeta &Analysis::getFieldMeta(const std::string &db,
                                   const std::string &table,
                                   const std::string &field) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     FieldMeta * const fm =
         this->getTableMeta(db, table).getChild(IdentityMetaKey(field));
     TEST_IdentifierNotFound(fm, field);
-
     return *fm;
 }
 
 FieldMeta &Analysis::getFieldMeta(const TableMeta &tm,
                                   const std::string &field) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     FieldMeta *const fm = tm.getChild(IdentityMetaKey(field));
     TEST_IdentifierNotFound(fm, field);
 
@@ -838,7 +848,6 @@ FieldMeta &Analysis::getFieldMeta(const TableMeta &tm,
 TableMeta &Analysis::getTableMeta(const std::string &db,
                                   const std::string &table) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     const DatabaseMeta &dm = this->getDatabaseMeta(db);
 
     TableMeta *const tm =
@@ -851,7 +860,6 @@ TableMeta &Analysis::getTableMeta(const std::string &db,
 DatabaseMeta &
 Analysis::getDatabaseMeta(const std::string &db) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     DatabaseMeta *const dm = this->schema.getChild(IdentityMetaKey(db));
     TEST_DatabaseNotFound(dm, db);
 
@@ -867,7 +875,6 @@ bool Analysis::tableMetaExists(const std::string &db,
 bool Analysis::nonAliasTableMetaExists(const std::string &db,
                                        const std::string &table) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     const DatabaseMeta &dm = this->getDatabaseMeta(db);
     return dm.childExists(IdentityMetaKey(table));
 }
@@ -876,7 +883,6 @@ bool Analysis::nonAliasTableMetaExists(const std::string &db,
 bool
 Analysis::databaseMetaExists(const std::string &db) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     return this->schema.childExists(IdentityMetaKey(db));
 }
 
@@ -901,7 +907,6 @@ Analysis::translateNonAliasPlainToAnonTableName(const std::string &db,
                                                 const std::string &table)
     const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     TableMeta *const tm =
         this->getDatabaseMeta(db).getChild(IdentityMetaKey(table));
     TEST_IdentifierNotFound(tm, table);
@@ -940,7 +945,6 @@ bool Analysis::isAlias(const std::string &db,
 std::string Analysis::unAliasTable(const std::string &db,
                                    const std::string &table) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;   
     auto db_alias_pair = table_aliases.find(db);
     if (table_aliases.end() == db_alias_pair) {
         return table;

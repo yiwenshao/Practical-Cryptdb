@@ -15,9 +15,8 @@
 //a list of ddl handlers, buildddlhandler, and ddlexecutor
 
 //################################################################Create table handler#########################################################################################
-class CreateTableHandler : public DDLHandler {
-    virtual AbstractQueryExecutor *
-        rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &pre) const
+AbstractQueryExecutor *
+        CreateTableHandler::rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &pre) const
     {
         assert(a.deltas.size() == 0);
 
@@ -87,13 +86,11 @@ class CreateTableHandler : public DDLHandler {
                         return createAndRewriteField(a, cf, tm.get(),
                                                      true, key_data, out_list);
                 });
-
             // -----------------------------
             //         Rewrite INDEX
             // -----------------------------
             highLevelRewriteKey(*tm.get(), *lex, new_lex, a);
-            highLevelRewriteForeignKey(*tm.get(), *lex, new_lex, a);
-
+            highLevelRewriteForeignKey(*tm.get(), *lex, new_lex, a,pre.table);
             // -----------------------------
             //         Update TABLE
             // -----------------------------
@@ -103,36 +100,18 @@ class CreateTableHandler : public DDLHandler {
                                             a.getDatabaseMeta(pre.dbname),
                                             IdentityMetaKey(pre.table))));
         } else { // Table already exists.
-
-            // Make sure we aren't trying to create a table that
             // already exists.
             const bool test =
                 lex->create_info.options & HA_LEX_CREATE_IF_NOT_EXISTS;
             TEST_TextMessageError(test,
                                 "Table " + pre.table + " already exists!");
             //why still rewrite here???
-            // -----------------------------
-            //         Rewrite TABLE
-            // -----------------------------
-            //这部分在exists的时候, 没有被执行!!!,但是如何抛出一场返回给客户端信息呢? 
-            new_lex->select_lex.table_list =
-                rewrite_table_list(lex->select_lex.table_list, a);
-            // > We do not rewrite the fields because presumably the caller
-            // can do a CREATE TABLE IF NOT EXISTS for a table that already
-            // exists, but with fields that do not actually exist.
-            // > This would cause problems when trying to look up FieldMeta
-            // for these non-existant fields.
-            // > We may want to do some additional non-deterministic
-            // anonymization of the fieldnames to prevent information leaks.
-            // (ie, server gets compromised, server logged all sql queries,
-            // attacker can see that the admin creates the account table
-            // with the credit card field every time the server boots)
         }
 	//在handler的第一阶段, 通过analysis搜集delta以及执行计划等内容, 然后在第二阶段, 实行delta以及
         //执行计划, 新的lex里面包含了改写以后的语句, 直接转化成string就可以用了.
         return new DDLQueryExecutor(*new_lex, std::move(a.deltas));
     }
-};
+
 
 
 

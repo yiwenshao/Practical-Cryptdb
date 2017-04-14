@@ -46,6 +46,8 @@
 
 FILE* fr,*fw;
 
+
+
 static std::string embeddedDir="/t/cryt/shadow";
 
 //My WrapperState.
@@ -92,6 +94,7 @@ struct rawReturnValue{
     std::vector<std::string> fieldNames;
     std::vector<int> fieldTypes;
 };
+
 
 
 struct backupOnionSelection {
@@ -375,7 +378,6 @@ static void processTableMeta(const TableMeta &table){
 static void processDatabaseMeta(const DatabaseMeta & db) {
     std::cout<<GREEN_BEGIN<<"PRINT DatabaseMeta"<<COLOR_END<<std::endl;
     for(const auto & table: db.getChildren()){
-//        std::cout<<table.second->getDatabaseID()<<":"<<table.first.getValue()<<std::endl;
         processTableMeta(*(table.second));
     }
 }
@@ -889,16 +891,23 @@ main() {
             std::getline(std::cin,curQuery);            
             continue;
         }
-	if(curQuery=="back"){
-	    startBack();
-	}else{	
-	    std::cout<<GREEN_BEGIN<<"curQuery: "<<curQuery<<"\n"<<COLOR_END<<std::endl;
-       	    batchTogether(client,curQuery,_thread_id);
-	}
+
+        /*
+        if(curQuery=="back"){
+            startBack();
+        }else{	
+            std::cout<<GREEN_BEGIN<<"curQuery: "<<curQuery<<"\n"<<COLOR_END<<std::endl;
+            batchTogether(client,curQuery,_thread_id);
+        }*/
+
+        std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+        processSchemaInfo(*schema);
+
+
+
         std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
         std::getline(std::cin,curQuery);
     }
-
 
     fclose(fr);
     fclose(fw);
