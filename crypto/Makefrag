@@ -7,7 +7,7 @@ CRYPTOOBJ   := $(patsubst %.cc,$(OBJDIR)/crypto/%.o,$(CRYPTOSRC))
 all:	$(OBJDIR)/libedbcrypto.a $(OBJDIR)/libedbcrypto.so
 
 $(OBJDIR)/libedbcrypto.so: $(CRYPTOOBJ) $(OBJDIR)/libedbutil.so
-	$(CXX) -shared -o $@ $(CRYPTOOBJ) $(LDFLAGS) $(LDRPATH) \
+	$(CXX) -fPIC -shared -o $@ $(CRYPTOOBJ) $(LDFLAGS) $(LDRPATH) \
 	       -ledbutil -lcrypto -lntl
 
 $(OBJDIR)/libedbcrypto.a: $(CRYPTOOBJ)

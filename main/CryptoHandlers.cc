@@ -312,6 +312,8 @@ private:
     const std::pair<int64_t, uint64_t> inclusiveRange;
 };
 
+
+
 static CryptedInteger
 overrideCreateFieldCryptedIntegerFactory(const Create_field &cf,
                                          const std::string &key,
@@ -1375,9 +1377,10 @@ HOM::newCreateField(const Create_field &cf,
                                   &my_charset_bin);
 }
 
+//if first, use seed key to generate 
+
 void
-HOM::unwait() const
-{
+HOM::unwait() const {
     const std::unique_ptr<streamrng<arc4>>
         prng(new streamrng<arc4>(seed_key));
     sk = new Paillier_priv(Paillier_priv::keygen(prng.get(), nbits));

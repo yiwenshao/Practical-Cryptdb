@@ -270,6 +270,8 @@ determineSecLevelData(onion o, std::vector<SECLEVEL> levels, bool unique)
                || SECLEVEL::RND == levels.back());
     } else if (oOPE == o) {
         assert(SECLEVEL::RND == levels.back());
+        levels.pop_back();
+        assert(SECLEVEL::OPE == levels.back());
     } else if (oAGG == o) {
         assert(SECLEVEL::HOM == levels.back());
     } else {
