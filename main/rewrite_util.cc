@@ -571,7 +571,7 @@ isUnique(const std::string &name,
         const auto &found =
             std::find(std::get<0>(it).begin(), std::get<0>(it).end(), name);
         if (found != std::get<0>(it).end()
-            && (std::get<1>(it) == Key::PRIMARY || std::get<1>(it) == Key::UNIQUE)) {
+            && (std::get<1>(it) == Key::PRIMARY || std::get<1>(it) == Key::UNIQUE ||std::get<1>(it)==Key::FOREIGN_KEY)) {
             unique = true;
             break;
         }
