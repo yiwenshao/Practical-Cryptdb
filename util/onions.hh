@@ -26,6 +26,7 @@ enum class SECLEVEL {
     INVALID,
     PLAINVAL,
     OPE,
+    OPEFOREIGN,
     DETJOIN,
     DET,
     SEARCH,
