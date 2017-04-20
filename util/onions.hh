@@ -44,14 +44,14 @@ static onionlayout PLAIN_ONION_LAYOUT = {
 static onionlayout NUM_ONION_LAYOUT = {
     {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
                                   SECLEVEL::RND})},
-    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPE, SECLEVEL::RND})},
+    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN,SECLEVEL::OPE, SECLEVEL::RND})},
     {oAGG, std::vector<SECLEVEL>({SECLEVEL::HOM})}
 };
 
 static onionlayout BEST_EFFORT_NUM_ONION_LAYOUT = {
     {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
                                   SECLEVEL::RND})},
-    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPE, SECLEVEL::RND})},
+    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN,SECLEVEL::OPE, SECLEVEL::RND})},
     {oAGG, std::vector<SECLEVEL>({SECLEVEL::HOM})},
     // Requires SECLEVEL::DET, otherwise you will have to implement
     // encoding for negative numbers in SECLEVEL::RND.
@@ -62,7 +62,7 @@ static onionlayout BEST_EFFORT_NUM_ONION_LAYOUT = {
 static onionlayout STR_ONION_LAYOUT = {
     {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
                                   SECLEVEL::RND})},
-    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPE, SECLEVEL::RND})},
+    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN,SECLEVEL::OPE, SECLEVEL::RND})},
     // {oSWP, std::vector<SECLEVEL>({SECLEVEL::SEARCH})}
     // {oSWP, std::vector<SECLEVEL>({SECLEVEL::PLAINVAL, SECLEVEL::DET,
                                   // SECLEVEL::RND})}
@@ -71,7 +71,7 @@ static onionlayout STR_ONION_LAYOUT = {
 static onionlayout BEST_EFFORT_STR_ONION_LAYOUT = {
     {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
                                   SECLEVEL::RND})},
-    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPE, SECLEVEL::RND})},
+    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN,SECLEVEL::OPE, SECLEVEL::RND})},
     // {oSWP, std::vector<SECLEVEL>({SECLEVEL::SEARCH})},
     // {oSWP, std::vector<SECLEVEL>({SECLEVEL::PLAINVAL, SECLEVEL::DET,
     //                              SECLEVEL::RND})},

@@ -680,12 +680,12 @@ buildTypeTextTranslator()
     // SecLevels.
     const std::vector<std::string> seclevel_strings
     {
-        "RND", "DET", "DETJOIN", "OPE", "HOM", "SEARCH", "PLAINVAL",
+        "RND", "DET", "DETJOIN","OPEFOREIGN" ,"OPE", "HOM", "SEARCH", "PLAINVAL",
         "INVALID"
     };
     const std::vector<SECLEVEL> seclevels
     {
-        SECLEVEL::RND, SECLEVEL::DET, SECLEVEL::DETJOIN, SECLEVEL::OPE,
+        SECLEVEL::RND, SECLEVEL::DET, SECLEVEL::DETJOIN, SECLEVEL::OPEFOREIGN,SECLEVEL::OPE,
         SECLEVEL::HOM, SECLEVEL::SEARCH, SECLEVEL::PLAINVAL,
         SECLEVEL::INVALID
     };
