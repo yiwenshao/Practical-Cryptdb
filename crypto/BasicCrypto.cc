@@ -454,8 +454,8 @@ getLayerKey(const AES_KEY * const mKey, string uniqueFieldName,
     if (l == SECLEVEL::DETJOIN) {
         return getKey(mKey, "joinjoin", l);
     }
-    if(l == SECLEVEL::OPE){
-        return getKey(mKey,"opeforeign",l);
+    if (l == SECLEVEL::OPEFOREIGN){
+        return getKey(mKey,"foreignjoin",l);
     }
     return getKey(mKey, uniqueFieldName, l);
 }
