@@ -208,7 +208,6 @@ needsSalt(OLK olk)
 bool
 needsSalt(EncSet es)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (auto pair : es.osl) {
         OLK olk(pair.first, pair.second.first, pair.second.second);
         if (needsSalt(olk)) {
@@ -227,23 +226,6 @@ operator<<(std::ostream &out, const reason &r)
 
     return out;
 }
-
-
-/*
-void
-RewritePlan::restrict(const EncSet & es) {
-    es_out = es_out.intersect(es);
-    assert_s(!es_out.empty(), "after restrict rewrite plan has empty encset");
-
-    if (plan.size()) { //node has children
-        for (auto pair = plan.begin(); pair != plan.end(); pair++) {
-            if (!es.contains(pair->first)) {
-            plan.erase(pair);
-            }
-        }
-    }
-}
-*/
 
 std::ostream&
 operator<<(std::ostream &out, const RewritePlan * const rp)
@@ -313,7 +295,7 @@ dropAll(const std::unique_ptr<Connect> &conn)
 std::vector<std::string>
 getAllUDFs()
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+    //std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::vector<std::string> udfs;
     for (const udf_func * const u: udf_list) {
         std::stringstream ss;
@@ -328,11 +310,11 @@ getAllUDFs()
         ss << " SONAME 'edb.so';";
         udfs.push_back(ss.str());
     }
-    std::cout<<"all udfs:"<<std::endl;
-    for(std::string s:udfs){
-        std::cout<<s<<"\t";
-    }
-    std::cout<<std::endl;
+
+
+
+
+
 
     return udfs;
 }
@@ -675,14 +657,14 @@ deltaOutputBeforeQuery(const std::unique_ptr<Connect> &e_conn,
                        CompletionType completion_type,
                        uint64_t *const embedded_completion_id)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+
     const std::string &escaped_original_query =
         escapeString(e_conn, original_query);
     const std::string &escaped_rewritten_query =
         escapeString(e_conn, rewritten_query);
-    std::cout<<"escaped_original_query: "<<escaped_original_query<<"\n"<<"original_query: "<<
-    original_query<<"\n"<<"escaped_rewritten_query: "<<escaped_rewritten_query<<"\n"<<"rewritten_query: "<<
-    rewritten_query<<std::endl;
+
+
+
     RFIF(escaped_original_query.length()  <= STORED_QUERY_LENGTH
       && escaped_rewritten_query.length() <= STORED_QUERY_LENGTH);
 
@@ -717,7 +699,7 @@ deltaOutputAfterQuery(const std::unique_ptr<Connect> &e_conn,
                       const std::vector<std::unique_ptr<Delta> > &deltas,
                       uint64_t embedded_completion_id)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+
     RFIF(e_conn->execute("START TRANSACTION;"));
 
     const std::string q_update =
@@ -738,7 +720,7 @@ static bool
 tableCopy(const std::unique_ptr<Connect> &c, const std::string &src,
           const std::string &dest)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+
     const std::string delete_query =
         " DELETE FROM " + dest + ";";
     RETURN_FALSE_IF_FALSE(c->execute(delete_query));
@@ -754,7 +736,7 @@ tableCopy(const std::unique_ptr<Connect> &c, const std::string &src,
 bool
 setRegularTableToBleedingTable(const std::unique_ptr<Connect> &e_conn)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+
     const std::string src = MetaData::Table::bleedingMetaObject();
     const std::string dest = MetaData::Table::metaObject();
     return tableCopy(e_conn, src, dest);
@@ -763,7 +745,7 @@ setRegularTableToBleedingTable(const std::unique_ptr<Connect> &e_conn)
 bool
 setBleedingTableToRegularTable(const std::unique_ptr<Connect> &e_conn)
 {
-     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+
     const std::string src = MetaData::Table::metaObject();
     const std::string dest = MetaData::Table::bleedingMetaObject();
     return tableCopy(e_conn, src, dest);
@@ -773,7 +755,7 @@ bool Analysis::addAlias(const std::string &alias,
                         const std::string &db,
                         const std::string &table)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+
     auto db_alias_pair = table_aliases.find(db);
     if (table_aliases.end() == db_alias_pair) {
         table_aliases.insert(

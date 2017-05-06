@@ -424,7 +424,6 @@ class MultiDeleteHandler : public DMLHandler {
 class SelectHandler : public DMLHandler {
     virtual void gather(Analysis &a, LEX *const lex)
         const{
-        std::cout<<RED_BEGIN<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<COLOR_END<<std::endl<<std::endl;
         //处理了选择域, 以及为having等field 设置了rewriteplain, 也就是encset, 不同的洋葱层次需要这个东西.
         process_select_lex(lex->select_lex, a);
     }

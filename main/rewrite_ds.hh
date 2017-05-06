@@ -191,8 +191,6 @@ public:
     RewritePlan(const EncSet &es, reason r) : r(r), es_out(es) {};
     virtual ~RewritePlan() {}
     reason getReason() const {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<std::endl;
-        std::cout<<"reson why: "<<r.why<<"reason item: "<<r.string_item<<std::endl;
         return r;
     }
 

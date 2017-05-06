@@ -298,6 +298,7 @@ class CItemCompare : public CItemSubtypeFT<Item_func, FT> {
                 return ORD_EncSet;          /* lambda */
             }
         };
+
         const EncSet my_es = getEncSet();
 
         TEST_BadItemArgumentCount(i.type(), 2, i.argument_count());

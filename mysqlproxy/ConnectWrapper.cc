@@ -363,7 +363,7 @@ void parseResType(const ResType &rd) {
 }
 */
 
-
+/*
 static
 void parseResType2(const ResType &rd) {
     std::cout<<RED_BEGIN<<"rd.affected_rows: "<<rd.affected_rows<<COLOR_END<<std::endl;
@@ -377,12 +377,14 @@ void parseResType2(const ResType &rd) {
 	}
     }
 }
+*/
+
 
 static ResType
 getResTypeFromLuaTable(lua_State *const L, int fields_index,
                        int rows_index, int affected_rows_index,
                        int insert_id_index, int status_index) {
-    std::cout<<"decide to show luaTable to ResType:"<<std::endl;
+    //std::cout<<"decide to show luaTable to ResType:"<<std::endl;
     const bool status = lua_toboolean(L, status_index);
     if (false == status) {
         return ResType(false, 0, 0);
@@ -479,7 +481,6 @@ parseReturnMeta(const ReturnMeta & rtm){
 
 static int
 next(lua_State *const L) {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
 //    ANON_REGION(__func__, &perf_cg);
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
@@ -504,11 +505,8 @@ next(lua_State *const L) {
     ps->safeCreateEmbeddedTHD();
 
     const ResType &res = getResTypeFromLuaTable(L, 2, 3, 4, 5, 6);
-    parseResType2(res);
+    //parseResType2(res);
 
-
-    std::cout<<"************************************************"<<std::endl;
-    printRes(res);
     const std::unique_ptr<QueryRewrite> &qr = c_wrapper->getQueryRewrite();
     parseReturnMeta(qr->rmeta);
     try {

@@ -273,10 +273,13 @@ getOriginalKeyName(const Key &key)
         return "PRIMARY";
     }
 
-    const std::string out_name = convert_lex_str(key.name);
+    std::string out_name = convert_lex_str(key.name);
 
-    TEST_TextMessageError(out_name.size() > 0,
-                          "Non-Primary keys can not have blank name!");
+    //TEST_TextMessageError(out_name.size() > 0,
+    //                      "Non-Primary keys can not have blank name!");
+    if(out_name.size()==0){
+        out_name="nonekey";
+    }
 
     return out_name;
 }
@@ -349,14 +352,18 @@ rewrite_key(const TableMeta &tm, const Key &key, const Analysis &a)
 }
 */
 
+
+/*
+only rewrite normal keys here, do not process foreign keys.
+
+*/
 static std::vector<Key *>
-rewrite_key1(const TableMeta &tm, const Key &key, const Analysis &a)
-{
+rewrite_key1(const TableMeta &tm, const Key &key, const Analysis &a){
+
     //leave foreign key unchanged
     std::vector<Key *> output_keys;
     if(key.type==Key::FOREIGN_KEY){
         THD* cthd = current_thd;
-
         Key *const new_key = key.clone(cthd->mem_root);
         output_keys.push_back(new_key);
         return output_keys;
@@ -369,7 +376,6 @@ rewrite_key1(const TableMeta &tm, const Key &key, const Analysis &a)
     for (auto onion_it : key_onions) {
         const onion o = onion_it;
         THD* cthd = current_thd;
-
         //原始key的拷贝
         Key *const new_key = key.clone(cthd->mem_root);
         //通过key的原始名字+onion+tm哈希获得新的key名字,用的是std::hash<string>算法.
@@ -420,7 +426,6 @@ rewrite_key1(const TableMeta &tm, const Key &key, const Analysis &a)
             return std::vector<Key *>({output_keys.front()});
         }
     }
-
     return output_keys;
 }
 
@@ -430,8 +435,7 @@ rewrite_key1(const TableMeta &tm, const Key &key, const Analysis &a)
 // 'seed_lex' and 'out_lex' can be the same object.
 void
 highLevelRewriteKey(const TableMeta &tm, const LEX &seed_lex,
-                    LEX *const out_lex, const Analysis &a)
-{
+                    LEX *const out_lex, const Analysis &a){
     assert(out_lex);
 
     // Add each new index.
@@ -519,10 +523,6 @@ highLevelRewriteForeignKey(const TableMeta &tm, const LEX &seed_lex,
                 new_key_part->field_name = string_to_lex_str(field_name);
                 ((Foreign_key*)new_key)->ref_columns.push_back(new_key_part);
             }
-
-
-
-
             output_keys.push_back(new_key);
         }else{
             THD* cthd = current_thd;

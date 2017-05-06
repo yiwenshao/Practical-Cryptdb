@@ -21,5 +21,24 @@ protected:
     AlterSubHandler() {;}
 };
 
+
+class AddIndexSubHandler : public AlterSubHandler {
+    virtual LEX *
+        rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &preamble)const;
+
+};
+
+class ForeignKeySubHandler : public AlterSubHandler{
+    virtual LEX *
+        rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &preamble)const;
+};
+
+
+
 class AlterDispatcher;
+
 AlterDispatcher *buildAlterSubDispatcher();
+
+
+
+

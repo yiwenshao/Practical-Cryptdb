@@ -25,8 +25,8 @@ typedef enum onion {
 enum class SECLEVEL {
     INVALID,
     PLAINVAL,
-    OPE,
     OPEFOREIGN,
+    OPE,
     DETJOIN,
     DET,
     SEARCH,

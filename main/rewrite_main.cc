@@ -58,7 +58,6 @@ std::string global_crash_point = "";
 
 void
 crashTest(const std::string &current_point) {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     if (current_point == global_crash_point) {
       throw CrashTestException();
     }
@@ -67,7 +66,6 @@ crashTest(const std::string &current_point) {
 static inline std::string
 extract_fieldname(Item_field *const i)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::stringstream fieldtemp;
     fieldtemp << *i;
     return fieldtemp.str();
@@ -76,7 +74,6 @@ extract_fieldname(Item_field *const i)
 static bool
 sanityCheck(FieldMeta &fm)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &it : fm.getChildren()) {
         OnionMeta *const om = it.second.get();
         const onion o = it.first.getValue();
@@ -93,7 +90,6 @@ sanityCheck(FieldMeta &fm)
 static bool
 sanityCheck(TableMeta &tm)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &it : tm.getChildren()) {
         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         const auto &fm = it.second;
@@ -105,9 +101,7 @@ sanityCheck(TableMeta &tm)
 static bool
 sanityCheck(DatabaseMeta &dm)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &it : dm.getChildren()) {
-//         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         const auto &tm = it.second;
         assert(sanityCheck(*tm.get()));
     }
@@ -117,9 +111,7 @@ sanityCheck(DatabaseMeta &dm)
 static bool
 sanityCheck(SchemaInfo &schema)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &it : schema.getChildren()) {
-//        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         const auto &dm = it.second;
         assert(sanityCheck(*dm.get()));
     }
@@ -158,7 +150,6 @@ tablesSanityCheck(SchemaInfo &schema,
                   const std::unique_ptr<Connect> &e_conn,
                   const std::unique_ptr<Connect> &conn)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &dm_it : schema.getChildren()) {
         const auto &db_name = dm_it.first.getValue();
         std::cout<<"db_name: "<<db_name<<std::endl;
@@ -515,7 +506,7 @@ deltaSanityCheck(const std::unique_ptr<Connect> &conn,
         " SELECT id, type FROM " + embedded_completion +
         "  WHERE complete = FALSE AND aborted != TRUE;";
 
-    std::cout<<"query in deltaSanityCheck to find unfinished deltas: "<<unfinished_deltas<<__LINE__<<":"<<__FILE__<<std::endl;
+    //std::cout<<"query in deltaSanityCheck to find unfinished deltas: "<<unfinished_deltas<<__LINE__<<":"<<__FILE__<<std::endl;
 
     RETURN_FALSE_IF_FALSE(e_conn->execute(unfinished_deltas, &dbres));
 
@@ -561,7 +552,6 @@ deltaSanityCheck(const std::unique_ptr<Connect> &conn,
 static bool
 metaSanityCheck(const std::unique_ptr<Connect> &e_conn)
 {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // same number of elements
     {
         std::unique_ptr<DBResult> regular_dbres;
@@ -626,7 +616,6 @@ std::unique_ptr<SchemaInfo>
 loadSchemaInfo(const std::unique_ptr<Connect> &conn,
                const std::unique_ptr<Connect> &e_conn)
 {
-     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // Must be done before loading the children.
     assert(deltaSanityCheck(conn, e_conn));
 
@@ -859,7 +848,6 @@ removeOnionLayer(const Analysis &a, const TableMeta &tm,
                  SECLEVEL *const new_level,
                  std::vector<std::unique_ptr<Delta> > *const deltas)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // Remove the EncLayer.
     EncLayer const &back_el = om_adjustor->popBackEncLayer();
 
@@ -907,7 +895,7 @@ removeOnionLayer(const Analysis &a, const TableMeta &tm,
  * changed schema to persistent storage.
  *
  */
-static std::pair<std::vector<std::unique_ptr<Delta> >,
+std::pair<std::vector<std::unique_ptr<Delta> >,
                  std::list<std::string>>
 adjustOnion(const Analysis &a, onion o, const TableMeta &tm,
             const FieldMeta &fm, SECLEVEL tolevel)
@@ -948,7 +936,6 @@ FieldQualifies(const FieldMeta *const restriction,
 template <class T>
 static Item *
 do_optimize_const_item(T *i, Analysis &a) {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     return i;
 
 }
@@ -958,7 +945,6 @@ static Item *
 decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
                     uint64_t IV)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     assert(!RiboldMYSQL::is_null(i));
 
     const Item *dec = &i;
@@ -1005,7 +991,6 @@ static class ANON : public CItemSubtypeIT<Item_subselect,
     virtual RewritePlan *
     do_gather_type(const Item_subselect &i, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         const std::string why = "subselect";
 
         // create an Analysis object for subquery gathering/rewriting
@@ -1075,7 +1060,6 @@ static class ANON : public CItemSubtypeIT<Item_subselect,
                     const RewritePlan &rp, Analysis &a)
         const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         const RewritePlanWithAnalysis &rp_w_analysis =
             static_cast<const RewritePlanWithAnalysis &>(rp);
         const st_select_lex *const select_lex =
@@ -1217,7 +1201,6 @@ static class ANON : public CItemSubtypeIT<Item_cache, Item::Type::CACHE_ITEM> {
 static void
 optimize_select_lex(st_select_lex *select_lex, Analysis & a)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     auto item_it = List_iterator<Item>(select_lex->item_list);
     for (;;) {
         if (!item_it++)
@@ -1245,7 +1228,6 @@ optimize_select_lex(st_select_lex *select_lex, Analysis & a)
 static void
 optimize_table_list(List<TABLE_LIST> *tll, Analysis &a)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     List_iterator<TABLE_LIST> join_it(*tll);
     for (;;) {
         TABLE_LIST *t = join_it++;
@@ -1298,6 +1280,49 @@ const std::unique_ptr<SQLDispatcher> Rewriter::dml_dispatcher =
 const std::unique_ptr<SQLDispatcher> Rewriter::ddl_dispatcher =
     std::unique_ptr<SQLDispatcher>(buildDDLDispatcher());
 
+
+static std::string serilize_OnionAdjustExcept(OnionAdjustExcept &e){
+    //onion and level
+    std::string res;
+    if(e.o==oDET){
+       res+="oDET";
+    }else if(e.o==oOPE){
+        res+="oOPE";
+    }else if(e.o==oAGG){
+        res+="oAGG";
+    }else if(e.o==oSWP){
+        res+="oSWP";
+    }else if(e.o==oPLAIN){
+        res+="oPLAIN";
+    }else{
+        res+="NULLONION";
+    }
+    res+="::::";
+    if(e.tolevel==SECLEVEL::INVALID){
+        res+="INVALID";
+    }else if(e.tolevel==SECLEVEL::PLAINVAL){
+        res+="PLAINVAL";
+    }else if(e.tolevel==SECLEVEL::OPEFOREIGN){
+        res+="OPEFOREIGN";
+    }else if(e.tolevel==SECLEVEL::OPE){
+        res+="OPE";
+    }else if(e.tolevel==SECLEVEL::DETJOIN){
+        res+="DETJOIN";
+    }else if(e.tolevel==SECLEVEL::DET){
+        res+="DET";
+    }else if(e.tolevel==SECLEVEL::SEARCH){
+        res+="SEARCH";
+    }else if(e.tolevel==SECLEVEL::HOM){
+        res+="HOM";
+    }else if(e.tolevel==SECLEVEL::RND){
+        res+="RND";
+    }else{
+        res+="nulllevel";
+    }
+    return res;
+}
+
+
 // NOTE : This will probably choke on multidatabase queries.
 AbstractQueryExecutor *
 Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
@@ -1315,7 +1340,7 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
     // optimization: do not process queries that we will not rewrite
     if (noRewrite(*lex)) {
         return new SimpleExecutor();
-    } else if (dml_dispatcher->canDo(lex)) {        
+    } else if (dml_dispatcher->canDo(lex)) { 
         // HACK: We don't want to process INFORMATION_SCHEMA queries
         if (SQLCOM_SELECT == lex->sql_command &&
             lex->select_lex.table_list.first) {
@@ -1333,6 +1358,7 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
             std::cout << GREEN_BEGIN << "Adjusting onion!" << COLOR_END
                       << std::endl;
 
+            //We use deltas to remove layers in the metadata, and queyrs to decrypt data.
             std::pair<std::vector<std::unique_ptr<Delta> >,
                       std::list<std::string> >
                 out_data = adjustOnion(a, e.o, e.tm, e.fm, e.tolevel);
@@ -1346,7 +1372,24 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
         return executor.get();
     } else if (ddl_dispatcher->canDo(lex)) {
         const SQLHandler &handler = ddl_dispatcher->dispatch(lex);
-        AbstractQueryExecutor *const executor = handler.transformLex(a, lex);
+        AbstractQueryExecutor * executor ;
+        try{
+            executor = handler.transformLex(a, lex);
+        }catch(OnionAdjustExcept e){ 
+            // if an error occur in the first line of code, gdb will go to return NULL, which is not what exactly happened.
+            //We use deltas to remove layers in the metadata, and queyrs to decrypt data.
+            std::pair<std::vector<std::unique_ptr<Delta> >,
+                      std::list<std::string> >
+                out_data = adjustOnion(a, e.o, e.tm, e.fm, e.tolevel);
+            
+            std::string resadjust = serilize_OnionAdjustExcept(e);
+            std::cout<<"###################################################**************************************"<<resadjust<<std::endl;
+            std::vector<std::unique_ptr<Delta> > &deltas = out_data.first;
+            const std::list<std::string> &adjust_queries = out_data.second;
+            return new OnionAdjustmentExecutor(std::move(deltas),
+                                               adjust_queries);           
+
+        }
         return executor;
     }
 
@@ -1398,7 +1441,6 @@ std::string ReturnMeta::stringify() {
 ResType
 Rewriter::decryptResults(const ResType &dbres, const ReturnMeta &rmeta)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     //这个success是构造的时候写入的.
     assert(dbres.success());
 
@@ -1536,6 +1578,8 @@ OnionMetaAdjustor::pullCopyLayers(OnionMeta const &om)
     return v;
 }
 
+
+//Write delta into the local meta database to remove layers, issuses queries to adjust layers, and then reissus the original query.
 std::pair<AbstractQueryExecutor::ResultType, AbstractAnything *>
 OnionAdjustmentExecutor::
 nextImpl(const ResType &res, const NextParams &nparams)

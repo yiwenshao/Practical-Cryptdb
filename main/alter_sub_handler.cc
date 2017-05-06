@@ -108,28 +108,125 @@ class ChangeColumnSubHandler : public AlterSubHandler {
     }
 };
 
-class ForeignKeySubHandler : public AlterSubHandler {
-    virtual LEX *
-        rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &preamble)
-            const
-    {
-        FAIL_TextMessageError("implement ForeignKeySubHandler");
-    }
-};
+LEX * ForeignKeySubHandler::rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &preamble)
+            const{
+//       LEX *const new_lex = copyWithTHD(lex);
+       TableMeta const &ctm =
+            a.getTableMeta(preamble.dbname, preamble.table);
+       
+        //find essential information from froeign key
+       auto it =
+             List_iterator<Key>(lex->alter_info.key_list);
 
-class AddIndexSubHandler : public AlterSubHandler {
-    virtual LEX *
-        rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &preamble)
-            const
-    {
+       while(auto cur = it++){
+           if(cur->type==Key::FOREIGN_KEY){
+                   Table_ident* ref_table = ((Foreign_key*)cur)->ref_table;
+                   std::string ref_table_name = convert_lex_str(ref_table->table);
+                   TableMeta const &reftm =
+                        a.getTableMeta(preamble.dbname, ref_table_name);
+                   auto it_ref_columns = List_iterator<Key_part_spec>(((Foreign_key*)cur)->ref_columns);
+                   //should find Only ope, and adjust it to OPEFOREIGN  
+                   while(auto cur_ref_columns=it_ref_columns++){
+                        std::string ref_column_name = convert_lex_str(cur_ref_columns->field_name);
+                        OnionMeta *om = a.getOnionMeta2(preamble.dbname,ref_table_name,ref_column_name,oOPE);
+                        FieldMeta &reffm = a.getFieldMeta(reftm,ref_column_name);
+                        assert(om!=NULL);
+                        if(om->getLayerBack()->level()==SECLEVEL::RND||
+                           om->getLayerBack()->level()==SECLEVEL::OPE){                           
+                           OnionAdjustExcept oje(reftm,reffm,oOPE,SECLEVEL::OPEFOREIGN);
+                           throw oje; 
+                        }else if(om->getLayerBack()->level()==SECLEVEL::OPEFOREIGN){
+                           //nothing here
+                        }else{
+                            assert(0);
+                        }
+                   }
+          }else if(cur->type==Key::MULTIPLE){//adjust to OPEFROEIGN
+              auto it_columns = List_iterator<Key_part_spec>(cur->columns);
+              while(auto go = it_columns++){
+                  std::string current_field_name = convert_lex_str(go->field_name);
+                  OnionMeta *om = a.getOnionMeta2(preamble.dbname, preamble.table, current_field_name, oOPE);
+                  if(om!=NULL){ 
+                      if(om->getLayerBack()->level()==SECLEVEL::RND||
+                        om->getLayerBack()->level()==SECLEVEL::OPE){
+                          const FieldMeta &fm = a.getFieldMeta(ctm,current_field_name);
+                          OnionAdjustExcept oje(ctm,fm,oOPE,SECLEVEL::OPEFOREIGN);
+                          throw oje;
+                      }else if(om->getLayerBack()->level()==SECLEVEL::OPEFOREIGN){
+                          //nothing
+                      }else{
+                         assert(0);
+                      }
+                  }
+             }
+          }else{
+              assert(0);
+              return NULL;
+          }
+       }
+       highLevelRewriteKey(ctm, *lex, lex, a);
+       highLevelRewriteForeignKey(ctm,*lex,lex,a,preamble.table);
+
+       return lex;
+}
+
+
+LEX * AddIndexSubHandler::rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &preamble)const{
+    
+        if(lex->alter_info.flags & ALTER_FOREIGN_KEY) return lex;
+        //LEX *const new_lex = copyWithTHD(lex);
         TableMeta const &tm =
             a.getTableMeta(preamble.dbname, preamble.table);
-
+        //before rewriting key, we should check the layers of the onions for each field
+        auto it =
+             List_iterator<Key>(lex->alter_info.key_list);
+        while(auto cur = it++){
+            //for each key, find the columns
+            switch(cur->type){
+                case Key::PRIMARY:
+                case Key::UNIQUE:
+                case Key::MULTIPLE:
+                case Key::FULLTEXT:
+                case Key::SPATIAL:{
+                    //for each column, find the 
+                    auto it_columns = List_iterator<Key_part_spec>(cur->columns);
+                    while(auto go = it_columns++){
+                        std::string current_field_name = convert_lex_str(go->field_name);
+                        OnionMeta *om = a.getOnionMeta2(preamble.dbname, preamble.table, current_field_name, oDET);
+                        if(om!=NULL){
+                            //Remove RND here(reference rewrite_field.cc)
+                           if(om->getLayerBack()->level()==SECLEVEL::RND){
+                                const TableMeta &tm = a.getTableMeta(preamble.dbname,preamble.table);
+                                const FieldMeta &fm = a.getFieldMeta(tm,current_field_name);
+                                OnionAdjustExcept oje(tm,fm,oDET,SECLEVEL::DET);
+                                throw oje;
+                           }
+                        }
+                        om = a.getOnionMeta2(preamble.dbname,preamble.table,convert_lex_str(go->field_name),oOPE);
+                        if(om!=NULL){
+                            //Still remove RND here
+                            if(om->getLayerBack()->level()==SECLEVEL::RND){
+                                const TableMeta &tm = a.getTableMeta(preamble.dbname,preamble.table);
+                                const FieldMeta &fm = a.getFieldMeta(tm,current_field_name);
+                                OnionAdjustExcept oje(tm,fm,oOPE,SECLEVEL::OPE);
+                                throw oje;
+                            }
+                        }
+                    }
+                    break;
+                }
+                case Key::FOREIGN_KEY:{
+                    
+                    //assert(0);
+                    //do nothing here
+                }
+            }
+        }
+        //if we have foreign, then no need to rewrite here
         highLevelRewriteKey(tm, *lex, lex, a);
-
         return lex;
-    }
-};
+}
+
 
 class DropIndexSubHandler : public AlterSubHandler {
     virtual LEX *
@@ -214,7 +311,6 @@ class DisableOrEnableKeys : public AlterSubHandler {
 LEX *AlterSubHandler::
 transformLex(Analysis &a, LEX *const lex) const
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     const std::string &db = lex->select_lex.table_list.first->db;
     TEST_DatabaseDiscrepancy(db, a.getDatabaseName());
     const Preamble preamble(db,

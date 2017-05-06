@@ -28,8 +28,6 @@ DBMeta::doFetchChildren(const std::unique_ptr<Connect> &e_conn,
     std::unique_ptr<DBResult> db_res;
     //这个id来自于dbobject.
     const std::string parent_id = std::to_string(this->getDatabaseID());
-    std::cout<<"parent id: "<<parent_id<<std::endl;
-
     const std::string serials_query =
         " SELECT " + table_name + ".serial_object,"
         "        " + table_name + ".serial_key,"
@@ -37,7 +35,8 @@ DBMeta::doFetchChildren(const std::unique_ptr<Connect> &e_conn,
         " FROM " + table_name +
         " WHERE " + table_name + ".parent_id"
         "   = " + parent_id + ";";
-    std::cout<<serials_query<<"serial query:"<<std::endl;
+    //all the metadata are fetched here.
+    //std::cout<<serials_query<<"serial query:"<<std::endl;
     TEST_TextMessageError(e_conn->execute(serials_query, &db_res),
                           "doFetchChildren query failed");
     MYSQL_ROW row;
@@ -92,7 +91,7 @@ std::unique_ptr<OnionMeta>
 OnionMeta::deserialize(unsigned int id, const std::string &serial)
 {
     assert(id != 0);
-    std::cout<<"string before unserialize: "<<serial<<std::endl;
+    //std::cout<<"string before unserialize: "<<serial<<std::endl;
     const auto vec = unserialize_string(serial);
     //OnionMeta序列化的结果有三个.
     assert(3 == vec.size());
