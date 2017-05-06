@@ -21,6 +21,15 @@ If you meet any problems installing it, or if you meet bugs or need new features
 New features added
 
 + foreign key constraint
+
+```
+create table student (id integer primary key);
+create table choose (sid integer, foreign key fk(sid) references student(id));
+insert into student values(1);
+insert into choose values(1);
+
+```
+
 + set user variable
 + timestamp
 + show create table
@@ -30,3 +39,7 @@ obselete functions deleted
 
 + annotation
 + dbobject.tt
+
+
+
+
