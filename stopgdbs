@@ -1,2 +1,0 @@
-###stop gdb 
-ps aux|grep gdb|grep -v grep|awk '{print $2}'| while read line;do sudo kill -9 $line;done
