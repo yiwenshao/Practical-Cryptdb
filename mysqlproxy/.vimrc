@@ -1,1 +1,0 @@
-../conf/dot.vimrc
