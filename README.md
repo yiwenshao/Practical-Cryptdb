@@ -1,31 +1,26 @@
-# Newcryptdb
+### Make cryptdb Practical
 
-Cryptdb originated from MIT. This is a modified version try to add new features and fix bugs we meet in our environment. 
-Introduction to the features included will be posted at yiwenshao.github.io.
+Cryptdb originated from MIT. This is a modified version. In this project, we try to add new features, fix bugs we meet in our environment, and rewrite the code and comments to make the source code easy to understand. Introduction to the features will be posted at yiwenshao.github.io. Also, analysis of the source code will be posted there so that you do not need so much effort contributing to this project.
 
-To deploy this version, you need.
+To deploy this version, you need follow the following steps.
 
-1. compile MySQL5.5 with the following command
-
-```
-mkdir build
-cd build
-export CXX=g++-4.7
-cmake -DWITH_EMBEDDED_SERVER=on -DENABLE_DTRACE=off ..
-make
-```
-2. set MySQL-SRC in conf/config.mk
-
-3. have g++-4.7 and use make to compile
-
-4. install MySQL-proxy
-
-If you meet any problems installing it, contact me via shaoyiwenetATgmailDotcom.
++ have ubuntu 16.04 installed
++ install mysql-server 5.5 or higher, with the root password 'letmein'
+	To verify this, you can use the command mysql -uroot -pletmein to log in
++ download this repository and run the script using  **source INSTALL.sh**
++ run ./cdbserver.sh
++ run ./cdbclient.sh 
++ enjoy it!
 
 
 
-new features added
+If you meet any problems installing it, or if you meet bugs or need new features that if not yet supported, post issues or contact me via shaoyiwenetATgmailDotcom.
 
+
+
+New features added
+
++ foreign key constraint
 + set user variable
 + timestamp
 + show create table
@@ -34,4 +29,4 @@ new features added
 obselete functions deleted
 
 + annotation
-
++ dbobject.tt
