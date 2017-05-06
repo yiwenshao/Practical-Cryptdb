@@ -33,8 +33,7 @@ rewrite(const Item &i, const EncSet &req_enc, Analysis &a) {
 }
 
 TABLE_LIST *
-rewrite_table_list(const TABLE_LIST * const t, const Analysis &a)
-{
+rewrite_table_list(const TABLE_LIST * const t, const Analysis &a) {
     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // Table name can only be empty when grouping a nested join.
     assert(t->table_name || t->nested_join);
@@ -153,14 +152,12 @@ gather(const Item &i, Analysis &a)
 void
 gatherAndAddAnalysisRewritePlan(const Item &i, Analysis &a)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     a.rewritePlans[&i] = std::unique_ptr<RewritePlan>(gather(i, a));
 }
 
 std::vector<std::tuple<std::vector<std::string>, Key::Keytype> >
 collectKeyData(const LEX &lex)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::vector<std::tuple<std::vector<std::string>, Key::Keytype> > output;
 
     auto key_it =
@@ -276,14 +273,18 @@ getOriginalKeyName(const Key &key)
         return "PRIMARY";
     }
 
-    const std::string out_name = convert_lex_str(key.name);
+    std::string out_name = convert_lex_str(key.name);
 
-    TEST_TextMessageError(out_name.size() > 0,
-                          "Non-Primary keys can not have blank name!");
+    //TEST_TextMessageError(out_name.size() > 0,
+    //                      "Non-Primary keys can not have blank name!");
+    if(out_name.size()==0){
+        out_name="nonekey";
+    }
 
     return out_name;
 }
 
+/*
 static std::vector<Key *>
 rewrite_key(const TableMeta &tm, const Key &key, const Analysis &a)
 {
@@ -295,8 +296,9 @@ rewrite_key(const TableMeta &tm, const Key &key, const Analysis &a)
     const std::vector<onion> key_onions = getOnionIndexTypes();
     for (auto onion_it : key_onions) {
         const onion o = onion_it;
+        THD* cthd = current_thd;
         //原始key的拷贝
-        Key *const new_key = key.clone(current_thd->mem_root);
+        Key *const new_key = key.clone(cthd->mem_root);
         //通过key的原始名字+onion+tm哈希获得新的key名字,用的是std::hash<string>算法.
         // Set anonymous name.
         const std::string new_name =
@@ -348,12 +350,92 @@ rewrite_key(const TableMeta &tm, const Key &key, const Analysis &a)
 
     return output_keys;
 }
+*/
+
+
+/*
+only rewrite normal keys here, do not process foreign keys.
+
+*/
+static std::vector<Key *>
+rewrite_key1(const TableMeta &tm, const Key &key, const Analysis &a){
+
+    //leave foreign key unchanged
+    std::vector<Key *> output_keys;
+    if(key.type==Key::FOREIGN_KEY){
+        THD* cthd = current_thd;
+        Key *const new_key = key.clone(cthd->mem_root);
+        output_keys.push_back(new_key);
+        return output_keys;
+    }
+
+    //从左到右分别是三种类型: oOPE, oDET, oPLAIN, 对于每个语句的index都是这样
+    //比如自己要alter table add 的index, 其对应index的名字, 以及相关的column信息
+    //比如create的时候, 产生的index, 其对应的名字以及相关的columns, 这样包含在key里面了
+    const std::vector<onion> key_onions = getOnionIndexTypes();
+    for (auto onion_it : key_onions) {
+        const onion o = onion_it;
+        THD* cthd = current_thd;
+        //原始key的拷贝
+        Key *const new_key = key.clone(cthd->mem_root);
+        //通过key的原始名字+onion+tm哈希获得新的key名字,用的是std::hash<string>算法.
+        // Set anonymous name.
+        const std::string new_name =
+            a.getAnonIndexName(tm, getOriginalKeyName(key), o);
+        //设置key的新名字, 以及新的key对应的column清空??
+        new_key->name = string_to_lex_str(new_name);
+        new_key->columns.empty();
+
+        //遍历原始的key的columns, 改写, 变成新key的colukns
+        // Set anonymous columns.
+        auto col_it =
+            RiboldMYSQL::constList_iterator<Key_part_spec>(key.columns);
+        for (;;) {
+            const Key_part_spec *const key_part = col_it++;
+            if (NULL == key_part) {
+                output_keys.push_back(new_key);
+                break;
+            }
+            //复制一个column信息
+            Key_part_spec *const new_key_part = copyWithTHD(key_part);
+            //原始的key_part, 也就是一个column, 里面取一个field_name出来
+            const std::string field_name =
+                convert_lex_str(new_key_part->field_name);
+            //通过column查tablemeta, 然后差当前的onion在不在那个tablemeta里面
+            // > the onion may not exist; ie oPLAIN with SENSITIVE and not
+            // an AUTO INCREMENT column
+            const FieldMeta &fm = a.getFieldMeta(tm, field_name);
+            const OnionMeta *const om = fm.getOnionMeta(o);
+            if (NULL == om) {
+                break;
+            }
+            //如果存在, 那么新的column的名字就是洋葱的名字, 然后new_key的column就确定了
+            //可以看到, 对于索引里面的每个field, 都选择一个洋葱, 如果没有合适的, 则不选择.
+            new_key_part->field_name =
+                string_to_lex_str(om->getAnonOnionName());
+            new_key->columns.push_back(new_key_part);
+        }
+    }
+
+    //上面, 对于一个key来说, 可以查三个洋葱
+    //对于每个洋葱,都可能构造一个key, 这是根据这个key对应的columns里面有没有洋葱, 有则选进来. 所以, 列扩展了以后, 索引也扩展了.
+    //主键特殊处理, 之根据一个洋葱构造.
+    // Only create one PRIMARY KEY.
+    if (Key::PRIMARY == key.type) {
+        if (output_keys.size() > 0) {
+            return std::vector<Key *>({output_keys.front()});
+        }
+    }
+    return output_keys;
+}
+
+
+
 
 // 'seed_lex' and 'out_lex' can be the same object.
 void
 highLevelRewriteKey(const TableMeta &tm, const LEX &seed_lex,
-                    LEX *const out_lex, const Analysis &a)
-{
+                    LEX *const out_lex, const Analysis &a){
     assert(out_lex);
 
     // Add each new index.
@@ -365,7 +447,7 @@ highLevelRewriteKey(const TableMeta &tm, const LEX &seed_lex,
                 // -----------------------------
                 //         Rewrite INDEX
                 // -----------------------------
-                auto new_keys = rewrite_key(tm, *key, a);
+                auto new_keys = rewrite_key1(tm, *key, a);
                 out_list.concat(vectorToListWithTHD(new_keys));
 
                 return out_list;
@@ -373,6 +455,89 @@ highLevelRewriteKey(const TableMeta &tm, const LEX &seed_lex,
 
     return;
 }
+
+void 
+highLevelRewriteForeignKey(const TableMeta &tm, const LEX &seed_lex,
+            LEX *const out_lex, const Analysis &a,std::string tbname){
+    std::string dbname = a.getDatabaseName();
+    auto it =
+             List_iterator<Key>(out_lex->alter_info.key_list);
+    std::vector<Key *> output_keys;
+
+    while(auto cur = it++){
+        if(cur->type== Key::FOREIGN_KEY){
+           THD* cthd = current_thd;
+            //process current names
+            Key* const new_key = cur->clone(cthd->mem_root);
+            std::string new_name = "newfkname";
+            new_key->name = string_to_lex_str(new_name);
+
+            //process current columns
+            auto col_it_cur = List_iterator<Key_part_spec>((cur->columns));
+
+            new_key->columns.empty();
+
+            while(1){
+                const Key_part_spec *const key_part = col_it_cur++;
+                if(NULL == key_part){
+                    break;
+                }
+                Key_part_spec *const new_key_part = copyWithTHD(key_part);
+                std::string field_name =
+                convert_lex_str(new_key_part->field_name);
+                //get current field name, and then replace it with one onionname here                
+                //currently we choose det onion, without caring about the layers
+                //OnionMeta *om = a.getOnionMeta2(dbname,tbname,field_name,oDET);
+                OnionMeta *om = tm.getChild(IdentityMetaKey(field_name))->getOnionMeta(oOPE);
+                assert(om!=NULL);                
+                field_name=om->getAnonOnionName();
+                new_key_part->field_name = string_to_lex_str(field_name);
+                new_key->columns.push_back(new_key_part);
+            }
+
+            //process ref tables
+            Table_ident* ref_table = ((Foreign_key*)cur)->ref_table;
+
+            std::string ref_table_name = std::string(ref_table->table.str,ref_table->table.length);
+            TableMeta &rtm = a.getTableMeta(a.getDatabaseName(),ref_table_name);
+
+            std::string ref_table_annoname = rtm.getAnonTableName();
+            ref_table->table = string_to_lex_str(ref_table_annoname);
+
+            //process ref columns
+            auto col_it =
+            List_iterator<Key_part_spec>(((Foreign_key*)cur)->ref_columns);
+            ((Foreign_key*)new_key)->ref_columns.empty();
+            while(1){
+                const Key_part_spec *const key_part = col_it++;
+                if(NULL == key_part){
+                    break;
+                }
+                Key_part_spec *const new_key_part = copyWithTHD(key_part);
+                std::string field_name =
+                convert_lex_str(new_key_part->field_name);
+                //update field name here
+                OnionMeta * om = a.getOnionMeta2(dbname,ref_table_name,field_name,oOPE);
+                assert(om!=NULL);
+                field_name=om->getAnonOnionName();
+                new_key_part->field_name = string_to_lex_str(field_name);
+                ((Foreign_key*)new_key)->ref_columns.push_back(new_key_part);
+            }
+            output_keys.push_back(new_key);
+        }else{
+            THD* cthd = current_thd;
+            Key* const new_key = cur->clone(cthd->mem_root);
+            output_keys.push_back(new_key);
+        }
+    }
+       
+    out_lex->alter_info.key_list = *vectorToListWithTHD(output_keys);
+   
+
+}
+
+
+
 
 std::string
 bool_to_string(bool b)
@@ -406,7 +571,7 @@ isUnique(const std::string &name,
         const auto &found =
             std::find(std::get<0>(it).begin(), std::get<0>(it).end(), name);
         if (found != std::get<0>(it).end()
-            && (std::get<1>(it) == Key::PRIMARY || std::get<1>(it) == Key::UNIQUE)) {
+            && (std::get<1>(it) == Key::PRIMARY || std::get<1>(it) == Key::UNIQUE ||std::get<1>(it)==Key::FOREIGN_KEY)) {
             unique = true;
             break;
         }
@@ -427,19 +592,16 @@ createAndRewriteField(Analysis &a, Create_field * const cf,
     cf->flags = cf->flags | UNSIGNED_FLAG;
 
     const std::string &name = std::string(cf->field_name);
-    std::cout<<RED_BEGIN<<name<<":"<<cf->sql_type<<COLOR_END<<std::endl;
     std::unique_ptr<FieldMeta>
         fm(new FieldMeta(*cf, a.getMasterKey().get(),
                          a.getDefaultSecurityRating(), tm->leaseCount(),
                          isUnique(name, key_data)));
-
     // -----------------------------
     //         Rewrite FIELD
     // -----------------------------
     //for each onion, we have new fields and salts, salts have long long type
     const auto new_fields = rewrite_create_field(fm.get(), cf, a);
     rewritten_cfield_list.concat(vectorToListWithTHD(new_fields));
-
     // -----------------------------
     //         Update FIELD
     // -----------------------------
@@ -463,7 +625,6 @@ createAndRewriteField(Analysis &a, Create_field * const cf,
 Item *
 encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
                     const Analysis &a, uint64_t IV) {
-std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     assert(!RiboldMYSQL::is_null(i));
     //这里是onionMeta中的vector, enclayers.也就是洋葱不同层次的加解密通过Onionmeta以及
     //encLary中的加解密算法来完成.
@@ -480,7 +641,6 @@ std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std
         assert(new_enc);
         enc = new_enc;
     }
-
     // @i is const, do we don't want the caller to modify it accidentally.
     assert(new_enc && new_enc != &i);
     return new_enc;

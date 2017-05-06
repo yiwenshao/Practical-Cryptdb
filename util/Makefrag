@@ -4,7 +4,7 @@ UTILSRC := onions.cc cryptdb_log.cc ctr.cc util.cc version.cc
 all:    $(OBJDIR)/libedbutil.so $(OBJDIR)/libedbutil.a
 
 $(OBJDIR)/libedbutil.so: $(patsubst %.cc,$(OBJDIR)/util/%.o,$(UTILSRC))
-	$(CXX) -shared -o $@ $^ $(LDFLAGS) -lntl -lcrypto -lgmp
+	$(CXX) -fPIC -shared -o $@ $^ $(LDFLAGS) -lntl -lcrypto -lgmp
 
 $(OBJDIR)/libedbutil.a: $(patsubst %.cc,$(OBJDIR)/util/%.o,$(UTILSRC))
 	$(AR) r $@ $^

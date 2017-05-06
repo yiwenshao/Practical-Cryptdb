@@ -29,7 +29,6 @@
 static Item *
 encrypt_item(const Item &i, const OLK &olk, Analysis &a)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     assert(!RiboldMYSQL::is_null(i));
 
     FieldMeta * const fm = olk.key;
@@ -55,7 +54,6 @@ static class ANON : public CItemSubtypeIT<Item_string,
     virtual RewritePlan *
     do_gather_type(const Item_string &i, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         LOG(cdb_v) << " String item do_gather " << i << std::endl;
         const std::string why = "is a string constant";
         reason rsn(FULL_EncSet_Str, why, i);
@@ -63,7 +61,6 @@ static class ANON : public CItemSubtypeIT<Item_string,
     }
 
     virtual Item * do_optimize_type(Item_string *i, Analysis & a) const {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         return i;
     }
 
@@ -71,7 +68,6 @@ static class ANON : public CItemSubtypeIT<Item_string,
     do_rewrite_type(const Item_string &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         LOG(cdb_v) << "do_rewrite_type String item " << i << std::endl;
         return encrypt_item(i, constr, a);
     }
@@ -80,7 +76,6 @@ static class ANON : public CItemSubtypeIT<Item_string,
     do_rewrite_insert_type(const Item_string &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         typical_rewrite_insert_type(i, fm, a, l);
     }
 } ANON;
@@ -90,7 +85,6 @@ static class ANON : public CItemSubtypeIT<Item_float,
     virtual RewritePlan *
     do_gather_type(const Item_float &i, Analysis &a) const
     {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         LOG(cdb_v) << " Float item do_gather " << i << std::endl;
         const std::string why = "is a float constant";
         reason rsn(PLAIN_EncSet, why, i);
@@ -101,7 +95,6 @@ static class ANON : public CItemSubtypeIT<Item_float,
     do_rewrite_type(const Item_float &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         LOG(cdb_v) << "do_rewrite_type Float item " << i << std::endl;
         return encrypt_item(i, constr, a);
     }
@@ -110,7 +103,6 @@ static class ANON : public CItemSubtypeIT<Item_float,
     do_rewrite_insert_type(const Item_float &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         typical_rewrite_insert_type(i, fm, a, l);
     }
 } ANON;
@@ -120,7 +112,6 @@ static class ANON : public CItemSubtypeIT<Item_int, Item::Type::INT_ITEM> {
     virtual RewritePlan *
     do_gather_type(const Item_int &i, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         LOG(cdb_v) << "CItemSubtypeIT (L966) num do_gather " << i
                    << std::endl;
         const std::string why = "is an int constant";
@@ -130,7 +121,6 @@ static class ANON : public CItemSubtypeIT<Item_int, Item::Type::INT_ITEM> {
 
     virtual Item * do_optimize_type(Item_int *i, Analysis & a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         return i;
     }
 
@@ -138,7 +128,6 @@ static class ANON : public CItemSubtypeIT<Item_int, Item::Type::INT_ITEM> {
     do_rewrite_type(const Item_int &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         LOG(cdb_v) << "do_rewrite_type " << i << std::endl;
 
         return encrypt_item(i, constr, a);
@@ -148,7 +137,6 @@ static class ANON : public CItemSubtypeIT<Item_int, Item::Type::INT_ITEM> {
     do_rewrite_insert_type(const Item_int &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const
     {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         typical_rewrite_insert_type(i, fm, a, l);
     }
 } ANON;
@@ -158,7 +146,6 @@ static class ANON : public CItemSubtypeIT<Item_decimal,
     virtual RewritePlan *
     do_gather_type(const Item_decimal &i, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         LOG(cdb_v) << "CItemSubtypeIT decimal do_gather " << i
                    << std::endl;
 
@@ -169,7 +156,6 @@ static class ANON : public CItemSubtypeIT<Item_decimal,
 
     virtual Item * do_optimize_type(Item_decimal *i, Analysis & a) const
     {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         return i;
     }
 
@@ -177,7 +163,6 @@ static class ANON : public CItemSubtypeIT<Item_decimal,
     do_rewrite_type(const Item_decimal &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         LOG(cdb_v) << "do_rewrite_type " << i << std::endl;
 
         return encrypt_item(i, constr, a);
@@ -187,7 +172,6 @@ static class ANON : public CItemSubtypeIT<Item_decimal,
     do_rewrite_insert_type(const Item_decimal &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         typical_rewrite_insert_type(i, fm, a, l);
     }
 } ANON;

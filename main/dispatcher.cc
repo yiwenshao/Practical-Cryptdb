@@ -1,5 +1,10 @@
 #include <main/dispatcher.hh>
 
+/*
+This file contains functions for SQLDispatcher and 
+AlterDispatcher
+*/
+//########################SQLDispatcher#########################
 bool
 SQLDispatcher::canDo(LEX *const lex) const
 {
@@ -22,6 +27,9 @@ SQLDispatcher::extract(LEX *const lex) const
     return lex->sql_command;
 }
 
+
+
+//#####################AlterDispatcher##########################
 bool
 AlterDispatcher::canDo(LEX *const lex) const
 {

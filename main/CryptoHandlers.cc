@@ -111,6 +111,17 @@ public:
         deserialize(unsigned int id, const SerialLayer &serial);
 };
 
+class OPEFOREIGNFactory : public LayerFactory {
+public:
+    static std::unique_ptr<EncLayer>
+        create(const Create_field &cf, const std::string &key);
+    static std::unique_ptr<EncLayer>
+        deserialize(unsigned int id, const SerialLayer &serial);
+};
+
+
+
+
 
 class HOMFactory : public LayerFactory {
 public:
@@ -158,6 +169,7 @@ EncLayerFactory::encLayer(onion o, SECLEVEL sl, const Create_field &cf,
         case SECLEVEL::DET: {return DETFactory::create(cf, key);}
         case SECLEVEL::DETJOIN: {return DETJOINFactory::create(cf, key);}
         case SECLEVEL::OPE:{return OPEFactory::create(cf, key);}
+        case SECLEVEL::OPEFOREIGN:{return OPEFOREIGNFactory::create(cf,key);}
         case SECLEVEL::HOM: {return HOMFactory::create(cf, key);}
         case SECLEVEL::SEARCH: {
             return std::unique_ptr<EncLayer>(new Search(cf, key));
@@ -171,6 +183,7 @@ EncLayerFactory::encLayer(onion o, SECLEVEL sl, const Create_field &cf,
     FAIL_TextMessageError("unknown or unimplemented security level");
 }
 
+//recover from the database using lambda.
 std::unique_ptr<EncLayer>
 EncLayerFactory::deserializeLayer(unsigned int id,
                                   const std::string &serial)
@@ -187,6 +200,9 @@ EncLayerFactory::deserializeLayer(unsigned int id,
 
         case SECLEVEL::DETJOIN:
             return DETJOINFactory::deserialize(id, li);
+
+        case SECLEVEL::OPEFOREIGN:
+            return OPEFOREIGNFactory::deserialize(id,li);
 
         case SECLEVEL::OPE:
             return OPEFactory::deserialize(id, li);
@@ -311,6 +327,8 @@ private:
     const enum enum_field_types field_type;
     const std::pair<int64_t, uint64_t> inclusiveRange;
 };
+
+
 
 static CryptedInteger
 overrideCreateFieldCryptedIntegerFactory(const Create_field &cf,
@@ -1036,6 +1054,18 @@ private:
     mutable OPE ope;                      // HACK
 };
 
+class OPEFOREIGN_int:public OPE_int{
+public:
+    OPEFOREIGN_int(const Create_field &cf, const std::string &seed_key):OPE_int(cf,seed_key){}
+    OPEFOREIGN_int(unsigned int id, const CryptedInteger &cinteger,
+            size_t plain_size, size_t ciph_size):OPE_int(id,cinteger,plain_size,ciph_size){}
+    SECLEVEL level() const {return SECLEVEL::OPEFOREIGN;}
+    std::string name() const {return "OPEFOREIGN_int";}
+    static std::unique_ptr<OPEFOREIGN_int>
+        deserialize(unsigned int id, const std::string &serial);
+};
+
+
 class OPE_str : public EncLayer {
 public:
     OPE_str(const Create_field &cf, const std::string &seed_key);
@@ -1063,6 +1093,17 @@ private:
     static const size_t ciph_size = 8;
 };
 
+class OPEFOREIGN_str: public OPE_str{
+public:
+    OPEFOREIGN_str(const Create_field &cf, const std::string &seed_key):OPE_str(cf,seed_key){}
+    OPEFOREIGN_str(unsigned int id, const std::string &serial):OPE_str(id,serial){}
+
+    SECLEVEL level() const {return SECLEVEL::OPEFOREIGN;}
+    std::string name() const {return "OPEFOREIGN_str";}
+
+};
+
+
 std::unique_ptr<EncLayer>
 OPEFactory::create(const Create_field &cf, const std::string &key)
 {
@@ -1087,6 +1128,35 @@ OPEFactory::deserialize(unsigned int id, const SerialLayer &sl)
         FAIL_TextMessageError("decimal support broken");
     }
 }
+
+
+std::unique_ptr<EncLayer>
+OPEFOREIGNFactory::create(const Create_field &cf, const std::string &key) {
+    if (isMySQLTypeNumeric(cf)) {
+        if (cf.sql_type == MYSQL_TYPE_DECIMAL
+            || cf.sql_type ==  MYSQL_TYPE_NEWDECIMAL) {
+            FAIL_TextMessageError("decimal support is broken");
+        }
+        return std::unique_ptr<EncLayer>(new OPEFOREIGN_int(cf, key));
+    }
+    return std::unique_ptr<EncLayer>(new OPEFOREIGN_str(cf, key));
+}
+
+std::unique_ptr<EncLayer>
+OPEFOREIGNFactory::deserialize(unsigned int id, const SerialLayer &sl)
+{
+    if (sl.name == "OPEFOREIGN_int") {
+        return OPEFOREIGN_int::deserialize(id, sl.layer_info);
+    } else if (sl.name == "OPEFOREIGN_str") {
+        return std::unique_ptr<EncLayer>(new OPEFOREIGN_str(id, sl.layer_info));
+    } else {
+        FAIL_TextMessageError("decimal support broken");
+    }
+}
+
+
+
+
 
 static size_t
 toMultiple(size_t n, size_t multiple)
@@ -1171,8 +1241,21 @@ OPE_int::deserialize(unsigned int id, const std::string &serial)
     const size_t ciph_bytes  = strtoul_(vec[1]);
     const CryptedInteger cint = CryptedInteger::deserialize(vec[2]);
     return std::unique_ptr<OPE_int>(new OPE_int(id, cint, plain_bytes,
+                                                ciph_bytes) );
+}
+
+
+std::unique_ptr<OPEFOREIGN_int>
+OPEFOREIGN_int::deserialize(unsigned int id, const std::string &serial)
+{
+    const std::vector<std::string> vec = unserialize_string(serial);
+    const size_t plain_bytes = strtoul_(vec[0]);
+    const size_t ciph_bytes  = strtoul_(vec[1]);
+    const CryptedInteger cint = CryptedInteger::deserialize(vec[2]);
+    return std::unique_ptr<OPEFOREIGN_int>(new OPEFOREIGN_int(id, cint, plain_bytes,
                                                 ciph_bytes));
 }
+
 
 std::string
 OPE_int::doSerialize() const
@@ -1375,9 +1458,10 @@ HOM::newCreateField(const Create_field &cf,
                                   &my_charset_bin);
 }
 
+//if first, use seed key to generate 
+
 void
-HOM::unwait() const
-{
+HOM::unwait() const {
     const std::unique_ptr<streamrng<arc4>>
         prng(new streamrng<arc4>(seed_key));
     sk = new Paillier_priv(Paillier_priv::keygen(prng.get(), nbits));

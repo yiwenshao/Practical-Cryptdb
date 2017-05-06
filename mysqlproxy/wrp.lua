@@ -1,5 +1,5 @@
-assert(package.loadlib(os.getenv("EDBDIR").."/obj/libexecute.so",
-                       "lua_cryptdb_init"))()
+assert(package.loadlib("/t/cryt/obj/libexecute.so","lua_cryptdb_init"))()
+
 local proto = assert(require("mysql.proto"))
 
 local g_want_interim    = nil
@@ -20,7 +20,7 @@ function read_auth()
                     proxy.connection.server.dst.port,
                     os.getenv("CRYPTDB_USER") or "root",
                     os.getenv("CRYPTDB_PASS") or "letmein",
-            os.getenv("CRYPTDB_SHADOW") or os.getenv("EDBDIR").."/shadow")
+            os.getenv("CRYPTDB_SHADOW") or "/t/cryt/shadow")
     -- EDBClient uses its own connection to the SQL server to set up UDFs
     -- and to manipulate multi-principal state.  (And, in the future, to
     -- store its schema state for single- and multi-principal operation.)
@@ -32,16 +32,17 @@ function disconnect_client()
 end
 
 function read_query(packet)
+    printred("read_query========================================================================================")
     local status, err = pcall(read_query_real, packet)
     if status then
         return err
     else
-        print("read_query: " .. err)
         return proxy.PROXY_SEND_QUERY
     end
 end
 
 function read_query_result(inj)
+    printred("read_query_result========================================================================================")
     local status, err = pcall(read_query_result_real, inj)
     if status then
         return err
@@ -50,6 +51,28 @@ function read_query_result(inj)
         return proxy.PROXY_SEND_RESULT
     end
 end
+
+
+
+function split(pString, pPattern)
+   local Table = {}  -- NOTE: use {n = 0} in Lua-5.0
+   local fpat = "(.-)" .. pPattern
+   local last_end = 1
+   local s, e, cap = pString:find(fpat, 1)
+   while s do
+      if s ~= 1 or cap ~= "" then
+     table.insert(Table,cap)
+      end
+      last_end = e+1
+      s, e, cap = pString:find(fpat, last_end)
+   end
+   if last_end <= #pString then
+      cap = pString:sub(last_end)
+      table.insert(Table, cap)
+   end
+   return Table
+end
+
 
 
 --
@@ -77,6 +100,8 @@ function printred(x)
 end
 
 function printline(n)
+    print("#######n==")
+    print(n)
     -- pretty printing
     if (n) then
        io.write("+")
@@ -114,8 +139,14 @@ function prettyNewQuery(q)
             return
         end
     end
- 
-    print(greentext("NEW QUERY: ")..makePrintable(q))
+
+    list = split(q,',') 
+    for i=1,#list do
+            io.write(string.sub(list[i],1,40))
+            print("")
+    end
+
+    --print(greentext("NEW QUERY: ")..makePrintable(q))
 end
 
 --
@@ -130,8 +161,7 @@ end
 
 function read_query_real(packet)
     local query = string.sub(packet, 2)
-    print("================================================")
-    printred("QUERY: ".. query)
+    --printred("QUERY: ".. query)
 
     if string.byte(packet) == proxy.COM_INIT_DB then
         query = "USE `" .. query .. "`"
@@ -154,6 +184,12 @@ function read_query_real(packet)
     else
         print("unexpected packet type " .. string.byte(packet))
     end
+end
+
+function printRowsAndFields(inj)
+    local resultset = inj.resultset
+
+
 end
 
 function read_query_result_real(inj)
@@ -192,11 +228,8 @@ function read_query_result_real(inj)
             interim_fields[i] =
                 { type = resfields[i].type,
                   name = resfields[i].name }
-            io.write(string.format("%-20s|",rfi.name))
+            io.write(string.format("%-10s|",rfi.name))
         end
-
-        print()
-        printline(#resfields)
 
         local resrows = resultset.rows
         if resrows then
@@ -209,9 +242,10 @@ function read_query_result_real(inj)
                 print()
             end
         end
-
-        printline(#resfields)
+        --printline(#resfields)
     end
+
+    print(greentext("ENCRYPTED RESULTS END"))
 
     return next_handler("results", true, client, interim_fields, interim_rows,
                         resultset.affected_rows, resultset.insert_id)
@@ -278,5 +312,3 @@ function next_handler(from, status, client, fields, rows, affected_rows,
 
     assert(nil)
 end
-
-print("hehe")

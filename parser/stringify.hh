@@ -126,10 +126,9 @@ std::string ListJoin(List<T> lst, std::string delim,
     auto it = List_iterator<T>(lst);
     for (T *element = it++; element; element = it++) {
         std::string finalized_element = finalize(*element);
-        accum << finalized_element;
-        accum << delim;
+            accum << finalized_element;
+            accum << delim;
     }
-
     std::string output, str_accum = accum.str();
     if (str_accum.length() > 0) {
         output = str_accum.substr(0, str_accum.length() - delim.length());
@@ -530,9 +529,27 @@ prefix_add_index(Key key)
     key_output << ListJoin<Key_part_spec>(key.columns, ",",
                                           do_prefix_add_index())
                << ")";
+    return key_output.str();
+}
+
+static std::string
+prefix_add_foreign(Key *key){
+    const std::string index_name = convert_lex_str(key->name);
+    std::ostringstream key_output;
+    key_output << " ADD constraint "<<" FOREIGN KEY "<<index_name<<" (";
+    key_output << ListJoin<Key_part_spec>(key->columns, ",",
+                                          do_prefix_add_index())
+               << ")";
+    
+    Table_ident* ref_table = ((Foreign_key*)key)->ref_table;
+    std::string ref_table_name = convert_lex_str(ref_table->table);
+    
+    key_output <<" REFERENCES "<< ref_table_name<<" (";
+    key_output<<ListJoin<Key_part_spec>( ((Foreign_key*)key)->ref_columns,",",do_prefix_add_index())<<" )";    
 
     return key_output.str();
 }
+
 
 static std::string
 enableOrDisableKeysOutput(const LEX &lex)
@@ -564,6 +581,71 @@ prettyLockType(enum thr_lock_type lock_type)
     }
 }
 */
+
+
+//process normal key in alter table command, do not process foreign key
+static std::string process_normal_key(LEX &lex){
+    std::ostringstream key_output;
+    auto it =
+             List_iterator<Key>(lex.alter_info.key_list);
+    while(auto cur = it++){
+        switch(cur->type){
+            case Key::PRIMARY:{
+                key_output<<prefix_add_index(*cur)<<",";
+                break;
+            }
+            case Key::UNIQUE:
+            case Key::MULTIPLE:
+            case Key::FULLTEXT:
+            case Key::SPATIAL:{
+                key_output<<prefix_add_index(*cur)<<",";               
+                break;
+            }
+            case Key::FOREIGN_KEY:{
+                break;
+            }
+            default:{
+                break;
+            }
+        }
+    } 
+    std::string orig = key_output.str();
+    std::string res = orig.substr(0,orig.length()-1);
+    return res;
+}
+
+static std::string process_foreign_key(LEX &lex){
+    std::ostringstream key_output;
+    auto it =
+             List_iterator<Key>(lex.alter_info.key_list);
+    while(auto cur = it++){
+        switch(cur->type){
+            case Key::PRIMARY:{
+                break;
+            }
+            case Key::UNIQUE:
+            case Key::MULTIPLE:
+            case Key::FULLTEXT:
+            case Key::SPATIAL:{
+                break;
+            }
+            case Key::FOREIGN_KEY:{
+                key_output<<prefix_add_foreign(cur)<<",";
+                break;
+            }
+            default:{
+                break;
+            }
+        }
+    } 
+    std::string orig = key_output.str();
+    std::string res = orig.substr(0,orig.length()-1);
+    return res;
+}
+
+
+
+
 
 static inline std::ostream&
 operator<<(std::ostream &out, LEX &lex)
@@ -886,15 +968,30 @@ operator<<(std::ostream &out, LEX &lex)
                                                  ",", prefix_add_column);
             prev = true;
         }
-
+    
+        if(lex.alter_info.flags & ALTER_FOREIGN_KEY){
+            if (true == prev) {
+                out << ", ";
+            }
+            std::string keys;
+            keys = process_foreign_key(lex);
+            out<<" "<<keys;
+            prev = true;           
+        }
         if (lex.alter_info.flags & ALTER_ADD_INDEX) {
             if (true == prev) {
                 out << ", ";
             }
-            out << " " << ListJoin<Key>(lex.alter_info.key_list, ",",
-                                        prefix_add_index);
+            //process primary and index here
+            //out << " " << ListJoin<Key>(lex.alter_info.key_list, ",",
+            //                            prefix_add_index);
+            //get a vector of key type, key name, and key columns
+            std::string keys;
+            keys = process_normal_key(lex);
+            out<<" "<<keys;
             prev = true;
         }
+
 
         if (lex.alter_info.flags & ALTER_DROP_INDEX) {
             if (true == prev) {
@@ -940,11 +1037,25 @@ operator<<(std::ostream &out, LEX &lex)
         /* placeholders to make analysis work.. */
         out << ".. type " << lex.sql_command << " query ..";
         break;
-
+    //ADDED
+    case SQLCOM_SHOW_CREATE:{
+        int elements = lex.select_lex.table_list.elements;
+        if(elements==1){
+            TABLE_LIST *tbl = lex.select_lex.table_list.first;
+            std::string db(tbl->db);
+            std::string tbn(tbl->table_name);
+            out<< "SHOW CREATE TABLE "+db+"."+tbn;
+        }else{
+            out<<"ONLY SUPPORT ONE TABLE";
+        }
+        break;
+    }
     default:
         thrower() << "unhandled sql command " << lex.sql_command;
     }
 
     return out;
 }
+
+
 

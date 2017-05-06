@@ -1,7 +1,10 @@
 #pragma once
 
 #include <vector>
+#include <crypto/hmac.hh>
 #include <crypto/arc4.hh>
+
+using std::make_pair;
 
 template<typename T>
 class gfe {

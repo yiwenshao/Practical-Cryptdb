@@ -28,8 +28,6 @@ DBMeta::doFetchChildren(const std::unique_ptr<Connect> &e_conn,
     std::unique_ptr<DBResult> db_res;
     //这个id来自于dbobject.
     const std::string parent_id = std::to_string(this->getDatabaseID());
-    std::cout<<"parent id: "<<parent_id<<std::endl;
-
     const std::string serials_query =
         " SELECT " + table_name + ".serial_object,"
         "        " + table_name + ".serial_key,"
@@ -37,7 +35,8 @@ DBMeta::doFetchChildren(const std::unique_ptr<Connect> &e_conn,
         " FROM " + table_name +
         " WHERE " + table_name + ".parent_id"
         "   = " + parent_id + ";";
-    std::cout<<serials_query<<"serial query:"<<std::endl;
+    //all the metadata are fetched here.
+    //std::cout<<serials_query<<"serial query:"<<std::endl;
     TEST_TextMessageError(e_conn->execute(serials_query, &db_res),
                           "doFetchChildren query failed");
     MYSQL_ROW row;
@@ -92,7 +91,7 @@ std::unique_ptr<OnionMeta>
 OnionMeta::deserialize(unsigned int id, const std::string &serial)
 {
     assert(id != 0);
-    std::cout<<"string before unserialize: "<<serial<<std::endl;
+    //std::cout<<"string before unserialize: "<<serial<<std::endl;
     const auto vec = unserialize_string(serial);
     //OnionMeta序列化的结果有三个.
     assert(3 == vec.size());
@@ -270,6 +269,10 @@ determineSecLevelData(onion o, std::vector<SECLEVEL> levels, bool unique)
                || SECLEVEL::RND == levels.back());
     } else if (oOPE == o) {
         assert(SECLEVEL::RND == levels.back());
+        levels.pop_back();
+        assert(SECLEVEL::OPE == levels.back());
+        levels.pop_back();
+        assert(SECLEVEL::OPEFOREIGN==levels.back());
     } else if (oAGG == o) {
         assert(SECLEVEL::HOM == levels.back());
     } else {
@@ -286,10 +289,12 @@ init_onions_layout(const AES_KEY *const m_key, FieldMeta *const fm,
     const onionlayout onion_layout = fm->getOnionLayout();
     if (fm->getHasSalt() != (static_cast<bool>(m_key)
                              && PLAIN_ONION_LAYOUT != onion_layout)) {
+        std::cout<<"unable to get salt?"<<std::endl;
         return false;
     }
 
     if (0 != fm->getChildren().size()) {
+        std::cout<<"already has children"<<std::endl;
         return false;
     }
 
@@ -331,6 +336,7 @@ FieldMeta::FieldMeta(const Create_field &field,
       sec_rating(sec_rating), uniq_count(uniq_count), counter(0),
       has_default(determineHasDefault(field)),
       default_value(determineDefaultValue(has_default, field)) {
+
     TEST_TextMessageError(init_onions_layout(m_key, this, field, unique),
                           "Failed to build onions for new FieldMeta!");
 }
@@ -409,10 +415,8 @@ onionlayout FieldMeta::determineOnionLayout(const AES_KEY *const m_key,
         // assert(!m_key);
         return PLAIN_ONION_LAYOUT;
     }
-
     TEST_TextMessageError(m_key,
                           "Should be using SECURITY_RATING::PLAIN!");
-
     if (false == encryptionSupported(f)) {
 	std::cout<<"encryption not supported for this field, remain plain"<<std::endl;
         //TEST_TextMessageError(SECURITY_RATING::SENSITIVE != sec_rating,
@@ -425,7 +429,6 @@ onionlayout FieldMeta::determineOnionLayout(const AES_KEY *const m_key,
     if (Field::NEXT_NUMBER == f.unireg_check) {
         return PLAIN_ONION_LAYOUT;
     }
-
     if (SECURITY_RATING::SENSITIVE == sec_rating) {
         if (true == isMySQLTypeNumeric(f)) {
             return NUM_ONION_LAYOUT;

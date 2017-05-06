@@ -66,7 +66,6 @@ class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
     virtual RewritePlan *
     do_gather_type(const Item_field &i, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAAAAA"<<std::endl;
         const std::string fieldname = i.field_name;
         const std::string table =
             i.table_name ? i.table_name :

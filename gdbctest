@@ -1,0 +1,1 @@
+sudo gdb ./obj/main/cdb_test `ps aux| grep cdb_test|grep -v grep|awk '{print $2}'`

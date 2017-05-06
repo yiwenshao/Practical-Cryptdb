@@ -370,3 +370,14 @@ private:
     bool stales() const {return true;}
     bool usesEmbedded() const {return true;}
 };
+
+
+
+
+
+
+std::pair<std::vector<std::unique_ptr<Delta> >,
+                 std::list<std::string>>
+adjustOnion(const Analysis &a, onion o, const TableMeta &tm,
+            const FieldMeta &fm, SECLEVEL tolevel);
+
