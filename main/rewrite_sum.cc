@@ -34,7 +34,6 @@ rewrite_agg_args(const Item_sum &oldi, const OLK &constr,
                  const RewritePlanOneOLK &rp, Analysis &a,
                  int no_args = -1)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAAAAAAAAAA"<<std::endl;
     if (no_args >= 0) {
         TEST_BadItemArgumentCount(oldi.type(), no_args,
                                   RiboldMYSQL::get_arg_count(oldi));
@@ -66,7 +65,6 @@ class CItemCount : public CItemSubtypeST<Item_sum_count, SFT> {
     virtual RewritePlan *
     do_gather_type(const Item_sum_count &i, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAAAAAAAAAA"<<std::endl;
         const unsigned int arg_count =
             RiboldMYSQL::get_arg_count(i);
         TEST_BadItemArgumentCount(i.type(), 1, arg_count);
@@ -95,7 +93,6 @@ class CItemCount : public CItemSubtypeST<Item_sum_count, SFT> {
     do_rewrite_type(const Item_sum_count &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAAAAA"<<std::endl;
         std::list<Item *> args =
             rewrite_agg_args(i, constr,
                              static_cast<const RewritePlanOneOLK &>(rp),
@@ -116,7 +113,6 @@ class CItemChooseOrder : public CItemSubtypeST<Item_sum_hybrid, SFT> {
     virtual RewritePlan *
     do_gather_type(const Item_sum_hybrid &i, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAAA"<<std::endl;
         const unsigned int arg_count = RiboldMYSQL::get_arg_count(i);
         TEST_BadItemArgumentCount(i.type(), 1, arg_count);
         const Item *const child = RiboldMYSQL::get_arg(i, 0);
@@ -138,7 +134,6 @@ class CItemChooseOrder : public CItemSubtypeST<Item_sum_hybrid, SFT> {
     do_rewrite_type(const Item_sum_hybrid &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAAA"<<std::endl;
         std::list<Item *> args =
             rewrite_agg_args(i, constr,
                              static_cast<const RewritePlanOneOLK &>(rp),
@@ -155,7 +150,6 @@ class CItemSum : public CItemSubtypeST<Item_sum_sum, SFT> {
     virtual RewritePlan *
     do_gather_type(const Item_sum_sum &i, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAA"<<std::endl;
         LOG(cdb_v) << "gather Item_sum_sum " << i << std::endl;
 
         const unsigned int arg_count = RiboldMYSQL::get_arg_count(i);
@@ -184,7 +178,6 @@ class CItemSum : public CItemSubtypeST<Item_sum_sum, SFT> {
     do_rewrite_type(const Item_sum_sum &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAA"<<std::endl;
         auto rp_wc = static_cast<const RewritePlanWithChildren &>(rp);
         assert(rp_wc.childr_rp.size() == 1);
 
@@ -230,7 +223,6 @@ static class ANON : public CItemSubtypeST<Item_sum_bit, Item_sum::Sumfunctype::S
     virtual RewritePlan *
     do_gather_type(const Item_sum_bit &i, Analysis &a) const
     {
-          std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAA"<<std::endl;
         /* LOG(cdb_v) << "do_a_t Item_sum_bit reason " << tr;
             analyze(i->get_arg(0), reason(EMPTY_EncSet, "bitagg", i, &tr, false), a);
             return tr.encset;
@@ -243,7 +235,6 @@ static class ANON : public CItemSubtypeST<Item_func_group_concat, Item_sum::Sumf
     virtual RewritePlan *
     do_gather_type(const Item_func_group_concat &i, Analysis &a) const
     {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAA"<<std::endl;
         /*  LOG(cdb_v) << "do_a_t Item_func_group reason " << tr;
             uint arg_count_field = i->*rob<Item_func_group_concat, uint,
                     &Item_func_group_concat::arg_count_field>::ptr();
@@ -264,7 +255,6 @@ static class ANON : public CItemSubtypeIT<Item_ref, Item::Type::REF_ITEM> {
     virtual RewritePlan *
     do_gather_type(const Item_ref &i, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAA"<<std::endl;
         std::vector<std::shared_ptr<RewritePlan> >
             childr_rp({std::shared_ptr<RewritePlan>(gather(**i.ref, a))});
 
@@ -281,7 +271,6 @@ static class ANON : public CItemSubtypeIT<Item_ref, Item::Type::REF_ITEM> {
     do_rewrite_type(const Item_ref &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAA"<<std::endl;
         const std::string &db_name = a.getDatabaseName();
         // SUPPORT
         TEST_Text(Item::Type::FIELD_ITEM == (*i.ref)->type(),
@@ -305,7 +294,6 @@ static class ANON : public CItemSubtypeIT<Item_null, Item::Type::NULL_ITEM> {
     virtual RewritePlan *
     do_gather_type(const Item_null &i, Analysis &a) const
     {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAA"<<std::endl;
         const std::string why = "is null";
         reason rsn(FULL_EncSet, why, i);
         return new RewritePlan(FULL_EncSet, rsn);
@@ -315,7 +303,6 @@ static class ANON : public CItemSubtypeIT<Item_null, Item::Type::NULL_ITEM> {
     do_rewrite_type(const Item_null &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAA"<<std::endl;
         return RiboldMYSQL::clone_item(i);
     }
 
@@ -323,7 +310,6 @@ static class ANON : public CItemSubtypeIT<Item_null, Item::Type::NULL_ITEM> {
     do_rewrite_insert_type(const Item_null &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<"AAAAAAAAAA"<<std::endl;
         for (uint j = 0; j < fm.getChildren().size(); ++j) {
             l->push_back(RiboldMYSQL::clone_item(i));
         }

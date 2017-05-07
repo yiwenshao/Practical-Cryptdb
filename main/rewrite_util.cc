@@ -34,7 +34,6 @@ rewrite(const Item &i, const EncSet &req_enc, Analysis &a) {
 
 TABLE_LIST *
 rewrite_table_list(const TABLE_LIST * const t, const Analysis &a) {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // Table name can only be empty when grouping a nested join.
     assert(t->table_name || t->nested_join);
     if (t->table_name) {
@@ -46,7 +45,6 @@ rewrite_table_list(const TABLE_LIST * const t, const Analysis &a) {
         TEST_DatabaseDiscrepancy(t->db, a.getDatabaseName());
         const std::string anon_name =
             a.translateNonAliasPlainToAnonTableName(t->db, plain_name);
-        std::cout<<"table name: "<<plain_name<<"anno: "<<anon_name<<std::endl;
         return rewrite_table_list(t, anon_name);
     } else {
         return copyWithTHD(t);
@@ -57,7 +55,6 @@ TABLE_LIST *
 rewrite_table_list(const TABLE_LIST * const t,
                    const std::string &anon_name)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     TABLE_LIST *const new_t = copyWithTHD(t);
     new_t->table_name = make_thd_string(anon_name);
     new_t->table_name_length = anon_name.size();
@@ -76,7 +73,6 @@ SQL_I_List<TABLE_LIST>
 rewrite_table_list(const SQL_I_List<TABLE_LIST> &tlist, Analysis &a,
                    bool if_exists)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     if (!tlist.elements) {
         return SQL_I_List<TABLE_LIST>();
     }
@@ -115,7 +111,6 @@ rewrite_table_list(const SQL_I_List<TABLE_LIST> &tlist, Analysis &a,
 
 List<TABLE_LIST>
 rewrite_table_list(List<TABLE_LIST> tll, Analysis &a) {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     List<TABLE_LIST> * const new_tll = new List<TABLE_LIST>();
 
     List_iterator<TABLE_LIST> join_it(tll);
@@ -253,9 +248,8 @@ rewrite_create_field(const FieldMeta * const fm,
 
     // Restore the default to the original Create_field parameter.
     f->def = save_def;
-    for(auto item:output_cfields){
-        std::cout<<RED_BEGIN<<item->field_name<<":"<<item->sql_type<<COLOR_END<<std::endl;
-    }
+    //for(auto item:output_cfields){
+    //}
 
     return output_cfields;
 }
@@ -663,11 +657,8 @@ void
 encrypt_item_all_onions(const Item &i, const FieldMeta &fm,
                         uint64_t IV, Analysis &a, std::vector<Item*> *l)
 {
-std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
-    int numOfOnion = 0;
     for (auto it : fm.orderedOnionMetas()) {
-        numOfOnion++;
-        std::cout<<"l size: "<<l->size()<<std::endl;
+       
         const onion o = it.first->getValue();
         OnionMeta * const om = it.second;
         //一个fieldmeta表示一个field, 内部的不同洋葱表现在onionMeta,每个onionMeta的不同层次表现
@@ -675,14 +666,12 @@ std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std
         //枚举的洋葱类型.
         l->push_back(encrypt_item_layers(i, o, *om, a, IV));
     }
-    std::cout<<"numOfOnions: "<<numOfOnion<<std::endl;
 }
 
 void
 typical_rewrite_insert_type(const Item &i, const FieldMeta &fm,
                             Analysis &a, std::vector<Item *> *l) {
 
-std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
 
     const uint64_t salt = fm.getHasSalt() ? randomValue() : 0;
 

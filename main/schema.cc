@@ -36,7 +36,6 @@ DBMeta::doFetchChildren(const std::unique_ptr<Connect> &e_conn,
         " WHERE " + table_name + ".parent_id"
         "   = " + parent_id + ";";
     //all the metadata are fetched here.
-    //std::cout<<serials_query<<"serial query:"<<std::endl;
     TEST_TextMessageError(e_conn->execute(serials_query, &db_res),
                           "doFetchChildren query failed");
     MYSQL_ROW row;
@@ -91,7 +90,6 @@ std::unique_ptr<OnionMeta>
 OnionMeta::deserialize(unsigned int id, const std::string &serial)
 {
     assert(id != 0);
-    //std::cout<<"string before unserialize: "<<serial<<std::endl;
     const auto vec = unserialize_string(serial);
     //OnionMeta序列化的结果有三个.
     assert(3 == vec.size());
@@ -116,7 +114,6 @@ std::string OnionMeta::serialize(const DBObject &parent) const
         serialize_string(this->onionname) +
         serialize_string(std::to_string(this->uniq_count)) +
         serialize_string(TypeText<SECLEVEL>::toText(this->minimum_seclevel));
-    std::cout<<"onionmeta serialize: "<<serial<<std::endl;
     return serial;
 }
 
@@ -289,12 +286,10 @@ init_onions_layout(const AES_KEY *const m_key, FieldMeta *const fm,
     const onionlayout onion_layout = fm->getOnionLayout();
     if (fm->getHasSalt() != (static_cast<bool>(m_key)
                              && PLAIN_ONION_LAYOUT != onion_layout)) {
-        std::cout<<"unable to get salt?"<<std::endl;
         return false;
     }
 
     if (0 != fm->getChildren().size()) {
-        std::cout<<"already has children"<<std::endl;
         return false;
     }
 
@@ -356,7 +351,6 @@ std::string FieldMeta::serialize(const DBObject &parent) const
         serialize_string(std::to_string(counter)) +
         serialize_string(bool_to_string(has_default)) +
         serialize_string(default_value);
-   std::cout<<"field serial name: "<<serial<<std::endl<<std::endl;
    return serial;
 }
 
@@ -418,7 +412,6 @@ onionlayout FieldMeta::determineOnionLayout(const AES_KEY *const m_key,
     TEST_TextMessageError(m_key,
                           "Should be using SECURITY_RATING::PLAIN!");
     if (false == encryptionSupported(f)) {
-	std::cout<<"encryption not supported for this field, remain plain"<<std::endl;
         //TEST_TextMessageError(SECURITY_RATING::SENSITIVE != sec_rating,
         //                      "A SENSITIVE security rating requires the"
         //                      " field to be supported with cryptography!");
@@ -509,7 +502,6 @@ std::string TableMeta::serialize(const DBObject &parent) const
         serialize_string(bool_to_string(has_salt)) +
         serialize_string(salt_name) +
         serialize_string(std::to_string(counter));
-    std::cout<<"serial tablemeta: "<<serial<<std::endl<<std::endl;
     return serial;
 }
 
@@ -609,18 +601,14 @@ SchemaCache::getSchema(const std::unique_ptr<Connect> &conn,
         //设置当前id对应的stale的值为true.        
         TEST_SchemaFailure(initialStaleness(e_conn));
         this->no_loads = false;
-        std::cout<<GREEN_BEGIN<<"no_loads = true"<<COLOR_END<<std::endl;
     }else{
-        std::cout<<GREEN_BEGIN<<"no_loads = false"<<COLOR_END<<std::endl;
     }
 
        //查询当前ID对应的Stale的值
     if (true == lowLevelGetCurrentStaleness(e_conn, this->id)) {
-        std::cout<<GREEN_BEGIN<<"stale = true and load"<<COLOR_END<<std::endl;
         this->schema =
             std::shared_ptr<SchemaInfo>(loadSchemaInfo(conn, e_conn));
     }else{
-        std::cout<<GREEN_BEGIN<<"stale = false and do not load"<<COLOR_END<<std::endl;
     }
 
     assert(this->schema);
@@ -633,7 +621,6 @@ lowLevelAllStale(const std::unique_ptr<Connect> &e_conn)
     const std::string &query =
         " UPDATE " + MetaData::Table::staleness() +
         "    SET stale = TRUE;";
-    std::cout<<"stale query: "<<query<<std::endl;
 
     TEST_SchemaFailure(e_conn->execute(query));
 }
@@ -681,7 +668,6 @@ lowLevelToggleCurrentStaleness(const std::unique_ptr<Connect> &e_conn,
         " UPDATE " + MetaData::Table::staleness() +
         "    SET stale = " + bool_to_string(staleness) +
         "  WHERE cache_id = " + std::to_string(cache_id) + ";";
-    std::cout<<query<<std::endl;
     RFIF(e_conn->execute(query));
 
     return true;

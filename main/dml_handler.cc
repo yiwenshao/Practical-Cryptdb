@@ -56,7 +56,6 @@ void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
     //这里先做lookup, 找到类以后调用内部的结果, 试试
     //对于普通的student操作, 最后调用的是ANON的typical_rewrite_insert_type来进行重写.
     itemTypes.do_rewrite_insert(i, fm, a, &l);
-    std::cout<<"size after do_rewrite_insert: "<<l.size()<<std::endl;
     for (auto it : l) {
         append_list->push_back(it);
     }
@@ -166,7 +165,6 @@ class InsertHandler : public DMLHandler {
         // -----------------
         if (lex->many_values.head()) {
             //开始处理many values
-            std::cout<<"start many values"<<std::endl;
             auto it = List_iterator<List_item>(lex->many_values);
             List<List_item> newList;
             for (;;) {
@@ -187,14 +185,13 @@ class InsertHandler : public DMLHandler {
                     //li指向了lex->many_values的迭代内容 
                     auto it0 = List_iterator<Item>(*li);
                     auto fmVecIt = fmVec.begin();
-                    int lnum=0;
+                   
                     for (;;) {
                         const Item *const i = it0++;
                         assert(!!i == (fmVec.end() != fmVecIt));
                         if (!i) {
                             break;
                         }
-                        std::cout<<"c"<<lnum++<<std::endl;
                         //获得values中的内容,并且通过fieldMeta好帮助完成rewrite工作
                         //每个field都要进行洋葱的加密.
                         rewriteInsertHelper(*i, **fmVecIt, a, newList0);
@@ -469,7 +466,6 @@ process_filters_lex(const st_select_lex &select_lex, Analysis &a)
 void
 process_select_lex(const st_select_lex &select_lex, Analysis &a)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     //可以看到, 首先处理top_join_list, 是List<TABLE_LIST>类型. 其含义是join list of the top level.
     //内部分别用process_table_aliases(tll, a); process_table_joins_and_derived(tll, a);两个函数处理.
     //如果不是jion式的语句, 就不用管了.其内部通过递归处理nested join, 并且处理了*on*语句.
@@ -488,10 +484,8 @@ process_select_lex(const st_select_lex &select_lex, Analysis &a)
         if (!item)
             break;
         numOfItem++;
-        std::cout<<"item name in process_select_lex: "<<item->name<<std::endl;
         gatherAndAddAnalysisRewritePlan(*item, a);
     }
-    std::cout<<"numOfItem: "<<numOfItem<<std::endl;
     //这里处理的是select_lex.where和select_lex.having, 通过Item类型的函数, 也就是下面那个, 为其添加
     //rewriteplain. 然后再通过process_order, 对select_lex.group_list和select_lex.order_list添加
     //rewritePlain
@@ -662,21 +656,17 @@ rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
     AssignOnce<Item *> ir;
 
     if (i.type() == Item::Type::FIELD_ITEM) {
-        std::cout<<"type= "<<"FIELD_ITEM"<<std::endl;
         const Item_field &field_i = static_cast<const Item_field &>(i);
         const auto &cached_rewritten_i = a.item_cache.find(&field_i);
         if (cached_rewritten_i != a.item_cache.end()) {
-            std::cout<<"used cached plain: "<<std::endl;
             ir = cached_rewritten_i->second.first;
             olk = cached_rewritten_i->second.second;
         } else {
-            std::cout<<"do not use cached plain: "<<std::endl;
             //对于select中的选择域来说,这里对应的是rewrite_field.cc中的83, do_rewrite_type
             ir = rewrite(i, rp.es_out, a);
             olk = rp.es_out.chooseOne();
         }
     } else {
-        std::cout<<"type != FIELD_ITEM"<<std::endl;
         ir = rewrite(i, rp.es_out, a);
         olk = rp.es_out.chooseOne();
     }
@@ -726,13 +716,11 @@ rewrite_select_lex(const st_select_lex &select_lex, Analysis &a)
         if (!item)
             break;
         numOfItem++;
-        std::cout<<"itemname before: "<<item->name<<std::endl;
         rewrite_proj(*item,
                      *constGetAssert(a.rewritePlans, item).get(),
                      a, &newList);
     }
 
-    std::cout<<"numOfItem: "<<numOfItem<<std::endl;
 //    auto item_it_new =
 //        RiboldMYSQL::constList_iterator<Item>(newList);
 //    std::cout<<"rewrite#############" <<std::endl;
@@ -1328,7 +1316,6 @@ DMLQueryExecutor::
 nextImpl(const ResType &res, const NextParams &nparams)
 {
     reenter(this->corot) {
-        std::cout<<RED_BEGIN<<"rewritten DML: "<<this->query<<COLOR_END<<std::endl;
         yield return CR_QUERY_AGAIN(this->query);
         TEST_ErrPkt(res.success(), "DML query failed against remote database");
         yield {
@@ -1641,7 +1628,6 @@ addShowDirectiveEntry(const std::unique_ptr<Connect> &e_conn,
         " ('" + database + "', '" + table + "',"
         "  '" + field + "', '" + onion + "', '" + level + "')";
 
-    std::cout<<"query: "<<query<<std::endl;
     return e_conn->execute(query);
 }
 
@@ -1721,7 +1707,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
 std::pair<AbstractQueryExecutor::ResultType, AbstractAnything *>
 ShowCreateTableExecutor::
 nextImpl(const ResType &res, const NextParams &nparams){
-    std::cout<<"showCreateTableExecutor"<<std::endl;
     //return CR_QUERY_AGAIN(nparams.original_query);
     reenter(this->corot) {
         yield return CR_QUERY_AGAIN(this->query);

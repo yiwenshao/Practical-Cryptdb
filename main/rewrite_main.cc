@@ -91,7 +91,6 @@ static bool
 sanityCheck(TableMeta &tm)
 {
     for (const auto &it : tm.getChildren()) {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         const auto &fm = it.second;
         assert(sanityCheck(*fm.get()));
     }
@@ -122,7 +121,6 @@ static std::map<std::string, int>
 collectTableNames(const std::string &db_name,
                   const std::unique_ptr<Connect> &c)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::map<std::string, int> name_map;
 
     assert(c->execute("USE " + quoteText(db_name)));
@@ -152,7 +150,6 @@ tablesSanityCheck(SchemaInfo &schema,
 {
     for (const auto &dm_it : schema.getChildren()) {
         const auto &db_name = dm_it.first.getValue();
-        std::cout<<"db_name: "<<db_name<<std::endl;
         const auto &dm = dm_it.second;
         // gather anonymous tables
         std::map<std::string, int> anon_name_map =
@@ -206,14 +203,12 @@ collectRecoveryDetails(const std::unique_ptr<Connect> &conn,
                        unsigned long unfinished_id,
                        std::unique_ptr<RecoveryDetails> *details)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // collect completion data
     std::unique_ptr<DBResult> dbres;
     const std::string &embedded_completion_q =
         " SELECT complete, original_query, rewritten_query, default_db FROM " +
             MetaData::Table::embeddedQueryCompletion() +
         "  WHERE id = " + std::to_string(unfinished_id) + ";";
-    std::cout<<"query: "<<embedded_completion_q<<std::endl;
     RETURN_FALSE_IF_FALSE(e_conn->execute(embedded_completion_q, &dbres));
     assert(mysql_num_rows(dbres->n) == 1);
 
@@ -228,7 +223,6 @@ collectRecoveryDetails(const std::unique_ptr<Connect> &conn,
         " SELECT COUNT(*) FROM " + MetaData::Table::remoteQueryCompletion() +
         "  WHERE embedded_completion_id = " +
                  std::to_string(unfinished_id) + ";";
-    std::cout<<"query: "<<remote_completion_q<<std::endl;
     RETURN_FALSE_IF_FALSE(conn->execute(remote_completion_q, &dbres));
 
     assert(1 == mysql_num_rows(dbres->n));
@@ -258,12 +252,10 @@ static bool
 abortQuery(const std::unique_ptr<Connect> &e_conn,
            unsigned long unfinished_id)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     const std::string update_aborted =
         " UPDATE " + MetaData::Table::embeddedQueryCompletion() +
         "    SET aborted = TRUE"
         "  WHERE id = " + std::to_string(unfinished_id) + ";";
-    std::cout<<"query: "<<update_aborted<<std::endl;
     RETURN_FALSE_IF_FALSE(e_conn->execute("START TRANSACTION"));
     ROLLBACK_AND_RFIF(setBleedingTableToRegularTable(e_conn), e_conn);
     ROLLBACK_AND_RFIF(e_conn->execute(update_aborted), e_conn);
@@ -276,13 +268,11 @@ static bool
 finishQuery(const std::unique_ptr<Connect> &e_conn,
             unsigned long unfinished_id)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     const std::string update_completed =
         " UPDATE " + MetaData::Table::embeddedQueryCompletion() +
         "    SET complete = TRUE"
         "  WHERE id = " + std::to_string(unfinished_id) + ";";
 
-    std::cout<<"query: "<<update_completed<<std::endl;
     RETURN_FALSE_IF_FALSE(e_conn->execute("START TRANSACTION"));
     ROLLBACK_AND_RFIF(setRegularTableToBleedingTable(e_conn), e_conn);
     ROLLBACK_AND_RFIF(e_conn->execute(update_completed), e_conn);
@@ -297,7 +287,6 @@ fixAdjustOnion(const std::unique_ptr<Connect> &conn,
                const std::unique_ptr<Connect> &e_conn,
                unsigned long unfinished_id)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::unique_ptr<RecoveryDetails> details;
     RETURN_FALSE_IF_FALSE(
         collectRecoveryDetails(conn, e_conn, unfinished_id, &details));
@@ -375,7 +364,6 @@ enum class QueryStatus {UNKNOWN_ERROR, MALFORMED_QUERY, SUCCESS,
 static QueryStatus
 retryQuery(const std::unique_ptr<Connect> &c, const std::string &query)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     if (true == c->execute(query)) {
         return QueryStatus::SUCCESS;
     }
@@ -407,7 +395,6 @@ fixDDL(const std::unique_ptr<Connect> &conn,
        const std::unique_ptr<Connect> &e_conn,
        unsigned long unfinished_id)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::unique_ptr<RecoveryDetails> details;
     RETURN_FALSE_IF_FALSE(
         collectRecoveryDetails(conn, e_conn, unfinished_id, &details));
@@ -506,7 +493,6 @@ deltaSanityCheck(const std::unique_ptr<Connect> &conn,
         " SELECT id, type FROM " + embedded_completion +
         "  WHERE complete = FALSE AND aborted != TRUE;";
 
-    //std::cout<<"query in deltaSanityCheck to find unfinished deltas: "<<unfinished_deltas<<__LINE__<<":"<<__FILE__<<std::endl;
 
     RETURN_FALSE_IF_FALSE(e_conn->execute(unfinished_deltas, &dbres));
 
@@ -523,7 +509,6 @@ deltaSanityCheck(const std::unique_ptr<Connect> &conn,
         return false;
     }
 
-    std::cout<<GREEN_BEGIN<<"We do reach here!!!!!"<<unfinished_count<<__LINE__<<":"<<__FILE__<<std::endl;
 
     const MYSQL_ROW row = mysql_fetch_row(dbres->n);
     const unsigned long *const l = mysql_fetch_lengths(dbres->n);
@@ -900,11 +885,9 @@ std::pair<std::vector<std::unique_ptr<Delta> >,
 adjustOnion(const Analysis &a, onion o, const TableMeta &tm,
             const FieldMeta &fm, SECLEVEL tolevel)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     TEST_Text(tolevel >= a.getOnionMeta(fm, o).getMinimumSecLevel(),
               "your query requires to permissive of a security level");
 
-    std::cout << GREEN_BEGIN << "onion: " << TypeText<onion>::toText(o) << COLOR_END << std::endl;
     // Make a copy of the onion meta for the purpose of making
     // modifications during removeOnionLayer(...)
     OnionMetaAdjustor om_adjustor(*fm.getOnionMeta(o));
@@ -1355,8 +1338,6 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
             executor = handler.transformLex(a, lex);
         } catch (OnionAdjustExcept e) {
             LOG(cdb_v) << "caught onion adjustment";
-            std::cout << GREEN_BEGIN << "Adjusting onion!" << COLOR_END
-                      << std::endl;
 
             //We use deltas to remove layers in the metadata, and queyrs to decrypt data.
             std::pair<std::vector<std::unique_ptr<Delta> >,
@@ -1411,7 +1392,6 @@ Rewriter::rewrite(const std::string &q, const SchemaInfo &schema,
     AbstractQueryExecutor *const executor =
         Rewriter::dispatchOnLex(analysis, q);
     if (!executor) {
-	    std::cout<<"we return noopexecutor here"<<__FILE__<<":"<<__LINE__<<std::endl;
         return QueryRewrite(true, analysis.rmeta, analysis.kill_zone,
                             new NoOpExecutor());       
     }

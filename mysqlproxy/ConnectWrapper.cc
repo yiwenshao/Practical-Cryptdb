@@ -317,74 +317,11 @@ struct rawReturnValue{
     std::vector<std::string> fieldNames;
     std::vector<int> fieldTypes;
 };
-/*
-static
-void printrawReturnValue(rawReturnValue & cur) {
-    int len = cur.fieldTypes.size();
-    if(len==0){
-        std::cout<<"zero output"<<std::endl;
-        return ;
-    }
-    if(static_cast<int>(cur.fieldNames.size())!=len||static_cast<int>(cur.rowValues[0].size())!=len){
-        std::cout<<RED_BEGIN<<"size mismatch in printrawReturnValue"<<COLOR_END<<std::endl;
-        return ;
-    }
-
-    for(int i=0;i<len;i++){
-        std::cout<<cur.fieldNames[i]<<":"<<cur.fieldTypes[i]<<"\t";
-    }
-
-    std::cout<<std::endl;
-    for(auto row:cur.rowValues){
-        for(auto rowItem:row){
-            std::cout<<rowItem<<"\t";
-        }
-        std::cout<<std::endl;
-    }
-}*/
-
-
-//printResType for testing purposes
-/*static
-void parseResType(const ResType &rd) {
-    std::cout<<RED_BEGIN<<"rd.affected_rows: "<<rd.affected_rows<<COLOR_END<<std::endl;
-    std::cout<<RED_BEGIN<<"rd.insert_id: "<<rd.insert_id<<COLOR_END<<std::endl;
-
-    for(auto name:rd.names){
-        std::cout<<name<<"\t";
-    }
-    std::cout<<std::endl;
-    for(auto row:rd.rows){
-        for(auto item:row){
-            std::cout<<ItemToString(*item)<<"\t";
-        }
-            std::cout<<std::endl;
-    }
-}
-*/
-
-/*
-static
-void parseResType2(const ResType &rd) {
-    std::cout<<RED_BEGIN<<"rd.affected_rows: "<<rd.affected_rows<<COLOR_END<<std::endl;
-    std::cout<<RED_BEGIN<<"rd.insert_id: "<<rd.insert_id<<COLOR_END<<std::endl;
-
-    int len = rd.names.size();
-    for(int i=0;i<len;i++){
-	std::cout<<rd.names[i]<<std::endl;
-	for(auto row:rd.rows){
-	    std::cout<<row[i]<<std::endl;
-	}
-    }
-}
-*/
-
 
 static ResType
 getResTypeFromLuaTable(lua_State *const L, int fields_index,
                        int rows_index, int affected_rows_index,
                        int insert_id_index, int status_index) {
-    //std::cout<<"decide to show luaTable to ResType:"<<std::endl;
     const bool status = lua_toboolean(L, status_index);
     if (false == status) {
         return ResType(false, 0, 0);
@@ -396,20 +333,16 @@ getResTypeFromLuaTable(lua_State *const L, int fields_index,
     std::vector<enum_field_types> types;
     /* iterate over the fields argument */
     lua_pushnil(L);
-    //std::cout<<"start to get fields"<<std::endl;
     while (lua_next(L, fields_index)) {
-        std::cout<<"1"<<std::endl;
         if (!lua_istable(L, -1))
             LOG(warn) << "mismatch";
         lua_pushnil(L);
         while (lua_next(L, -2)) {
             const std::string k = xlua_tolstring(L, -2);
             if ("name" == k) {
-                std::cout<<"field name"<<std::endl;
                 names.push_back(xlua_tolstring(L, -1));
                 myRawFromLua.fieldNames.push_back(xlua_tolstring(L, -1));
             } else if ("type" == k) {
-                std::cout<<"field type"<<std::endl;
                 types.push_back(static_cast<enum_field_types>(luaL_checkint(L, -1)));
                 myRawFromLua.fieldTypes.push_back(static_cast<enum_field_types>(luaL_checkint(L, -1)) );
             } else {
@@ -441,7 +374,6 @@ getResTypeFromLuaTable(lua_State *const L, int fields_index,
             assert(key >= 0 && static_cast<uint>(key) < types.size());
             const std::string data = xlua_tolstring(L, -1);
             curRow.push_back(data);
-//            std::cout<<"transform to typed data"<<std::endl;
             row[key] = MySQLFieldTypeToItem(types[key], data);
             lua_pop(L, 1);
         }
@@ -450,7 +382,6 @@ getResTypeFromLuaTable(lua_State *const L, int fields_index,
         lua_pop(L, 1);
 
     }
-    std::cout<<RED_BEGIN<<"ADD TRANSFORM TEST"<<COLOR_END<<std::endl;
     //printrawReturnValue(myRawFromLua);
 
     return ResType(status, lua_tointeger(L, affected_rows_index),
@@ -468,20 +399,16 @@ nilBuffer(lua_State *const L, size_t count)
     return;
 }
 
-
-
 /*
  *return mete for dectypting data.
  * */
 static void 
 parseReturnMeta(const ReturnMeta & rtm){
-    std::cout<<RED_BEGIN<<"parseReturnMeta!!!"<<COLOR_END<<std::endl;
 }
 
 
 static int
 next(lua_State *const L) {
-//    ANON_REGION(__func__, &perf_cg);
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
     //查找client
@@ -526,7 +453,6 @@ next(lua_State *const L) {
         case AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN: {
             // more to do before we have the client's results
             xlua_pushlstring(L, "again");
-            std::cout<<"QUERY_COME_AGAIN:11111111111111111111111"<<std::endl<<std::endl;
             const auto &output =
                 std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
             const auto &want_interim = output.first;
@@ -540,7 +466,6 @@ next(lua_State *const L) {
             // the results of executing this query should be send directly
             // back to the client
             xlua_pushlstring(L, "query-results");
-            std::cout<<"QUERY_USE_RESULTS:22222222222222222222222222"<<std::endl<<std::endl;
             const auto &new_query =
                 std::get<1>(new_results)->extract<std::string>();
             xlua_pushlstring(L, new_query);
@@ -550,7 +475,6 @@ next(lua_State *const L) {
         case AbstractQueryExecutor::ResultType::RESULTS: {
             // ready to return results to the client
             xlua_pushlstring(L, "results");
-            std::cout<<"RESULTS:33333333333333333333333333333333333333"<<std::endl<<std::endl;
             const auto &res = new_results.second->extract<ResType>();
             returnResultSet(L, res);        // pushes 4 items on stack
             return 5;

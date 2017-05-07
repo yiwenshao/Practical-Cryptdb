@@ -540,7 +540,6 @@ bool CreateDelta::apply(const std::unique_ptr<Connect> &e_conn,
             " '" + esc_serial_key + "',"
             " " + std::to_string(parent_id) + ","
             " " + std::to_string(old_object_id.get()) + ");";
-        std::cout<<"query in writedelta:"<<query<<std::endl;
         RETURN_FALSE_IF_FALSE(e_conn->execute(query));
 
         const unsigned int object_id = e_conn->last_insert_id();
@@ -675,7 +674,6 @@ deltaOutputBeforeQuery(const std::unique_ptr<Connect> &e_conn,
         "           (SELECT DATABASE()),  FALSE,"
         "           '" + TypeText<CompletionType>::toText(completion_type) + "'"
         "          );";
-    std::cout<<q_completion<<std::endl;
     ROLLBACK_AND_RFIF(e_conn->execute(q_completion), e_conn);
     *embedded_completion_id = e_conn->last_insert_id();
     assert(*embedded_completion_id);

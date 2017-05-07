@@ -221,14 +221,12 @@ class CreateDBHandler : public DDLHandler {
         rewriteAndUpdate(Analysis &a, LEX *const lex, const Preamble &pre)
             const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         assert(a.deltas.size() == 0);
 
         const std::string &dbname =
             convert_lex_str(lex->name);
         if (false == a.databaseMetaExists(dbname)) {
             std::unique_ptr<DatabaseMeta> dm(new DatabaseMeta());
-            std::cout<<"create_db_id= : "<<dm->getDatabaseID()<<std::endl;
             //可以看到, 建立数据库的时候,和建立表的时候类型, 使用了createdelta, 添加了从db到schema的映射过程.
             a.deltas.push_back(std::unique_ptr<Delta>(
                         new CreateDelta(std::move(dm), a.getSchema(),
@@ -240,7 +238,6 @@ class CreateDBHandler : public DDLHandler {
             TEST_TextMessageError(test,
                                 "Database " + dbname + " already exists!");
         }
-        std::cout<<"delta_size: "<<a.deltas.size()<<std::endl;
         return new DDLQueryExecutor(*copyWithTHD(lex), std::move(a.deltas));
     }
 };
@@ -399,7 +396,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
                     "deltaOutputBeforeQuery failed for DDL");
                 this->embedded_completion_id = embedded_completion_id;
             }
-	    std::cout<<RED_BEGIN<<"rewritten DDL: "<<this->new_query<<COLOR_END<<std::endl;
             return CR_QUERY_AGAIN(this->new_query);
         }
         TEST_ErrPkt(res.success(), "DDL query failed");
