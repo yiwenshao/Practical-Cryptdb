@@ -590,8 +590,6 @@ lowLevelGetCurrentStaleness(const std::unique_ptr<Connect> &e_conn,
     const std::string &query =
         " SELECT stale FROM " + MetaData::Table::staleness() +
         "  WHERE cache_id = " + std::to_string(cache_id) + ";";
-    std::cout<<"query: "<<query<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<std::endl;
-
     std::unique_ptr<DBResult> db_res;
     RFIF(e_conn->execute(query, &db_res));
     assert(1 == mysql_num_rows(db_res->n));

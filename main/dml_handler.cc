@@ -66,7 +66,6 @@ void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
 class InsertHandler : public DMLHandler {
     virtual void gather(Analysis &a, LEX *const lex) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         //only select xxx etc?不是的!!!
         process_select_lex(lex->select_lex, a);
 
@@ -232,9 +231,7 @@ class InsertHandler : public DMLHandler {
 };
 
 class UpdateHandler : public DMLHandler {
-    virtual void gather(Analysis &a, LEX *lex) const
-    {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+    virtual void gather(Analysis &a, LEX *lex) const {
         process_table_list(lex->select_lex.top_join_list, a);
 
         if (lex->select_lex.item_list.head()) {
@@ -300,9 +297,7 @@ class UpdateHandler : public DMLHandler {
 
 class DeleteHandler : public DMLHandler {
     virtual void gather(Analysis &a, LEX *const lex)
-        const
-    {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+        const {
         process_select_lex(lex->select_lex, a);
     }
 
@@ -322,16 +317,13 @@ class DeleteHandler : public DMLHandler {
 
 class MultiDeleteHandler : public DMLHandler {
     virtual void gather(Analysis &a, LEX *const lex)
-        const
-    {
-         std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+        const {
         process_select_lex(lex->select_lex, a);
     }
 
     virtual AbstractQueryExecutor *
         rewrite(Analysis &a, LEX *lex)
-        const
-    {
+        const {
         LEX *const new_lex = copyWithTHD(lex);
         // the multidelete looks like this
         //  $ DELETE <LEX::auxiliary_...> FROM <LEX::query_tables>;
@@ -444,9 +436,7 @@ class SelectHandler : public DMLHandler {
 };
 
 AbstractQueryExecutor *DMLHandler::
-transformLex(Analysis &analysis, LEX *lex) const
-{
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
+transformLex(Analysis &analysis, LEX *lex) const {
     this->gather(analysis, lex);
     return this->rewrite(analysis, lex);
 }
@@ -540,7 +530,6 @@ gatherAndAddAnalysisRewritePlanForFieldValuePair(const Item_field &field,
                                                  const Item &val,
                                                  Analysis &a)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     a.rewritePlans[&val] = std::unique_ptr<RewritePlan>(gather(val, a));
     a.rewritePlans[&field] =
         std::unique_ptr<RewritePlan>(gather(field, a));
@@ -555,7 +544,6 @@ static SQL_I_List<ORDER> *
 rewrite_order(Analysis &a, const SQL_I_List<ORDER> &lst,
               const EncSet &constr, const std::string &name)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<name<<std::endl<<std::endl;
     SQL_I_List<ORDER> *const new_lst = copyWithTHD(&lst);
     ORDER * prev = NULL;
     for (ORDER *o = lst.first; o; o = o->next) {
@@ -576,7 +564,6 @@ rewrite_order(Analysis &a, const SQL_I_List<ORDER> &lst,
 static st_select_lex *
 rewrite_filters_lex(const st_select_lex &select_lex, Analysis & a)
 {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     st_select_lex *const new_select_lex = copyWithTHD(&select_lex);
 
     // FIXME: Use const reference for list.
@@ -604,7 +591,6 @@ rewrite_field_value_pairs(List_iterator<Item> fd_it,
                           List_iterator<Item> val_it, Analysis &a,
                           List<Item> *const res_fields,
                           List<Item> *const res_values) {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (;;) {
         const Item *const field_item = fd_it++;
         const Item *const value_item = val_it++;
@@ -646,7 +632,6 @@ rewrite_field_value_pairs(List_iterator<Item> fd_it,
 static void
 addToReturn(ReturnMeta *const rm, int pos, const OLK &constr,
             bool has_salt, const std::string &name){
-//        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
     TEST_TextMessageError(test, "ReturnMeta has badly ordered"
                                 " ReturnFields!");
@@ -660,7 +645,6 @@ addToReturn(ReturnMeta *const rm, int pos, const OLK &constr,
 static void
 addSaltToReturn(ReturnMeta *const rm, int pos)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
     TEST_TextMessageError(test, "ReturnMeta has badly ordered"
                                 " ReturnFields!");
@@ -674,7 +658,6 @@ addSaltToReturn(ReturnMeta *const rm, int pos)
 static void
 rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
              List<Item> *const newList) {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     AssignOnce<OLK> olk;
     AssignOnce<Item *> ir;
 
@@ -724,7 +707,6 @@ rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
 st_select_lex *
 rewrite_select_lex(const st_select_lex &select_lex, Analysis &a)
 {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     // rewrite_filters_lex must be called before rewrite_proj because
     // it is responsible for filling Analysis::item_cache which
     // rewrite_proj uses.
@@ -769,7 +751,6 @@ rewrite_select_lex(const st_select_lex &select_lex, Analysis &a)
 static void
 process_table_aliases(const List<TABLE_LIST> &tll, Analysis &a)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     RiboldMYSQL::constList_iterator<TABLE_LIST> join_it(tll);
     for (;;) {
         const TABLE_LIST *const t = join_it++;
@@ -795,7 +776,6 @@ static void
 process_table_joins_and_derived(const List<TABLE_LIST> &tll,
                                 Analysis &a)
 {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     RiboldMYSQL::constList_iterator<TABLE_LIST> join_it(tll);
     for (;;) {
         const TABLE_LIST *const t = join_it++;
@@ -831,7 +811,6 @@ process_table_joins_and_derived(const List<TABLE_LIST> &tll,
 void
 process_table_list(const List<TABLE_LIST> &tll, Analysis & a)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     /*
      * later, need to rewrite different joins, e.g.
      * SELECT g2_ChildEntity.g_id, IF(ai0.g_id IS NULL, 1, 0) AS albumsFirst, g2_Item.g_originationTimestamp FROM g2_ChildEntity LEFT JOIN g2_AlbumItem AS ai0 ON g2_ChildEntity.g_id = ai0.g_id INNER JOIN g2_Item ON g2_ChildEntity.g_id = g2_Item.g_id INNER JOIN g2_AccessSubscriberMap ON g2_ChildEntity.g_id = g2_AccessSubscriberMap.g_itemId ...
@@ -843,7 +822,6 @@ process_table_list(const List<TABLE_LIST> &tll, Analysis & a)
 
 static bool
 invalidates(const FieldMeta &fm, const EncSet & es){
-//        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     for (const auto &om_it : fm.getChildren()) {
         onion const o = om_it.first.getValue();
         if (es.osl.find(o) == es.osl.end()) {
@@ -858,7 +836,6 @@ SIMPLE_UPDATE_TYPE
 determineUpdateType(const Item &value_item, const FieldMeta &fm,
                     const EncSet &es)
 {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     if (invalidates(fm, es)) {
         return SIMPLE_UPDATE_TYPE::UNSUPPORTED;
     }
@@ -883,7 +860,6 @@ doPairRewrite(FieldMeta &fm, const EncSet &es,
               List<Item> *const res_fields, List<Item> *const res_values,
               Analysis &a)
 {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     const std::unique_ptr<RewritePlan> &field_rp =
         constGetAssert(a.rewritePlans,
                        &static_cast<const Item &>(field_item));
@@ -909,7 +885,6 @@ addSalt(FieldMeta &fm, const Item_field &field_item,
         Analysis &a,
         std::function<Item *(const Item_field &rew_fd)> getSaltValue)
 {
-//      std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     assert(res_fields->elements != 0);
     const Item_field * const rew_fd =
         static_cast<Item_field *>(res_fields->head());
@@ -929,11 +904,9 @@ handleUpdateType(SIMPLE_UPDATE_TYPE update_type, const EncSet &es,
                  List<Item> *const res_fields,
                  List<Item> *const res_values, Analysis &a)
 {
-//     std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     FieldMeta &fm =
         a.getFieldMeta(a.getDatabaseName(), field_item.table_name,
                        field_item.field_name);
-
     switch (update_type) {
         case SIMPLE_UPDATE_TYPE::NEW_VALUE: {
             bool add_salt = false;
@@ -1001,13 +974,10 @@ handleUpdateType(SIMPLE_UPDATE_TYPE update_type, const EncSet &es,
 class SetHandler : public DMLHandler {
     virtual void gather(Analysis &a, LEX *const lex) const
     {
-               std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
-        // no-op
     }
 
     virtual AbstractQueryExecutor *rewrite(Analysis &a, LEX *lex) const
     {
-        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         #define DIRECTIVE_HANDLER(function)                         \
             std::bind((function), this, std::placeholders::_1,      \
                       std::placeholders::_2)
@@ -1036,7 +1006,6 @@ class SetHandler : public DMLHandler {
 
             switch (v->varType()) {
             case set_var_base::V_USER: {
-//                std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
                 const set_var_user *const user_v =
                     static_cast<const set_var_user *>(v);
                 Item_func_set_user_var *const i =
@@ -1079,7 +1048,6 @@ class SetHandler : public DMLHandler {
                 var_pairs[var_name] = var_value;
             }
             case set_var_base::V_SYSTEM: {
-                std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
                 // do not allow the client to put us into SQL_SAFE_UPDATES
                 // mode; else bad things will happen
                 const set_var *const set_v =
@@ -1096,7 +1064,6 @@ class SetHandler : public DMLHandler {
             }
             case set_var_base::V_PASSWORD:
             case set_var_base::V_COLLATION:
-//                std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
                 break;
             default:
                 assert(false);
@@ -1117,7 +1084,6 @@ private:
     handleAdjustDirective(std::map<std::string, std::string> &var_pairs,
                           Analysis &a) const
     {
-//        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         const ParameterCollection &params = collectParameters(var_pairs, a);
 
         for (const auto &it : params.onions) {
@@ -1140,7 +1106,6 @@ private:
     handleShowDirective(std::map<std::string, std::string> &var_pairs,
                         Analysis &a) const
     {
-//        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         return new ShowDirectiveExecutor(a.getSchema());
     }
 
@@ -1148,7 +1113,6 @@ private:
     handleSensitiveDirective(std::map<std::string, std::string> &var_pairs,
                              Analysis &a) const
     {
-//        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         assert(a.deltas.size() == 0);
 
         const ParameterCollection &params = collectParameters(var_pairs, a);
@@ -1173,7 +1137,6 @@ private:
     handleKillZoneDirective(std::map<std::string, std::string> &var_pairs,
                         Analysis &a) const
     {
-//        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         auto count = var_pairs.find(std::string("count"));
         auto where = var_pairs.find(std::string("where"));
         TEST_Text(var_pairs.end() != count
@@ -1385,7 +1348,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
 static std::pair<std::string, ReturnMeta>
 rewriteAndGetFirstQuery(const std::string &query, NextParams nparams)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     try {
         const std::shared_ptr<const SchemaInfo> schema =
             nparams.ps.getSchemaInfo();
@@ -1423,7 +1385,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
         crYield(std::make_pair(true, cond_trx));
     crEndBlock
     */
-std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     reenter(this->corot) {
         assert(res.success());
 
@@ -1606,7 +1567,6 @@ std::pair<AbstractQueryExecutor::ResultType, AbstractAnything *>
 ShowDirectiveExecutor::
 nextImpl(const ResType &res, const NextParams &nparams)
 {
-    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     reenter(this->corot) {
         yield {
             TEST_ErrPkt(deleteAllShowDirectiveEntries(nparams.ps.getEConn()),
@@ -1662,7 +1622,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
 bool ShowDirectiveExecutor::
 deleteAllShowDirectiveEntries(const std::unique_ptr<Connect> &e_conn)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     const std::string &query =
         "DELETE FROM " + MetaData::Table::showDirective() + ";";
     return e_conn->execute(query);
@@ -1676,7 +1635,6 @@ addShowDirectiveEntry(const std::unique_ptr<Connect> &e_conn,
                       const std::string &onion,
                       const std::string &level)
 {
-//    std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     const std::string &query =
         "INSERT INTO " + MetaData::Table::showDirective() +
         " (_database, _table, _field, _onion, _level) VALUES "
@@ -1691,7 +1649,6 @@ bool ShowDirectiveExecutor::
 getAllShowDirectiveEntries(const std::unique_ptr<Connect> &e_conn,
                            std::unique_ptr<DBResult> *db_res)
 {
-//   std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     assert(db_res);
     const std::string &query =
         "SELECT * FROM " + MetaData::Table::showDirective() + ";";
@@ -1702,7 +1659,6 @@ std::pair<AbstractQueryExecutor::ResultType, AbstractAnything *>
 SensitiveDirectiveExecutor::
 nextImpl(const ResType &res, const NextParams &nparams)
 {
-//std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     reenter(this->corot) {
         yield {
             TEST_ErrPkt(nparams.ps.getEConn()->execute("START TRANSACTION"),
@@ -1762,9 +1718,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
     assert(false);
 }
 
-
-
-
 std::pair<AbstractQueryExecutor::ResultType, AbstractAnything *>
 ShowCreateTableExecutor::
 nextImpl(const ResType &res, const NextParams &nparams){
@@ -1773,37 +1726,16 @@ nextImpl(const ResType &res, const NextParams &nparams){
     reenter(this->corot) {
         yield return CR_QUERY_AGAIN(this->query);
         TEST_ErrPkt(res.success(), "show create table tables failed");
-
         yield {
-            //how to find schemaInfo?? we can get it directly
             const std::shared_ptr<const SchemaInfo> &schema =
                 nparams.ps.getSchemaInfo();
             const DatabaseMeta *const dm =
                 schema->getChild(IdentityMetaKey(nparams.default_db));
             TEST_ErrPkt(dm, "failed to find the database '"
                             + nparams.default_db + "'");
-            
             std::vector<std::vector<Item *> > new_rows;
-
-            //adapted from show tables;
-            /*for (const auto &it : res.rows) {
-                assert(1 == it.size());
-                for (const auto &table : dm->getChildren()) {    
-                    assert(table.second);
-                    if (table.second->getAnonTableName()
-                        == ItemToString(*it.front())) {
-
-                        const IdentityMetaKey &plain_table_name
-                            = dm->getKey(*table.second.get());
-                        new_rows.push_back(std::vector<Item *>
-                            {make_item_string(plain_table_name.getValue())});
-                    }
-                }
-            }*/
-
             return CR_RESULTS(ResType(res, new_rows));
         }
     }
-    //avoid reach the end
     assert(false);
 }

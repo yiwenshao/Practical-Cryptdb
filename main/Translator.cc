@@ -14,17 +14,14 @@
 // TODO: Make length longer.
 // TODO: Ensure some level of collision resistance.
 std::string
-getpRandomName()
-{
+getpRandomName(){
     // FIXME: Not using numbers because.
     //  'CREATE TABLE a (2e integer); <---- succeeds
     //  'CREATE TABLE b (2e5 integer); <--- fails
     static const char valids[] =
-        // "0123456789"
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     static int out_length = 10;
     char output[out_length + 1];
-
     std::function<bool()> wrap_srand =[](){srand(time(NULL)); return true;};
     std::function<void(bool)> do_nothing = [] (bool b) {return;};
     static bool danger_will_robinson = wrap_srand();
@@ -34,14 +31,12 @@ getpRandomName()
         output[i] = valids[rand() % strlen(valids)];
     }
     output[out_length] = 0;
-
     return std::string(output);
 }
 
 std::string
 nextAutoInc(std::map<std::string, unsigned int > & autoInc,
-            std::string fullname)
-{
+            std::string fullname){
     std::string val;
     if (autoInc.find(fullname) == autoInc.end()) {
         val = "1";
@@ -61,7 +56,6 @@ getTableSalt(std::string anonTableName) {
 
 std::string
 getTableOfSalt(std::string salt_name) {
-
     return salt_name.substr(BASE_SALT_NAME.length() + 3, salt_name.length() - 3 - BASE_SALT_NAME.length());
 }
 
@@ -69,8 +63,7 @@ getTableOfSalt(std::string salt_name) {
 
 std::string
 getFieldsItSelect(std::list<std::string> & words,
-                  std::list<std::string>::iterator & it)
-{
+                  std::list<std::string>::iterator & it) {
     it = words.begin();
     it++;
     std::string res = "SELECT ";
@@ -80,7 +73,6 @@ getFieldsItSelect(std::list<std::string> & words,
         it++;
         res += "DISTINCT ";
     }
-
     return res;
 }
 

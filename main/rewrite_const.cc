@@ -22,13 +22,12 @@
 #include <util/enum_text.hh>
 #include <parser/lex_util.hh>
 
-// class/object names we don't care to know the name of
+/* class/object names we don't care to know the name of */
 #define ANON                ANON_NAME(__anon_id_const)
 
-// encrypts a constant item based on the information in a
+// encrypts a constant item based on the information in Analysis
 static Item *
-encrypt_item(const Item &i, const OLK &olk, Analysis &a)
-{
+encrypt_item(const Item &i, const OLK &olk, Analysis &a) {
     assert(!RiboldMYSQL::is_null(i));
 
     FieldMeta * const fm = olk.key;

@@ -12,8 +12,7 @@ using namespace std;
 static bool lib_initialized = false;
 
 void
-init_mysql(const string &embed_db)
-{
+init_mysql(const string &embed_db){
     // FIXME: can still get a weird case where something calls
     // init_mysql(...) and lib_initialized is true so it continues on to
     // execute a query against the embedded database; but the thread
@@ -41,8 +40,7 @@ init_mysql(const string &embed_db)
 }
 
 char *
-make_thd_string(const string &s, size_t *lenp)
-{
+make_thd_string(const string &s, size_t *lenp){
     THD *thd = current_thd;
     assert(thd);
     if (lenp)
@@ -64,8 +62,7 @@ ItemToString(const Item &i) {
 }
 
 std::string
-printItemToString(const Item &i)
-{
+printItemToString(const Item &i){
     std::ostringstream o;
     o << i;
     return o.str();

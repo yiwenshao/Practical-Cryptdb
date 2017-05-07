@@ -425,7 +425,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
         TEST_ErrPkt(deltaOutputAfterQuery(nparams.ps.getEConn(), this->deltas,
                                           this->embedded_completion_id.get()),
                    "deltaOuputAfterQuery failed for DDL");
-//        std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
         yield return CR_RESULTS(this->ddl_res.get());
     }
 

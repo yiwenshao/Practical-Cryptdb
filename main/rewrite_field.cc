@@ -22,9 +22,8 @@
 #include <parser/lex_util.hh>
 
 
-// gives names to classes and objects we don't care to know the name of 
+/*gives names to classes and objects we don't care to know the name of */
 #define ANON                ANON_NAME(__anon_id_f_)
-
 
 CItemTypesDir itemTypes = CItemTypesDir();
 CItemFuncDir funcTypes = CItemFuncDir();
@@ -40,8 +39,7 @@ CItemSumFuncDir sumFuncTypes = CItemSumFuncDir();
 static std::string
 deductPlainTableName(const std::string &field_name,
                      Name_resolution_context *const context,
-                     Analysis &a)
-{
+                     Analysis &a) {
     assert(context);
 
     const TABLE_LIST *current_table =

@@ -134,11 +134,10 @@ mapList(List_iterator<InType> it, std::function<OutType *(InType *)> op)
     return newList;
 }
 
-//注意这里的function返回值是List<Type>, 参数是List<Type>以及Type*
+/* 注意这里的function返回值是List<Type>, 参数是List<Type>以及Type* */
 template <typename Type> List<Type>
 accumList(List_iterator<Type> it,
-          std::function<List<Type>(List<Type>, Type *)> op)
-{
+          std::function<List<Type>(List<Type>, Type *)> op) {
     List<Type> accum;
 
     for (Type *element = it++; element ; element = it++) {
@@ -149,8 +148,7 @@ accumList(List_iterator<Type> it,
 }
 
 template <typename T> List<T> *
-vectorToListWithTHD(std::vector<T *> v)
-{
+vectorToListWithTHD(std::vector<T *> v) {
     List<T> *const lst = new (current_thd->mem_root) List<T>;
     for (auto it : v) {
         lst->push_back(it);
@@ -160,8 +158,7 @@ vectorToListWithTHD(std::vector<T *> v)
 }
 
 template <typename Type> List<Type>
-filterList(List_iterator<Type> it, std::function<bool(Type *)> op)
-{
+filterList(List_iterator<Type> it, std::function<bool(Type *)> op) {
     List<Type> new_list;
 
     for (Type *element = it++; element ; element = it++) {

@@ -892,13 +892,12 @@ main() {
             continue;
         }
 
-        /*
         if(curQuery=="back"){
             startBack();
         }else{	
             std::cout<<GREEN_BEGIN<<"curQuery: "<<curQuery<<"\n"<<COLOR_END<<std::endl;
             batchTogether(client,curQuery,_thread_id);
-        }*/
+        }
 
         std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
         processSchemaInfo(*schema);

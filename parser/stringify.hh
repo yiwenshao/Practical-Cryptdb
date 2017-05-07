@@ -562,27 +562,6 @@ enableOrDisableKeysOutput(const LEX &lex)
     return out;
 }
 
-/*
-static std::string
-prettyLockType(enum thr_lock_type lock_type)
-{
-    switch (lock_type) {
-        case TL_READ:
-        case TL_READ_NO_INSERT:
-            return "READ";
-        case TL_WRITE:
-        case TL_WRITE_DEFAULT:
-            return "WRITE";
-        default:
-            // FIXME: Use TEST_TextMessageError
-            std::cerr << "Unsupported lock type: " << lock_type
-                      << std::endl;
-            assert(false);
-    }
-}
-*/
-
-
 //process normal key in alter table command, do not process foreign key
 static std::string process_normal_key(LEX &lex){
     std::ostringstream key_output;

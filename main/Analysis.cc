@@ -295,7 +295,6 @@ dropAll(const std::unique_ptr<Connect> &conn)
 std::vector<std::string>
 getAllUDFs()
 {
-    //std::cout<<__PRETTY_FUNCTION__<<":"<<__LINE__<<":"<<__FILE__<<":"<<__LINE__<<std::endl<<std::endl;
     std::vector<std::string> udfs;
     for (const udf_func * const u: udf_list) {
         std::stringstream ss;
@@ -310,11 +309,6 @@ getAllUDFs()
         ss << " SONAME 'edb.so';";
         udfs.push_back(ss.str());
     }
-
-
-
-
-
 
     return udfs;
 }
@@ -403,9 +397,8 @@ SharedProxyState::SharedProxyState(ConnectionInfo ci,
     assert(loadStoredProcedures(conn));
 }
 
-SharedProxyState::~SharedProxyState()
-{
-    // mysql_library_end();
+SharedProxyState::~SharedProxyState() {
+
 }
 
 int

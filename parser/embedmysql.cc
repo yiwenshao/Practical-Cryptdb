@@ -23,24 +23,18 @@ using namespace std;
 extern "C" void *create_embedded_thd(int client_flag);
 
 void
-query_parse::cleanup()
-{
-//    if (annot) {
-//        delete annot;
-//    }
+query_parse::cleanup(){
     if (t) {
         t->end_statement();
         t->cleanup_after_query();
         close_thread_tables(t);
         --thread_count;
-        // t->clear_data_list();
         delete t;
         t = 0;
     }
 }
 
-query_parse::~query_parse()
-{
+query_parse::~query_parse() {
     cleanup();
 }
 
@@ -49,16 +43,6 @@ query_parse::lex()
 {
     return t->lex;
 }
-/*
-static void
-cloneItemInOrder(ORDER * o) {
-    assert_s((*o->item)->type() == Item::Type::FIELD_ITEM, " support for order by/group by non-field not currently implemented" );
-    Item ** tmp = (Item **)malloc(sizeof(Item *));
-    *tmp = new  Item_field(current_thd, static_cast<Item_field *>(*o->item));
-    assert_s(*tmp, "clone item failed on order by element, elements perhaps non constant which is not currently implemented");
-    o->item = tmp;
-}
-*/
 
 /*
  * For the whys and hows;
@@ -103,11 +87,8 @@ query_parse::query_parse(const std::string &db, const std::string &q)
     //  set annotation to true and return
 
     if (strncmp(toLowerCase(q).c_str(), "cryptdb", 7) == 0) {
-    //do not use Annotation now
-//        annot = new Annotation(q);
+        //do not use Annotation now
         return;
-    } else {
-        //annot = NULL;
     }
     try {
         //set db

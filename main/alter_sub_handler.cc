@@ -9,26 +9,20 @@
 //            can update in place.
 // ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 class AddColumnSubHandler : public AlterSubHandler {
     virtual LEX *
         rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &preamble)
-            const
-    {
+            const {
         TableMeta &tm = a.getTableMeta(preamble.dbname, preamble.table);
-
-        // collect the keys (and their types) as they may affect the onion
-        // layout we use
+        /*collect the keys (and their types) as they may affect the onion layout we use */
         const auto &key_data = collectKeyData(*lex);
-
         // Create *Meta objects.
         auto add_it =
             List_iterator<Create_field>(lex->alter_info.create_list);
         lex->alter_info.create_list =
             accumList<Create_field>(add_it,
                 [&a, &tm, &key_data] (List<Create_field> out_list,
-                                      Create_field *cf)
-            {
+                                      Create_field *cf){
                     return createAndRewriteField(a, cf, &tm, false, key_data,
                                                  out_list);
             });
@@ -102,18 +96,17 @@ class DropColumnSubHandler : public AlterSubHandler {
 class ChangeColumnSubHandler : public AlterSubHandler {
     virtual LEX *
         rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &preamble)
-            const
-    {
+            const{
         FAIL_TextMessageError("implement ChangeColumnSubHandler");
     }
 };
 
+
+/*added should update inplace*/
 LEX * ForeignKeySubHandler::rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &preamble)
             const{
-//       LEX *const new_lex = copyWithTHD(lex);
        TableMeta const &ctm =
             a.getTableMeta(preamble.dbname, preamble.table);
-       
         //find essential information from froeign key
        auto it =
              List_iterator<Key>(lex->alter_info.key_list);

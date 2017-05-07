@@ -261,7 +261,6 @@ RiboldMYSQL::get_select_lex(const Item_subselect &i)
     return const_cast<Item_subselect &>(i).get_select_lex();
 }
 
-// Item::val_str(...) modifies/returns an internal buffer sometimes.
 std::string RiboldMYSQL::val_str(const Item &i, bool *is_null)
 {
     static const std::string empty_string = "";
