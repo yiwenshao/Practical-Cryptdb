@@ -134,7 +134,7 @@ public:
 template <enum enum_field_types id>
 class AbstractMySQLDecimalMetaData : public AbstractMySQLTypeMetaData {
 public:
-    bool encryptionSupported() const {return true;}
+    bool encryptionSupported() const {return false;}
     bool isNumeric() const {return true;}
     const std::string humanReadable(const Create_field &) const
         {return "DECIMAL";}
