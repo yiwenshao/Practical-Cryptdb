@@ -5,19 +5,49 @@ prefix = result:gsub("\n$", "")
 libpath = prefix.."/obj/libexecute.so"
 assert(package.loadlib(libpath,
                        "lua_cryptdb_init"))()
+
 local proto = assert(require("mysql.proto"))
 
 local g_want_interim    = nil
 local skip              = false
 local client            = nil
---
--- Interception points provided by mysqlproxy
---
+
+queryType = {}
+queryType[proxy.COM_SLEEP] = "COM_SLEEP"
+queryType[proxy.COM_QUIT] = "COM_QUIT"
+queryType[proxy.COM_INIT_DB] = "COM_INIT_DB"
+queryType[proxy.COM_QUERY] = "COM_QUERY"
+queryType[proxy.COM_FIELD_LIST]= "COM_FIELD_LIST"
+queryType[proxy.COM_CREATE_DB]= "COM_CREATE_DB"
+queryType[proxy.COM_DROP_DB]= "COM_DROP_DB"
+queryType[proxy.COM_REFRESH]= "COM_REFRESH"
+queryType[proxy.COM_SHUTDOWN] = "COM_SHUTDOWN"
+queryType[proxy.COM_STATISTICS] = "COM_STATISTICS"
+queryType[proxy.COM_PROCESS_INFO] = "COM_PROCESS_INFO"
+queryType[proxy.COM_CONNECT] = "COM_CONNECT"
+queryType[proxy.COM_PROCESS_KILL] = "COM_PROCESS_KILL"
+queryType[proxy.COM_DEBUG] = "COM_DEBUG"
+queryType[proxy.COM_PING] = "COM_PING"
+queryType[proxy.COM_TIME] = "COM_TIME"
+queryType[proxy.COM_DELAYED_INSERT] = "COM_DELAYED_INSERT"
+queryType[proxy.COM_CHANGE_USER] = "COM_CHANGE_USER"
+queryType[proxy.COM_BINLOG_DUMP] = "COM_BINLOG_DUMP"
+queryType[proxy.COM_TABLE_DUMP] = "COM_TABLE_DUMP"
+queryType[proxy.COM_CONNECT_OUT] = "COM_CONNECT_OUT"
+queryType[proxy.COM_REGISTER_SLAVE] = "COM_REGISTER_SLAVE"
+queryType[proxy.COM_STMT_PREPARE] = "COM_STMT_PREPARE"
+queryType[proxy.COM_STMT_EXECUTE] = "COM_STMT_EXECUTE"
+queryType[proxy.COM_STMT_SEND_LONG_DATA] = "COM_STMT_SEND_LONG_DATA"
+queryType[proxy.COM_STMT_CLOSE] = "COM_STMT_CLOSE"
+queryType[proxy.COM_STMT_RESET] = "COM_STMT_RESET"
+queryType[proxy.COM_SET_OPTION] = "COM_SET_OPTION"
+queryType[proxy.COM_STMT_FETCH] = "COM_STMT_FETCH"
+queryType[proxy.COM_DAEMON] = "COM_DAEMON"
+
 
 
 function read_auth()
     client = proxy.connection.client.src.name 
-
     -- Use this instead of connect_server(), to get server name
     dprint("Connected " .. proxy.connection.client.src.name)
     CryptDB.connect(proxy.connection.client.src.name,
@@ -26,9 +56,6 @@ function read_auth()
                     os.getenv("CRYPTDB_USER") or "root",
                     os.getenv("CRYPTDB_PASS") or "letmein",
             os.getenv("CRYPTDB_SHADOW") or prefix.."/shadow")
-    -- EDBClient uses its own connection to the SQL server to set up UDFs
-    -- and to manipulate multi-principal state.  (And, in the future, to
-    -- store its schema state for single- and multi-principal operation.)
 end
 
 function disconnect_client()
@@ -118,8 +145,7 @@ function prettyNewQuery(q)
             -- don't print maintenance queries
             return
         end
-    end
- 
+    end 
     print(greentext("NEW QUERY: ")..makePrintable(q))
 end
 
@@ -135,8 +161,8 @@ end
 
 function read_query_real(packet)
     local query = string.sub(packet, 2)
-    print("================================================")
-    printred("QUERY: ".. query)
+    --print("================================================")
+    --printred("QUERY: ".. query)
 
     if string.byte(packet) == proxy.COM_INIT_DB then
         query = "USE `" .. query .. "`"
@@ -156,14 +182,19 @@ function read_query_real(packet)
         return next_handler("query", true, client, {}, {}, nil, nil)
     elseif string.byte(packet) == proxy.COM_QUIT then
         -- do nothing
+        print("packet type donothing " .. queryType[string.byte(packet)].." query is: "..query)
+    elseif string.byte(packet) == proxy.COM_FIELD_LIST then
+	-- connect, show databases, use tdb; will cause this type of command to get table definition
+	-- do nothing here http://imysql.com/mysql-internal-manual/com-field-list.html
+        print("packet type donothing " .. queryType[string.byte(packet)].." query is: "..query)
     else
-        print("unexpected packet type " .. string.byte(packet))
+        print("unexpected packet type " .. queryType[string.byte(packet)].." query is: "..query)
     end
 end
 
 function read_query_result_real(inj)
     local query = inj.query:sub(2)
-    prettyNewQuery(query)
+    --prettyNewQuery(query)
 
     if skip == true then
         skip = false
@@ -183,39 +214,39 @@ function read_query_result_real(inj)
 
     if true == g_want_interim then
         -- build up interim result for next(...) calls
-        print(greentext("ENCRYPTED RESULTS:"))
+        --print(greentext("ENCRYPTED RESULTS:"))
 
         -- mysqlproxy doesn't return real lua arrays, so re-package
         local resfields = resultset.fields
 
-        printline(#resfields)
+        --printline(#resfields)
         if (#resfields) then
-           io.write("|")
+           --io.write("|")
         end
         for i = 1, #resfields do
             rfi = resfields[i]
             interim_fields[i] =
                 { type = resfields[i].type,
                   name = resfields[i].name }
-            io.write(string.format("%-20s|",rfi.name))
+            --io.write(string.format("%-20s|",rfi.name))
         end
 
-        print()
-        printline(#resfields)
+        --print()
+        --printline(#resfields)
 
         local resrows = resultset.rows
         if resrows then
             for row in resrows do
                 table.insert(interim_rows, row)
-                io.write("|")
+                --io.write("|")
                 for key,value in pairs(row) do
-                    io.write(string.format("%-20s|", makePrintable(value)))
+                    --io.write(string.format("%-20s|", makePrintable(value)))
                 end
-                print()
+                --print()
             end
         end
 
-        printline(#resfields)
+        --printline(#resfields)
     end
 
     return next_handler("results", true, client, interim_fields, interim_rows,
