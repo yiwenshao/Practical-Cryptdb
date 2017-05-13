@@ -1,0 +1,1 @@
+/usr/bin/cc  -Wall -Wno-deprecated-declarations -Wunused -Wwrite-strings -Wno-strict-aliasing -Wextra -Wshadow -Werror -O3 -g -I/usr/include/mysql   CMakeFiles/myloader.dir/myloader.c.o  -o myloader -rdynamic -lmysqlclient -lpthread -lz -lm -lrt -ldl -lglib-2.0 -lgthread-2.0 -lpcre -lz -lm -lrt -ldl -lglib-2.0 -lgthread-2.0 -lpcre 
