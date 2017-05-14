@@ -1,0 +1,7 @@
+/*!40101 SET NAMES binary*/;
+/*!40014 SET FOREIGN_KEY_CHECKS=0*/;
+
+CREATE TABLE `child1` (
+  `id` smallint(6) DEFAULT NULL,
+  `name` varchar(1000) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
