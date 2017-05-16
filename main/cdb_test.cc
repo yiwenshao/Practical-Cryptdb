@@ -41,7 +41,7 @@
 #include <util/yield.hpp>
 
 #include <sstream>
-
+#include <unistd.h>
 
 
 FILE* fr,*fw;
@@ -861,7 +861,6 @@ int
 main() {
     fr = fopen((const char*)"readFile",(const char*)"r");
     fw = fopen((const char*)"writeFile",(const char *)"a");
-    if(!fr||!fw) return 0;
 
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
@@ -871,44 +870,41 @@ main() {
     //const std::string master_key = "113341234";
     const std::string master_key = "113341234HEHE";
 
-    SharedProxyState *shared_ps = new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
+    char *buffer;
+    if((buffer = getcwd(NULL, 0)) == NULL){  
+        perror("getcwd error");  
+    }
+    embeddedDir = std::string(buffer)+"/shadow";
+
+
+    SharedProxyState *shared_ps = 
+			new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
     assert(0 == mysql_thread_init());
     //we init embedded database here.
     clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
     clients[client]->ps->safeCreateEmbeddedTHD();
     //Connect end!!
-
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
-
     std::string curQuery = "SHOW DATABASES;";
     std::cout<<"please input a new query:######################################################"<<std::endl;
     std::getline(std::cin,curQuery);
-    unsigned long long _thread_id = globalConn->get_thread_id();   
-
+    unsigned long long _thread_id = globalConn->get_thread_id();
     while(curQuery!="quit"){
         if(curQuery.size()==0){
             std::cout<<std::endl;
             std::getline(std::cin,curQuery);            
             continue;
         }
-
         if(curQuery=="back"){
             startBack();
         }else{	
             std::cout<<GREEN_BEGIN<<"curQuery: "<<curQuery<<"\n"<<COLOR_END<<std::endl;
             batchTogether(client,curQuery,_thread_id);
         }
-
         std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
         processSchemaInfo(*schema);
-
-
-
         std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
         std::getline(std::cin,curQuery);
     }
-
-    fclose(fr);
-    fclose(fw);
     return 0;
 }
