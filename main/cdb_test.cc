@@ -43,11 +43,6 @@
 #include <sstream>
 #include <unistd.h>
 
-
-FILE* fr,*fw;
-
-
-
 static std::string embeddedDir="/t/cryt/shadow";
 
 //My WrapperState.
@@ -360,7 +355,7 @@ void batchTogether(std::string client, std::string curQuery,unsigned long long _
 
 static void processFieldMeta(const FieldMeta &field){
     std::cout<<GREEN_BEGIN<<"PRINT FieldMeta"<<COLOR_END<<std::endl;
-    for(const auto & onion: field.getChildren()){
+    for(const OnionMeta & onion: field.getChildren()){
         std::cout<<onion.second->getDatabaseID()<<":"<<onion.first.getValue()<<std::endl;
     }
     std::cout<<GREEN_BEGIN<<"end FieldMeta"<<COLOR_END<<std::endl;
@@ -368,21 +363,34 @@ static void processFieldMeta(const FieldMeta &field){
 
 static void processTableMeta(const TableMeta &table){
     std::cout<<GREEN_BEGIN<<"PRINT TableMeta"<<COLOR_END<<std::endl;
-    for(const auto & field: table.getChildren()){
+    for(const FieldMeta & field: table.getChildren()){
         std::cout<<field.second->getDatabaseID()<<":"<<field.first.getValue()<<std::endl;
         processFieldMeta(*(field.second));
     }
 }
 
 
-static void processDatabaseMeta(const DatabaseMeta & db) {
+static void processDatabaseMeta(const DatabaseMeta & dbm,std::string table="student1") {
+    TableMeta & tbm = *dbm.getChild(IdentityMetaKey(table));
+    processTableMeta(tbm);
+    return;
+
     std::cout<<GREEN_BEGIN<<"PRINT DatabaseMeta"<<COLOR_END<<std::endl;
-    for(const auto & table: db.getChildren()){
+    for(const auto & table: dbm.getChildren()){
         processTableMeta(*(table.second));
     }
 }
 
-static void processSchemaInfo(SchemaInfo &schema){
+static void processSchemaInfo(SchemaInfo &schema,std::string db="tdb"){
+     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
+     Analysis analysis(db,schema,TK,
+                        SECURITY_RATING::SENSITIVE);
+     if(analysis.databaseMetaExists(db)){
+         processDatabaseMeta(analysis.getDatabaseMeta(db));
+     }else{
+	 std::cout<<"data base not exists"<<std::endl;
+     }
+    return ;
     //we have a map here
      std::cout<<GREEN_BEGIN<<"PRINT SchemaInfo"<<COLOR_END<<std::endl;
     //only const auto & is allowed, now copying. or we meet use of deleted function.
@@ -391,6 +399,8 @@ static void processSchemaInfo(SchemaInfo &schema){
         processDatabaseMeta(*(child.second));
     }
 }
+
+
 
 static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
     std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
@@ -832,6 +842,7 @@ static std::string logicBackUp(std::string database, std::string table,SchemaInf
 static
 void
 startBack(){
+    return ;
     //only for testing backup module
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
     processSchemaInfo(*schema);
@@ -859,8 +870,8 @@ startBack(){
 
 int
 main() {
-    fr = fopen((const char*)"readFile",(const char*)"r");
-    fw = fopen((const char*)"writeFile",(const char *)"a");
+   
+ 
 
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
@@ -897,14 +908,16 @@ main() {
         }
         if(curQuery=="back"){
             startBack();
+            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+            processSchemaInfo(*schema);
         }else{	
             std::cout<<GREEN_BEGIN<<"curQuery: "<<curQuery<<"\n"<<COLOR_END<<std::endl;
             batchTogether(client,curQuery,_thread_id);
         }
-        std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-        processSchemaInfo(*schema);
         std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
         std::getline(std::cin,curQuery);
     }
+
+
     return 0;
 }

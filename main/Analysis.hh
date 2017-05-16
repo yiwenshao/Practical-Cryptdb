@@ -279,9 +279,11 @@ public:
           master_key(analysis.getMasterKey()),
           default_sec_rating(analysis.getDefaultSecurityRating()) {}
 
-    unsigned int pos; // > a counter indicating how many projection
+    unsigned int pos; // a counter indicating how many projection
                       // fields have been analyzed so far
+    //each field may or may not has a salt field
     std::map<const FieldMeta *, const salt_type> salts;
+    //each Item has a rewrite plain, which lists possible way to encrypt this item, that is OLKs!
     std::map<const Item *, std::unique_ptr<RewritePlan> > rewritePlans;
     std::map<std::string, std::map<const std::string, const std::string>>
         table_aliases;
@@ -296,7 +298,7 @@ public:
 
     // These functions are prefered to their lower level counterparts.
     bool addAlias(const std::string &alias, const std::string &db,
-                  const std::string &table);
+                  const std::string &table);	
     OnionMeta &getOnionMeta(const std::string &db,
                             const std::string &table,
                             const std::string &field, onion o) const;
@@ -316,6 +318,7 @@ public:
 
     TableMeta &getTableMeta(const std::string &db,
                             const std::string &table) const;
+
     DatabaseMeta &getDatabaseMeta(const std::string &db) const;
 
     bool tableMetaExists(const std::string &db,
@@ -326,12 +329,11 @@ public:
     std::string getAnonTableName(const std::string &db,
                                  const std::string &table,
                                  bool *const is_alias=NULL) const;
-
     std::string
         translateNonAliasPlainToAnonTableName(const std::string &db,
                                               const std::string &table)
         const;
-
+    //use this function to rewrite functions
     std::string getAnonIndexName(const std::string &db,
                                  const std::string &table,
                                  const std::string &index_name,
@@ -341,6 +343,7 @@ public:
                                  onion o) const;
 
     static const EncLayer &getBackEncLayer(const OnionMeta &om);
+
     static SECLEVEL getOnionLevel(const OnionMeta &om);
     SECLEVEL getOnionLevel(const FieldMeta &fm, onion o);
 
@@ -348,24 +351,20 @@ public:
         getEncLayers(const OnionMeta &om);
 
     const SchemaInfo &getSchema() const {return schema;}
-
     std::vector<std::unique_ptr<Delta> > deltas;
-
     std::string getDatabaseName() const {return db_name;}
-
     const std::unique_ptr<AES_KEY> &getMasterKey() const {return master_key;}
     SECURITY_RATING getDefaultSecurityRating() const
         {return default_sec_rating;}
-
     // access to isAlias(...)
     friend class MultiDeleteHandler;
 
 private:
+    //name for the default db
     const std::string db_name;
     const SchemaInfo &schema;
     const std::unique_ptr<AES_KEY> &master_key;
     const SECURITY_RATING default_sec_rating;
-
     bool isAlias(const std::string &db,
                  const std::string &table) const;
     std::string unAliasTable(const std::string &db,
