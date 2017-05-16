@@ -82,15 +82,18 @@ private:
 class FieldMeta : public MappedDBMeta<OnionMeta, OnionMetaKey>,
                   public UniqueCounter {
 public:
-    // New.
+    // New a fieldmeta, Create_field  and unique are used for determin the characteristics of the new
+    //fieldmeta, they are not part of fieldmeta.
     FieldMeta(const Create_field &field, const AES_KEY * const mKey,
               SECURITY_RATING sec_rating, unsigned long uniq_count,
               bool unique);
+
     // Restore (WARN: Creates an incomplete type as it will not have it's
     // OnionMetas until they are added by the caller).
     static std::unique_ptr<FieldMeta>
         deserialize(unsigned int id, const std::string &serial);
-    //从数据库中读取serial数据, 反序列化以后, 就可以使用这个构造函数构造一个新的fieldmeta
+
+    //read serialized data, deserialize it, and then construct new fieldmeta
     FieldMeta(unsigned int id, const std::string &fname, bool has_salt,
               const std::string &salt_name, onionlayout onion_layout,
               SECURITY_RATING sec_rating, unsigned long uniq_count,
@@ -102,19 +105,26 @@ public:
           counter(counter), has_default(has_default),
           default_value(default_value) {
     }
+
     ~FieldMeta() {;}
 
     std::string serialize(const DBObject &parent) const;
+
     std::string stringify() const;
+
     std::vector<std::pair<const OnionMetaKey *, OnionMeta *>>
         orderedOnionMetas() const;
+
     std::string getSaltName() const;
+
     unsigned long getUniq() const {return uniq_count;}
 
     OnionMeta *getOnionMeta(onion o) const;
+
     TYPENAME("fieldMeta");
 
     SECURITY_RATING getSecurityRating() const {return sec_rating;}
+
     bool hasOnion(onion o) const;
     bool hasDefault() const {return has_default;}
     std::string defaultValue() const {return default_value;}
@@ -134,10 +144,12 @@ private:
     const std::string default_value;
 
     SECLEVEL getOnionLevel(onion o) const;
+
     static onionlayout determineOnionLayout(const AES_KEY *const m_key,
                                             const Create_field &f,
                                             SECURITY_RATING sec_rating);
     static bool determineHasDefault(const Create_field &cf);
+
     static std::string determineDefaultValue(bool has_default,
                                              const Create_field &cf);
     uint64_t &getCounter_() {return counter;}

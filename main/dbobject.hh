@@ -19,6 +19,7 @@ public:
     }
 };
 
+//we have onionMetaKey,UIntMetaKey and IdentityMetaKey for metadata hierachy
 template <typename KeyType>
 class MetaKey : public AbstractMetaKey {
     const KeyType key_data;

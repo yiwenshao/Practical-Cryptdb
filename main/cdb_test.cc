@@ -353,12 +353,41 @@ void batchTogether(std::string client, std::string curQuery,unsigned long long _
 }
 
 
+
+static void processOnionMeta(OnionMeta &om){
+    std::cout<<"om.getAnonOnionName(): "<<om.getAnonOnionName()<<std::endl;
+
+
+}
+
+
 static void processFieldMeta(const FieldMeta &field){
-    std::cout<<GREEN_BEGIN<<"PRINT FieldMeta"<<COLOR_END<<std::endl;
+//Process general info
+    if(field.getHasSalt()){
+        std::cout<<"this field has salt"<<std::endl;
+    }
+    std::cout<<"field.getFieldName(): "<<field.getFieldName()<<std::endl;
+    std::cout<<"field.getSaltName(): "<<field.getSaltName()<<std::endl;
+    std::cout<<"field.serialize(): "<<field.serialize(field)<<std::endl;
+
+    for(std::pair<const OnionMetaKey *, OnionMeta *> &ompair:field.orderedOnionMetas()){
+	processOnionMeta(*ompair.second);
+    }
+//Process Onions
+    if(field.hasOnion(oDET)){
+        field.getOnionMeta(oDET);
+    }
+    if(field.hasOnion(oOPE)){
+	field.getOnionMeta(oOPE);
+    }
+    if(field.hasOnion(oAGG)){
+	field.getOnionMeta(oAGG);
+    }
+    return;
+//iterate over onions
     for(const std::pair<const OnionMetaKey,std::unique_ptr<OnionMeta> > & onion: field.getChildren()){
         std::cout<<onion.second->getDatabaseID()<<":"<<onion.first.getValue()<<std::endl;
     }
-    std::cout<<GREEN_BEGIN<<"end FieldMeta"<<COLOR_END<<std::endl;
 }
 
 static void processTableMeta(const TableMeta &table){
