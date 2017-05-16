@@ -355,7 +355,7 @@ void batchTogether(std::string client, std::string curQuery,unsigned long long _
 
 static void processFieldMeta(const FieldMeta &field){
     std::cout<<GREEN_BEGIN<<"PRINT FieldMeta"<<COLOR_END<<std::endl;
-    for(const OnionMeta & onion: field.getChildren()){
+    for(const std::pair<const OnionMetaKey,std::unique_ptr<OnionMeta> > & onion: field.getChildren()){
         std::cout<<onion.second->getDatabaseID()<<":"<<onion.first.getValue()<<std::endl;
     }
     std::cout<<GREEN_BEGIN<<"end FieldMeta"<<COLOR_END<<std::endl;
@@ -363,7 +363,7 @@ static void processFieldMeta(const FieldMeta &field){
 
 static void processTableMeta(const TableMeta &table){
     std::cout<<GREEN_BEGIN<<"PRINT TableMeta"<<COLOR_END<<std::endl;
-    for(const FieldMeta & field: table.getChildren()){
+    for(const std::pair<const IdentityMetaKey,std::unique_ptr<FieldMeta> > & field: table.getChildren()){
         std::cout<<field.second->getDatabaseID()<<":"<<field.first.getValue()<<std::endl;
         processFieldMeta(*(field.second));
     }
@@ -376,7 +376,7 @@ static void processDatabaseMeta(const DatabaseMeta & dbm,std::string table="stud
     return;
 
     std::cout<<GREEN_BEGIN<<"PRINT DatabaseMeta"<<COLOR_END<<std::endl;
-    for(const auto & table: dbm.getChildren()){
+    for(const std::pair<const IdentityMetaKey,std::unique_ptr<TableMeta> > & table: dbm.getChildren()){
         processTableMeta(*(table.second));
     }
 }
