@@ -33,7 +33,7 @@ insert into choose values(1);
 + set user variable
 + timestamp
 + show create table
-
++ cdb_test for simple curd
 
 obselete functions deleted
 
