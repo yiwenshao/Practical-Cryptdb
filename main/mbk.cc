@@ -454,11 +454,13 @@ static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db =
 //representation of one field.
 struct transField{
     bool hasSalt;
-    int onionIndex;
-    int numOfOnions;
+    FieldMeta *originalFm;
+    int onionIndex=0;
+    int numOfOnions=0;
     //onions
     std::vector<std::string> fields;
     std::vector<onion> onions;
+    std::vector<OnionMeta*>originalOm;
     void show(){
         for(auto i=0U;i<fields.size();i++){
              cout<<fields[i]<<" : "<<gmp2[onions[i]]<<"\t";
@@ -475,10 +477,12 @@ static std::vector<transField> getTransField(std::vector<FieldMeta *> pfms){
     //for every field
     for(auto pfm:pfms){
         transField tf;
+	tf.originalFm = pfm;
         for(std::pair<const OnionMetaKey *, OnionMeta *> &ompair:pfm->orderedOnionMetas()){
             tf.numOfOnions++;
             tf.fields.push_back((ompair.second)->getAnonOnionName());
             tf.onions.push_back(ompair.first->getValue());
+            tf.originalOm.push_back(ompair.second);
         }
         if(pfm->getHasSalt()){
             tf.hasSalt=true;
@@ -677,13 +681,16 @@ static std::shared_ptr<ReturnMeta> myGetReturnMeta(std::string database, std::st
         std::cout<<field->getFieldName()<<field->getSaltName()<<std::endl;
         //getOlks!!
         for(std::pair<const OnionMetaKey *, OnionMeta *> oneOnion:field->orderedOnionMetas()){
+
             std::cout<<oneOnion.first->getValue()<<":"<<oneOnion.second->getAnonOnionName()<<std::endl;
             OLK curOLK(oneOnion.first->getValue(),oneOnion.second->getSecLevel(),field);
             std::cout<<curOLK.o<<std::endl;            
             addToReturn(myReturnMeta.get(),pos++,curOLK,true,field->getFieldName());
             addSaltToReturn(myReturnMeta.get(),pos++);
             selectFields.push_back(oneOnion.second->getAnonOnionName());
+
             break;
+
         }
         selectFields.push_back(field->getSaltName());
     }
@@ -960,8 +967,43 @@ startBack(){
     }
 }
 
+static
+std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vector<transField> &tfds){
+    assert(fms.size()==tfds.size());
+    std::shared_ptr<ReturnMeta> myReturnMeta = std::make_shared<ReturnMeta>();
+    int pos=0;
+    //construct OLK
+    for(auto i=0u;i<tfds.size();i++){
+        OLK curOLK(tfds[i].onions[tfds[i].onionIndex], tfds[i].originalOm[tfds[i].onionIndex]->getSecLevel(),tfds[i].originalFm);
+	addToReturn(myReturnMeta.get(),pos++,curOLK,true,tfds[i].originalFm->getFieldName());
+        addSaltToReturn(myReturnMeta.get(),pos++);
+    }
+    return myReturnMeta;
+}
+
+static
+std::string getBackupQuery(SchemaInfo &schema, std::vector<transField> &tfds,std::string db="tdb",std::string table="student1"){
+    std::string res = "SELECT ";
+    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
+    //get databaseMeta, search in the map
+    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
+    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
+    std::string annotablename = tbm.getAnonTableName();
+    //then a list of onion names
+    for(auto item:tfds){
+        int index = item.onionIndex;
+        res += item.fields[index];
+        res += " , ";
+	if(item.hasSalt){
+            res += item.originalFm->getSaltName()+" , ";
+        }
+    }
+    res = res.substr(0,res.size()-2);
 
 
+    res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
+    return res;
+}
 
 
 int
@@ -1023,12 +1065,13 @@ main() {
         }else if(curQuery=="back"){
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
 	    std::vector<FieldMeta*> fms = getFieldMeta(*schema);
-            auto res = getTransField(fms);
+            auto res = getTransField(fms);    
             for(auto &item:res){
                 item.show();
             }
-
- 
+	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+            std::string backq = getBackupQuery(*schema,res);
+	    std::cout<<backq<<endl;
 
         }else{	
             std::cout<<GREEN_BEGIN<<"curQuery: "<<curQuery<<"\n"<<COLOR_END<<std::endl;

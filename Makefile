@@ -71,12 +71,10 @@ always:
 $(OBJDIR)/%.o: %.cc
 	@mkdir -p $(@D)
 	$(CXX) -MD $(CXXFLAGS) -c $< -o $@
-	echo "11111111111111111111111"
 
 $(OBJDIR)/%.o: $(OBJDIR)/%.cc
 	@mkdir -p $(@D)
 	$(CXX) -MD $(CXXFLAGS) -c $< -o $@
-	echo "2222222222222222222222"
 
 include crypto/Makefrag
 include parser/Makefrag
