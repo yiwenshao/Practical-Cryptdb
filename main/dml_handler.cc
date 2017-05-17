@@ -1317,7 +1317,9 @@ nextImpl(const ResType &res, const NextParams &nparams)
 {
     reenter(this->corot) {
         yield return CR_QUERY_AGAIN(this->query);
-        TEST_ErrPkt(res.success(), "DML query failed against remote database");
+        //crosses init here www.cplusplus.com/forum/beginner/48287/ 
+        //errormessage += "DML query failed against remote database";
+        TEST_ErrPkt(res.success(), this->query+"DML query failed against remote database");
         yield {
             try {
                 return CR_RESULTS(Rewriter::decryptResults(res, this->rmeta));
