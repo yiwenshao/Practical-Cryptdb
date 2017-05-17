@@ -16,3 +16,4 @@ tags
 readFile
 writeFile
 *CMakeFiles*
+*all*
