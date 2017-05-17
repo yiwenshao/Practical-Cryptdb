@@ -539,19 +539,26 @@ main() {
             continue;
         }
         if(curQuery=="back"){
+            std::string db,table;
+            std::cout<<"please input dbname "<<std::endl;
+            cin>>db;
+	    std::cout<<"please input table name "<<std::endl;
+            cin>>table;
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-	    std::vector<FieldMeta*> fms = getFieldMeta(*schema);
+	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
             auto res = getTransField(fms);    
             for(auto &item:res){
+                break;
                 item.show();
             }
 	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-            std::string backq = getBackupQuery(*schema,res);
+            std::string backq = getBackupQuery(*schema,res,db,table);
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
 	    //printrawReturnValue(resraw);
 	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
             auto finalresults = decryptResults(rawtorestype,*rm);
 	    parseResType(finalresults);
+
         }
         std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
         std::getline(std::cin,curQuery);
