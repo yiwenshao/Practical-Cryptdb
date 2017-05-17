@@ -42,6 +42,12 @@
 
 #include <sstream>
 #include <unistd.h>
+#include <map>
+
+using std::cout;
+using std::cin;
+using std::endl;
+std::map<SECLEVEL,std::string> gmp;
 
 static std::string embeddedDir="/t/cryt/shadow";
 
@@ -354,11 +360,22 @@ void batchTogether(std::string client, std::string curQuery,unsigned long long _
 
 
 
-static void processOnionMeta(OnionMeta &om){
-    std::cout<<"om.getAnonOnionName(): "<<om.getAnonOnionName()<<std::endl;
-
-
+static void processLayers(const EncLayer &enc){
+    //std::cout<<enc.serialize(enc)<<std::endl;
+    std::cout<<enc.name()<<std::endl;
 }
+
+
+
+static void processOnionMeta(const OnionMeta &onion){
+    std::cout<<GREEN_BEGIN<<"PRINT OnionMeta"<<COLOR_END<<std::endl;
+    std::cout<<"onionmeta->getAnonOnionName(): "<<onion.getAnonOnionName()<<std::endl;
+    auto &layers = onion.getLayers();
+    for(auto &slayer:layers){
+        processLayers(*(slayer.get()));
+    }
+}
+
 
 
 static void processFieldMeta(const FieldMeta &field){
@@ -390,11 +407,11 @@ static void processFieldMeta(const FieldMeta &field){
     }
 }
 
+
 static void processTableMeta(const TableMeta &table){
     std::cout<<GREEN_BEGIN<<"PRINT TableMeta"<<COLOR_END<<std::endl;
-    for(const std::pair<const IdentityMetaKey,std::unique_ptr<FieldMeta> > & field: table.getChildren()){
-        std::cout<<field.second->getDatabaseID()<<":"<<field.first.getValue()<<std::endl;
-        processFieldMeta(*(field.second));
+    for(FieldMeta *cfm:table.orderedFieldMetas()){
+	processFieldMeta(*cfm);
     }
 }
 
@@ -404,10 +421,6 @@ static void processDatabaseMeta(const DatabaseMeta & dbm,std::string table="stud
     processTableMeta(tbm);
     return;
 
-    std::cout<<GREEN_BEGIN<<"PRINT DatabaseMeta"<<COLOR_END<<std::endl;
-    for(const std::pair<const IdentityMetaKey,std::unique_ptr<TableMeta> > & table: dbm.getChildren()){
-        processTableMeta(*(table.second));
-    }
 }
 
 static void processSchemaInfo(SchemaInfo &schema,std::string db="tdb"){
@@ -419,16 +432,58 @@ static void processSchemaInfo(SchemaInfo &schema,std::string db="tdb"){
      }else{
 	 std::cout<<"data base not exists"<<std::endl;
      }
-    return ;
-    //we have a map here
-     std::cout<<GREEN_BEGIN<<"PRINT SchemaInfo"<<COLOR_END<<std::endl;
-    //only const auto & is allowed, now copying. or we meet use of deleted function.
-    for(const auto & child : schema.getChildren()) {
-        std::cout<<child.second->getDatabaseID()<<":"<<child.first.getValue()<<std::endl;
-        processDatabaseMeta(*(child.second));
-    }
 }
 
+
+
+//first step of back
+static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db = "tdb",std::string table="student1"){
+     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
+     Analysis analysis(db,schema,TK,
+                        SECURITY_RATING::SENSITIVE);
+     if(analysis.databaseMetaExists(db)){
+        const DatabaseMeta & dbm = analysis.getDatabaseMeta(db);
+        TableMeta & tbm = *dbm.getChild(IdentityMetaKey(table));
+	return tbm.orderedFieldMetas();
+     }else{
+         std::cout<<"data base not exists"<<std::endl;
+	 return std::vector<FieldMeta *>();
+     }
+}
+
+struct transField{
+    bool hasSalt;
+    int numOfOnions;
+    //onions
+    std::vector<std::string> fields;
+    void show(){
+        for(auto item:fields){
+             cout<<item<<"\t";
+        }
+        cout<<endl;
+        if(hasSalt){
+            cout<<"has salt"<<endl;
+        }else cout<<"do not have salt"<<endl;
+    }
+};
+
+static std::vector<transField> getTransField(std::vector<FieldMeta *> pfms){
+    std::vector<transField> res;
+    //for every field
+    for(auto pfm:pfms){
+        transField tf;
+        for(std::pair<const OnionMetaKey *, OnionMeta *> &ompair:pfm->orderedOnionMetas()){
+            tf.numOfOnions++;
+            tf.fields.push_back((ompair.second)->getAnonOnionName());
+        }
+        if(pfm->getHasSalt()){
+            tf.hasSalt=true;
+	    tf.fields.push_back(pfm->getSaltName());
+        }
+        res.push_back(tf);
+    }
+    return res;
+}
 
 
 static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
@@ -450,6 +505,9 @@ static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
                         SECURITY_RATING::SENSITIVE);
     return schema;
 }
+
+
+
 
 
 static void
@@ -895,12 +953,17 @@ startBack(){
     }
 }
 
-
-
 int
 main() {
-   
- 
+     gmp[SECLEVEL::INVALID]="INVALID";
+     gmp[SECLEVEL::PLAINVAL]="PLAINVAL";
+     gmp[SECLEVEL::OPE]="OPE";
+     gmp[SECLEVEL::DETJOIN]="DETJOIN";
+     gmp[SECLEVEL::OPEFOREIGN]="OPEFOREIGN";
+     gmp[SECLEVEL::DET]="DET";
+     gmp[SECLEVEL::SEARCH]="SEARCH";
+     gmp[SECLEVEL::HOM]="HOM";
+     gmp[SECLEVEL::RND]="RND"; 
 
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
@@ -935,10 +998,17 @@ main() {
             std::getline(std::cin,curQuery);            
             continue;
         }
-        if(curQuery=="back"){
+        if(curQuery=="back1"){
             startBack();
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
             processSchemaInfo(*schema);
+        }else if(curQuery=="back"){
+            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+            auto res = getTransField(getFieldMeta(*schema));
+            for(auto &item:res){
+                item.show();
+            }
+
         }else{	
             std::cout<<GREEN_BEGIN<<"curQuery: "<<curQuery<<"\n"<<COLOR_END<<std::endl;
             batchTogether(client,curQuery,_thread_id);
@@ -946,7 +1016,5 @@ main() {
         std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
         std::getline(std::cin,curQuery);
     }
-
-
     return 0;
 }
