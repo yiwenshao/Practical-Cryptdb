@@ -1071,8 +1071,11 @@ main() {
             }
 	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
             std::string backq = getBackupQuery(*schema,res);
-	    std::cout<<backq<<endl;
-
+            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+	    //printrawReturnValue(resraw);
+	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
+            auto finalresults = decryptResults(rawtorestype,*rm);
+	    parseResType(finalresults);
         }else{	
             std::cout<<GREEN_BEGIN<<"curQuery: "<<curQuery<<"\n"<<COLOR_END<<std::endl;
             batchTogether(client,curQuery,_thread_id);
