@@ -48,6 +48,8 @@ using std::cout;
 using std::cin;
 using std::endl;
 std::map<SECLEVEL,std::string> gmp;
+std::map<onion,std::string> gmp2;
+
 
 static std::string embeddedDir="/t/cryt/shadow";
 
@@ -456,9 +458,10 @@ struct transField{
     int numOfOnions;
     //onions
     std::vector<std::string> fields;
+    std::vector<onion> onions;
     void show(){
-        for(auto item:fields){
-             cout<<item<<"\t";
+        for(auto i=0U;i<fields.size();i++){
+             cout<<fields[i]<<" : "<<gmp2[onions[i]]<<"\t";
         }
         cout<<endl;
         if(hasSalt){
@@ -475,6 +478,7 @@ static std::vector<transField> getTransField(std::vector<FieldMeta *> pfms){
         for(std::pair<const OnionMetaKey *, OnionMeta *> &ompair:pfm->orderedOnionMetas()){
             tf.numOfOnions++;
             tf.fields.push_back((ompair.second)->getAnonOnionName());
+            tf.onions.push_back(ompair.first->getValue());
         }
         if(pfm->getHasSalt()){
             tf.hasSalt=true;
@@ -965,6 +969,15 @@ main() {
      gmp[SECLEVEL::HOM]="HOM";
      gmp[SECLEVEL::RND]="RND"; 
 
+
+     gmp2[oDET]="oDET";
+     gmp2[oOPE]="oOPE";
+     gmp2[oAGG]="oAGG";
+     gmp2[oSWP]="oSWP";
+     gmp2[oPLAIN]="oPLAIN";
+     gmp2[oBESTEFFORT]="oBESTEFFORT";
+     gmp2[oINVALID]="oINVALID";
+
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
     clients[client] = new WrapperState();    
@@ -1008,7 +1021,6 @@ main() {
             for(auto &item:res){
                 item.show();
             }
-
         }else{	
             std::cout<<GREEN_BEGIN<<"curQuery: "<<curQuery<<"\n"<<COLOR_END<<std::endl;
             batchTogether(client,curQuery,_thread_id);
