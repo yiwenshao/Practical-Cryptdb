@@ -266,6 +266,7 @@ rewrite(lua_State *const L) {
     const std::string &query = xlua_tolstring(L, 2);
     const unsigned long long _thread_id =
         strtoull(xlua_tolstring(L, 3).c_str(), NULL, 10);
+    std::cout<<query<<std::endl;
     //this is not used??
     c_wrapper->last_query = query;
     if (EXECUTE_QUERIES) {

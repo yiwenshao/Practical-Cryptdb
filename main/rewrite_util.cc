@@ -574,6 +574,8 @@ isUnique(const std::string &name,
     return unique;
 }
 
+
+//from one filed to multiple fields. the fields are automatically transformed to unsigned. This is called in createHandler.
 List<Create_field>
 createAndRewriteField(Analysis &a, Create_field * const cf,
                       TableMeta *const tm, bool new_table,
@@ -583,7 +585,19 @@ createAndRewriteField(Analysis &a, Create_field * const cf,
                       List<Create_field> &rewritten_cfield_list)
 {
     // we only support the creation of UNSIGNED fields
-    cf->flags = cf->flags | UNSIGNED_FLAG;
+    //add this to support plaintext data and decimal
+    if(cf->sql_type != enum_field_types::MYSQL_TYPE_DECIMAL && 
+       cf->sql_type != enum_field_types::MYSQL_TYPE_FLOAT &&
+       cf->sql_type != enum_field_types::MYSQL_TYPE_DOUBLE &&
+       cf->sql_type != enum_field_types::MYSQL_TYPE_TIMESTAMP &&
+       cf->sql_type != enum_field_types::MYSQL_TYPE_DATE &&
+       cf->sql_type != enum_field_types::MYSQL_TYPE_TIME &&
+       cf->sql_type != enum_field_types::MYSQL_TYPE_DATETIME &&
+       cf->sql_type != enum_field_types::MYSQL_TYPE_YEAR &&
+       cf->sql_type != enum_field_types::MYSQL_TYPE_NEWDATE &&
+       cf->sql_type != enum_field_types::MYSQL_TYPE_NEWDECIMAL
+     )
+     cf->flags = cf->flags | UNSIGNED_FLAG;
 
     const std::string &name = std::string(cf->field_name);
     std::unique_ptr<FieldMeta>
