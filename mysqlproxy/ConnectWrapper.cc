@@ -266,7 +266,7 @@ rewrite(lua_State *const L) {
     const std::string &query = xlua_tolstring(L, 2);
     const unsigned long long _thread_id =
         strtoull(xlua_tolstring(L, 3).c_str(), NULL, 10);
-    std::cout<<query<<std::endl;
+    //std::cout<<query<<std::endl;
     //this is not used??
     c_wrapper->last_query = query;
     if (EXECUTE_QUERIES) {
@@ -433,7 +433,7 @@ next(lua_State *const L) {
     ps->safeCreateEmbeddedTHD();
 
     const ResType &res = getResTypeFromLuaTable(L, 2, 3, 4, 5, 6);
-    //parseResType2(res);
+
 
     const std::unique_ptr<QueryRewrite> &qr = c_wrapper->getQueryRewrite();
     parseReturnMeta(qr->rmeta);
