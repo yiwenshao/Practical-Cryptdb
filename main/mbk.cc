@@ -47,6 +47,7 @@
 using std::cout;
 using std::cin;
 using std::endl;
+using std::vector;
 std::map<SECLEVEL,std::string> gmp;
 std::map<onion,std::string> gmp2;
 
@@ -258,6 +259,7 @@ static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db =
 struct transField{
     bool hasSalt;
     FieldMeta *originalFm;
+    vector<int> choosenOnions;
     int onionIndex=0;
     int numOfOnions=0;
     //onions
@@ -280,7 +282,7 @@ static std::vector<transField> getTransField(std::vector<FieldMeta *> pfms){
     //for every field
     for(auto pfm:pfms){
         transField tf;
-	tf.originalFm = pfm;
+	    tf.originalFm = pfm;
         for(std::pair<const OnionMetaKey *, OnionMeta *> &ompair:pfm->orderedOnionMetas()){
             tf.numOfOnions++;
             tf.fields.push_back((ompair.second)->getAnonOnionName());
@@ -289,7 +291,7 @@ static std::vector<transField> getTransField(std::vector<FieldMeta *> pfms){
         }
         if(pfm->getHasSalt()){
             tf.hasSalt=true;
-	    tf.fields.push_back(pfm->getSaltName());
+	        tf.fields.push_back(pfm->getSaltName());
         }
         res.push_back(tf);
     }
@@ -464,7 +466,35 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vect
 }
 
 static
-std::string getBackupQuery(SchemaInfo &schema, std::vector<transField> &tfds,std::string db="tdb",std::string table="student1"){
+std::string getBackupQuery(SchemaInfo &schema, std::vector<transField> &tfds,
+                                     std::string db="tdb",std::string table="student1"){
+    std::string res = "SELECT ";
+    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
+    //get databaseMeta, search in the map
+    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
+    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
+    std::string annotablename = tbm.getAnonTableName();
+    
+    //then a list of onion names
+    for(auto item:tfds){
+        for(auto index:item.choosenOnions){
+            res += item.fields[index];
+            res += " , ";
+        }
+    	if(item.hasSalt){
+            res += item.originalFm->getSaltName()+" , ";
+        }
+    }
+
+    res = res.substr(0,res.size()-2);
+    res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
+    return res;
+}
+
+/*
+static
+std::string getBackupQueryAll(SchemaInfo &schema, std::vector<transField> &tfds,
+                                     std::string db="tdb",std::string table="student1"){
     std::string res = "SELECT ";
     const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
     //get databaseMeta, search in the map
@@ -484,6 +514,9 @@ std::string getBackupQuery(SchemaInfo &schema, std::vector<transField> &tfds,std
     res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
     return res;
 }
+*/
+
+
 
 
 int
@@ -512,14 +545,11 @@ main() {
     ConnectionInfo ci("localhost", "root", "letmein",3306);
     //const std::string master_key = "113341234";
     const std::string master_key = "113341234HEHE";
-
     char *buffer;
     if((buffer = getcwd(NULL, 0)) == NULL){  
         perror("getcwd error");  
     }
     embeddedDir = std::string(buffer)+"/shadow";
-
-
     SharedProxyState *shared_ps = 
 			new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
     assert(0 == mysql_thread_init());
@@ -542,23 +572,45 @@ main() {
             std::string db,table;
             std::cout<<"please input dbname "<<std::endl;
             cin>>db;
-	    std::cout<<"please input table name "<<std::endl;
+    	    std::cout<<"please input table name "<<std::endl;
             cin>>table;
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+            //get all the fields in the tables.
+    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
             auto res = getTransField(fms);    
             for(auto &item:res){
                 break;
                 item.show();
             }
-	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+    	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
             std::string backq = getBackupQuery(*schema,res,db,table);
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-	    //printrawReturnValue(resraw);
-	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
+    	    //printrawReturnValue(resraw);
+    	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
             auto finalresults = decryptResults(rawtorestype,*rm);
-	    parseResType(finalresults);
+    	    parseResType(finalresults);
+        }else if(curQuery=="backall"){
+            std::string db,table;
+            std::cout<<"please input dbname "<<std::endl;
+            cin>>db;
+    	    std::cout<<"please input table name "<<std::endl;
+            cin>>table;
+            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+            //get all the fields in the tables.
+    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+            auto res = getTransField(fms);
 
+            //for each filed, we choose all the onions and salts.
+            for(auto &item:res){
+                assert(item.choosenOnions.size()==0u);
+                assert(item.onions.size()==item.originalOm.size());
+                assert(item.fields.size()==item.originalOm.size() || item.fields.size()==item.originalOm.size()+1);
+                for(unsigned int i=0u;i<item.onions.size();i++){
+                    item.choosenOnions.push_back(i);
+                }
+            }
+            std::string backq = getBackupQuery(*schema,res,db,table);
+            cout<<backq<<endl;
         }
         std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
         std::getline(std::cin,curQuery);
