@@ -48,9 +48,12 @@ using std::cout;
 using std::cin;
 using std::endl;
 using std::vector;
+using std::string;
+
 std::map<SECLEVEL,std::string> gmp;
 std::map<onion,std::string> gmp2;
 
+static const int numOfPipe = 1;
 
 static std::string embeddedDir="/t/cryt/shadow";
 
@@ -141,6 +144,7 @@ rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
     }
     return myRaw;
 }
+
 
 /*
 //print RawReturnValue for testing purposes.
@@ -241,14 +245,15 @@ void parseResType(const ResType &rd) {
 
 
 //first step of back
-static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db = "tdb",std::string table="student1"){
+static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db = "tdb",
+                                                               std::string table="student1"){
      const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
      Analysis analysis(db,schema,TK,
                         SECURITY_RATING::SENSITIVE);
      if(analysis.databaseMetaExists(db)){
         const DatabaseMeta & dbm = analysis.getDatabaseMeta(db);
         TableMeta & tbm = *dbm.getChild(IdentityMetaKey(table));
-	return tbm.orderedFieldMetas();
+    	return tbm.orderedFieldMetas();
      }else{
          std::cout<<"data base not exists"<<std::endl;
 	 return std::vector<FieldMeta *>();
@@ -260,7 +265,8 @@ struct transField{
     bool hasSalt;
     FieldMeta *originalFm;
     vector<int> choosenOnions;
-    int onionIndex=0;
+    //used to construct return meta
+    int onionIndex = 0;
     int numOfOnions=0;
     //onions
     std::vector<std::string> fields;
@@ -451,6 +457,7 @@ static std::vector<std::string> split(const std::string &s, char delim) {
     return elems;
 }*/
 
+//get returnMeta 
 static
 std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vector<transField> &tfds){
     assert(fms.size()==tfds.size());
@@ -458,8 +465,9 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vect
     int pos=0;
     //construct OLK
     for(auto i=0u;i<tfds.size();i++){
-        OLK curOLK(tfds[i].onions[tfds[i].onionIndex], tfds[i].originalOm[tfds[i].onionIndex]->getSecLevel(),tfds[i].originalFm);
-	addToReturn(myReturnMeta.get(),pos++,curOLK,true,tfds[i].originalFm->getFieldName());
+        OLK curOLK(tfds[i].onions[tfds[i].onionIndex],
+                tfds[i].originalOm[tfds[i].onionIndex]->getSecLevel(),tfds[i].originalFm);
+	    addToReturn(myReturnMeta.get(),pos++,curOLK,true,tfds[i].originalFm->getFieldName());
         addSaltToReturn(myReturnMeta.get(),pos++);
     }
     return myReturnMeta;
@@ -467,6 +475,75 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vect
 
 static
 std::string getBackupQuery(SchemaInfo &schema, std::vector<transField> &tfds,
+                                     std::string db="tdb",std::string table="student1") {
+    std::string res = "SELECT ";
+    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
+    //get databaseMeta, search in the map
+    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
+    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
+    std::string annotablename = tbm.getAnonTableName();
+    
+    //then a list of onion names
+    for(auto item:tfds){
+        for(auto index:item.choosenOnions){
+            res += std::string("hex(")+item.fields[index]+")";
+            res += " , ";
+        }
+    	if(item.hasSalt){
+            res += string("hex(")+item.originalFm->getSaltName()+") , ";
+        }
+    }
+    res = res.substr(0,res.size()-2);
+    res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
+    return res;
+}
+
+static
+std::string getInsertQuery(SchemaInfo &schema, std::vector<transField> &tfds,
+                                     std::string db,std::string table, rawReturnValue & rows){ 
+    std::string res = "INSERT INTO ";
+    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
+    //get databaseMeta, search in the map
+    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
+    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
+    std::string annotablename = tbm.getAnonTableName();
+    //Those are just headers
+    res +=  std::string("`")+db+std::string("`.`")+annotablename+"` VALUES ";
+
+    int startIndex=0;
+    while(startIndex < (int)rows.rowValues.size()){
+            string manyValues = "( ";
+            //first
+            if(startIndex<(int)rows.rowValues.size()){        
+                vector<string> &curStringVec = rows.rowValues[startIndex];
+                for(auto item:curStringVec){
+                    manyValues+=string("0x")+item+",";
+                }
+            }
+            //finish first query.
+            manyValues[manyValues.size()-1]=')';
+
+            manyValues = res + manyValues;
+ 
+            //we can just parse a list of values
+            for(int i=1;i<numOfPipe;i++){
+                vector<string> &curStringVec = rows.rowValues[++startIndex];
+                manyValues+=", (";
+                for(auto item:curStringVec){
+                    manyValues+=string("0x")+item+",";
+                }
+                manyValues[manyValues.size()-1]=')';
+            }
+            manyValues+=";";
+            cout<<manyValues<<endl;
+            ++startIndex;
+    }
+    return res;
+}
+
+//query for testing purposes
+static
+std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
                                      std::string db="tdb",std::string table="student1"){
     std::string res = "SELECT ";
     const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
@@ -491,30 +568,6 @@ std::string getBackupQuery(SchemaInfo &schema, std::vector<transField> &tfds,
     return res;
 }
 
-/*
-static
-std::string getBackupQueryAll(SchemaInfo &schema, std::vector<transField> &tfds,
-                                     std::string db="tdb",std::string table="student1"){
-    std::string res = "SELECT ";
-    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
-    //get databaseMeta, search in the map
-    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
-    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
-    std::string annotablename = tbm.getAnonTableName();
-    //then a list of onion names
-    for(auto item:tfds){
-        int index = item.onionIndex;
-        res += item.fields[index];
-        res += " , ";
-	if(item.hasSalt){
-            res += item.originalFm->getSaltName()+" , ";
-        }
-    }
-    res = res.substr(0,res.size()-2);
-    res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
-    return res;
-}
-*/
 
 
 
@@ -568,7 +621,7 @@ main() {
             std::getline(std::cin,curQuery);            
             continue;
         }
-        if(curQuery=="back"){
+        if(curQuery=="test"){
             std::string db,table;
             std::cout<<"please input dbname "<<std::endl;
             cin>>db;
@@ -579,11 +632,10 @@ main() {
     	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
             auto res = getTransField(fms);    
             for(auto &item:res){
-                break;
-                item.show();
+                item.choosenOnions.push_back(0);
             }
     	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-            std::string backq = getBackupQuery(*schema,res,db,table);
+            std::string backq = getTestQuery(*schema,res,db,table);
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
     	    //printrawReturnValue(resraw);
     	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
@@ -611,6 +663,9 @@ main() {
             }
             std::string backq = getBackupQuery(*schema,res,db,table);
             cout<<backq<<endl;
+            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+            getInsertQuery(*schema,res,db,table,resraw);           
+
         }
         std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
         std::getline(std::cin,curQuery);
