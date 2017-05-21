@@ -41,6 +41,9 @@ getMultipleFields $2
 
 rm -rf load.sql
 
+
+echo "start to get multiple inserts!!!!"
+
 for((i=0;i<$3;i++))do
     echo $head$multi\; >> load.sql
 done
