@@ -657,15 +657,36 @@ main() {
                 assert(item.choosenOnions.size()==0u);
                 assert(item.onions.size()==item.originalOm.size());
                 assert(item.fields.size()==item.originalOm.size() || item.fields.size()==item.originalOm.size()+1);
-                for(unsigned int i=0u;i<item.onions.size();i++){
+                for(unsigned int i=0u;i<item.onions.size();i++) {
                     item.choosenOnions.push_back(i);
                 }
             }
             std::string backq = getBackupQuery(*schema,res,db,table);
             cout<<backq<<endl;
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-            getInsertQuery(*schema,res,db,table,resraw);           
+            getInsertQuery(*schema,res,db,table,resraw);
+        }else if(curQuery=="backpart"){
+            std::string db,table;
+            std::cout<<"please input dbname "<<std::endl;
+            cin>>db;
+    	    std::cout<<"please input table name "<<std::endl;
+            cin>>table;
+            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+            //get all the fields in the tables.
+    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+            auto res = getTransField(fms);
 
+            //for each filed, we choose all the onions and salts.
+            for(auto &item:res){
+                assert(item.choosenOnions.size()==0u);
+                assert(item.onions.size()==item.originalOm.size());
+                assert(item.fields.size()==item.originalOm.size() || item.fields.size()==item.originalOm.size()+1);
+                item.choosenOnions.push_back(0);
+            }
+            std::string backq = getBackupQuery(*schema,res,db,table);
+            cout<<backq<<endl;
+            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+            getInsertQuery(*schema,res,db,table,resraw);
         }
         std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
         std::getline(std::cin,curQuery);

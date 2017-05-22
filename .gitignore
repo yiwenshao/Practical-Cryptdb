@@ -5,7 +5,6 @@ tags
 shadow/
 core
 curMysql
-reset.sh
 reset.sql
 test
 cscope.files
