@@ -573,7 +573,13 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
 
 
 int
-main() {
+main(int argc, char* argv[]) {
+     if(argc!=3){
+         for(int i=0;i<argc;i++){
+             printf("%s\n",argv[i]);
+         }
+         return 0;
+     }
      gmp[SECLEVEL::INVALID]="INVALID";
      gmp[SECLEVEL::PLAINVAL]="PLAINVAL";
      gmp[SECLEVEL::OPE]="OPE";
@@ -596,31 +602,26 @@ main() {
     clients[client] = new WrapperState();    
     //Connect phase
     ConnectionInfo ci("localhost", "root", "letmein",3306);
-    //const std::string master_key = "113341234";
-    const std::string master_key = "113341234HEHE";
+    const std::string master_key = "113341234";
     char *buffer;
     if((buffer = getcwd(NULL, 0)) == NULL){  
         perror("getcwd error");  
     }
     embeddedDir = std::string(buffer)+"/shadow";
     SharedProxyState *shared_ps = 
-			new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
+			new SharedProxyState(ci, embeddedDir , master_key, 
+                                            determineSecurityRating());
     assert(0 == mysql_thread_init());
     //we init embedded database here.
     clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
     clients[client]->ps->safeCreateEmbeddedTHD();
     //Connect end!!
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
-    std::string curQuery = "SHOW DATABASES;";
-    std::cout<<"please input a new query:######################################################"<<std::endl;
-    std::getline(std::cin,curQuery);
+//-------------------------finish connection---------------------------------------
+
+    std::string curQuery = "backpart";
     //unsigned long long _thread_id = globalConn->get_thread_id();
-    while(curQuery!="quit"){
-        if(curQuery.size()==0){
-            std::cout<<std::endl;
-            std::getline(std::cin,curQuery);            
-            continue;
-        }
+    if(curQuery!="quit"){
         if(curQuery=="test"){
             std::string db,table;
             std::cout<<"please input dbname "<<std::endl;
@@ -637,7 +638,6 @@ main() {
     	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
             std::string backq = getTestQuery(*schema,res,db,table);
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-    	    //printrawReturnValue(resraw);
     	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
             auto finalresults = decryptResults(rawtorestype,*rm);
     	    parseResType(finalresults);
@@ -651,12 +651,12 @@ main() {
             //get all the fields in the tables.
     	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
             auto res = getTransField(fms);
-
             //for each filed, we choose all the onions and salts.
             for(auto &item:res){
                 assert(item.choosenOnions.size()==0u);
                 assert(item.onions.size()==item.originalOm.size());
-                assert(item.fields.size()==item.originalOm.size() || item.fields.size()==item.originalOm.size()+1);
+                assert(item.fields.size()==item.originalOm.size() ||
+                       item.fields.size()==item.originalOm.size()+1);
                 for(unsigned int i=0u;i<item.onions.size();i++) {
                     item.choosenOnions.push_back(i);
                 }
@@ -666,21 +666,18 @@ main() {
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
             getInsertQuery(*schema,res,db,table,resraw);
         }else if(curQuery=="backpart"){
-            std::string db,table;
-            std::cout<<"please input dbname "<<std::endl;
-            cin>>db;
-    	    std::cout<<"please input table name "<<std::endl;
-            cin>>table;
+            std::string db(argv[1]),table(argv[2]);
+            std::cout<<db<<":"<<table<<std::endl;
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
             //get all the fields in the tables.
     	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
             auto res = getTransField(fms);
-
             //for each filed, we choose all the onions and salts.
             for(auto &item:res){
                 assert(item.choosenOnions.size()==0u);
                 assert(item.onions.size()==item.originalOm.size());
-                assert(item.fields.size()==item.originalOm.size() || item.fields.size()==item.originalOm.size()+1);
+                assert(item.fields.size()==item.originalOm.size() ||
+                       item.fields.size()==item.originalOm.size()+1);
                 item.choosenOnions.push_back(0);
             }
             std::string backq = getBackupQuery(*schema,res,db,table);
@@ -688,8 +685,6 @@ main() {
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
             getInsertQuery(*schema,res,db,table,resraw);
         }
-        std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
-        std::getline(std::cin,curQuery);
     }
     return 0;
 }
