@@ -17,7 +17,7 @@ void backupselect(){
     auto dbresult = con->execute(query);
     DBResult * result = dbresult.get();
     vector<vector<string>> rows = result->getRows();
-    vector<uint64_t> types = result->getTypes();
+    vector<enum_field_types> types = result->getTypes();
     string head = string("INSERT INTO ")+"`"+table+"`"+string(" VALUES (");
     for(auto i=0;i<rows.size();i++){
         string cur=head;          

@@ -11,7 +11,7 @@ void createSelect(){
     auto dbresult = con->execute(string("SELECT * FROM `")+database+"`.`"+string(table)+"` LIMIT 1;");
     DBResult * result = dbresult.get();
     vector<vector<string>> rows = result->getRows();
-    vector<uint64_t> types = result->getTypes();
+    vector<enum_field_types> types = result->getTypes();
     vector<string> fields = result->getFields();
     string head = "SELECT ";
     for(int i=0;i<types.size();i++){

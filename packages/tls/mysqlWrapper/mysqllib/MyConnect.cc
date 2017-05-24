@@ -91,7 +91,7 @@ Connect::execute(const std::string &query){
 
     vector<vector<string>> rows;
     vector<string> fields;
-    vector<uint64_t> types;
+    vector<enum_field_types> types;
 
     if(num_fields==0){
         return std::make_shared<DBResult>(rows,fields,types);
