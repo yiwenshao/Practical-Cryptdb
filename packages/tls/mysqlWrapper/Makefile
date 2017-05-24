@@ -1,10 +1,18 @@
-SRCFILES=$(wildcard *.cc)
-OBJFILES=$(patsubst %.cc,obj/%.o,$(SRCFILES))
+SRCFILES=$(wildcard mysqllib/*.cc)
+OBJFILES=$(patsubst mysqllib/%.cc,obj/%.o,$(SRCFILES))
 CXXFLAGS=-I/usr/include/mysql -fabi-version=2 -fno-omit-frame-pointer -std=c++11
 LDFLAGS=-L/usr/lib/x86_64-linux-gnu -lmysqlclient -lpthread -lz -lm -lrt -ldl
 CXX=g++
 
-main: $(OBJFILES)
+
+.PHONY: all
+
+all: main createSelect
+
+createSelect: obj/createSelect.o $(OBJFILES)
+	$(CXX) -o createSelect $^ $(LDFLAGS)
+
+main: obj/main.o $(OBJFILES)
 	$(CXX) -o main $^ $(LDFLAGS)
 .PHONY:clean
 
@@ -15,7 +23,9 @@ obj/%.o:%.cc
 	$(CXX) -MMD $(CXXFLAGS) -g -c $< -o $@
 
 
-
+obj/%.o:mysqllib/%.cc
+	@mkdir -p $(@D)
+	$(CXX) -MMD $(CXXFLAGS) -g -c $< -o $@
 
 clean:
 	-rm -rf obj main 

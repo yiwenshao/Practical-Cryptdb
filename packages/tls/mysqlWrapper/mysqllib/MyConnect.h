@@ -61,6 +61,7 @@ class DBResult {
     vector<vector<string>> getRows();
     vector<uint64_t> getTypes(){return types;}
     vector<string> getTypesString(){return typesString;}
+    vector<string> getFields(){return fields;}
     ~DBResult();
  private:
     const uint64_t affected_rows;
