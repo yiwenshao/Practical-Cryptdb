@@ -120,9 +120,6 @@ public:
 };
 
 
-
-
-
 class HOMFactory : public LayerFactory {
 public:
     static std::unique_ptr<EncLayer>
@@ -177,7 +174,6 @@ EncLayerFactory::encLayer(onion o, SECLEVEL sl, const Create_field &cf,
         case SECLEVEL::PLAINVAL: {
             return std::unique_ptr<EncLayer>(new PlainText());
         }
-
         default:{}
     }
     FAIL_TextMessageError("unknown or unimplemented security level");
@@ -186,8 +182,7 @@ EncLayerFactory::encLayer(onion o, SECLEVEL sl, const Create_field &cf,
 //recover from the database using lambda.
 std::unique_ptr<EncLayer>
 EncLayerFactory::deserializeLayer(unsigned int id,
-                                  const std::string &serial)
-{
+                                  const std::string &serial){
     assert(id);
     const SerialLayer li = serial_unpack(serial);
 
@@ -266,8 +261,7 @@ static Create_field*
 integerCreateFieldHelper(const Create_field &f,
                          enum enum_field_types type,
                          const std::string &anonname = "",
-                         CHARSET_INFO * const charset = NULL)
-{
+                         CHARSET_INFO * const charset = NULL){
     return lowLevelcreateFieldHelper(f, 0, type, anonname, charset);
 }
 
@@ -749,24 +743,20 @@ public:
     std::string doSerialize() const {return rawkey;}
     DET_str(unsigned int id, const std::string &serial);
 
-
     virtual SECLEVEL level() const {return SECLEVEL::DET;}
     std::string name() const {return "DET_str";}
     Create_field * newCreateField(const Create_field &cf,
                                   const std::string &anonname = "")
         const;
-
     Item *encrypt(const Item &ptext, uint64_t IV) const;
     Item *decrypt(const Item &ctext, uint64_t IV) const;
     Item * decryptUDF(Item * const col, Item * const ivcol = NULL) const;
-
 protected:
     const std::string rawkey;
     static const int key_bytes = 16;
     static const bool do_pad   = true;
     const std::unique_ptr<const AES_KEY> enckey;
     const std::unique_ptr<const AES_KEY> deckey;
-
 };
 
 

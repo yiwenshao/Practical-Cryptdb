@@ -198,6 +198,7 @@ ResType MygetResTypeFromLuaTable(bool isNULL,rawReturnValue *inRow = NULL,int in
     std::vector<std::string> names;
     std::vector<enum_field_types> types;
     std::vector<std::vector<Item *> > rows;
+
     //return NULL restype 
     if(isNULL){
         return ResType(true,0,0,std::move(names),
@@ -209,7 +210,6 @@ ResType MygetResTypeFromLuaTable(bool isNULL,rawReturnValue *inRow = NULL,int in
         for(auto inTypes:inRow->fieldTypes){
             types.push_back(static_cast<enum_field_types>(inTypes));
         }
-
         for(auto inRows:inRow->rowValues) {
             std::vector<Item *> curTempRow = itemNullVector(types.size());
             for(int i=0;i< (int)(inRows.size());i++){
@@ -332,14 +332,17 @@ static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
 static void
 addToReturn(ReturnMeta *const rm, int pos, const OLK &constr,
             bool has_salt, const std::string &name) {
+
     const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
 
     TEST_TextMessageError(test, "ReturnMeta has badly ordered"
                                 " ReturnFields!");
 
     const int salt_pos = has_salt ? pos + 1 : -1;
+
     std::pair<int, ReturnField>
         pair(pos, ReturnField(false, name, constr, salt_pos));
+
     rm->rfmeta.insert(pair);
 }
 
@@ -379,14 +382,20 @@ decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
     return out_i;
 }
 
+/*
+structure of return field. 
+map<int,returnField>, int is the index of names
+returnField, represent a field, if the field is not salt, then fieldCalled is the plaintex name
+*/
 static
-ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {   
+ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
+    //num of rows
     const unsigned int rows = dbres.rows.size();
+    //num of names, to be decrypted
     const unsigned int cols = dbres.names.size();
     std::vector<std::string> dec_names;
 
-    for (auto it = dbres.names.begin();
-        it != dbres.names.end(); it++) {      
+    for (auto it = dbres.names.begin();it != dbres.names.end(); it++){
         const unsigned int index = it - dbres.names.begin();
         //fetch rfmeta based on index
         const ReturnField &rf = rmeta.rfmeta.at(index);
@@ -397,12 +406,16 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
         }
     }
 
+
     const unsigned int real_cols = dec_names.size();
 
     std::vector<std::vector<Item *> > dec_rows(rows);
+
+    //real cols depends on plain text names.
     for (unsigned int i = 0; i < rows; i++) {
         dec_rows[i] = std::vector<Item *>(real_cols);
     }
+
     //
     unsigned int col_index = 0;
     for (unsigned int c = 0; c < cols; c++) {
@@ -410,14 +423,16 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
         if (rf.getIsSalt()) {
             continue;
         }
+
         //the key is in fieldMeta
         FieldMeta *const fm = rf.getOLK().key;
 
         for (unsigned int r = 0; r < rows; r++) {
-
+	    //
             if (!fm || dbres.rows[r][c]->is_null()) {
                 dec_rows[r][col_index] = dbres.rows[r][c];
             } else {
+
                 uint64_t salt = 0;
                 const int salt_pos = rf.getSaltPosition();
                 //read salt from remote datab for descrypting.
@@ -427,10 +442,11 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
                     assert_s(!salt_item->null_value, "salt item is null");
                     salt = salt_item->value;
                 }
-                //peel onion.
+
+                 //specify fieldMeta, onion, and salt should be able to decrpyt
+                //peel onion
                 dec_rows[r][col_index] =
-                    decrypt_item_layers(*dbres.rows[r][c],
-                                        fm, rf.getOLK().o, salt);
+                    decrypt_item_layers(*dbres.rows[r][c],fm,rf.getOLK().o,salt);
             }
         }
         col_index++;
@@ -442,22 +458,9 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
                    std::move(dec_rows));
 }
 
-/*static void split(const std::string &s, char delim, std::vector<std::string> &elems) {
-    std::stringstream ss;
-    ss.str(s);
-    std::string item;
-    while (std::getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-}
-
-static std::vector<std::string> split(const std::string &s, char delim) {
-    std::vector<std::string> elems;
-    split(s, delim, elems);
-    return elems;
-}*/
-
-//get returnMeta 
+//get returnMeta
+//for each filed, we have a fieldmeta. we can chosse one onion under that field to construct a return meta.
+//in fact, a returnmeta can contain many fields.
 static
 std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vector<transField> &tfds){
     assert(fms.size()==tfds.size());
@@ -467,7 +470,7 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vect
     for(auto i=0u;i<tfds.size();i++){
         OLK curOLK(tfds[i].onions[tfds[i].onionIndex],
                 tfds[i].originalOm[tfds[i].onionIndex]->getSecLevel(),tfds[i].originalFm);
-	    addToReturn(myReturnMeta.get(),pos++,curOLK,true,tfds[i].originalFm->getFieldName());
+	addToReturn(myReturnMeta.get(),pos++,curOLK,true,tfds[i].originalFm->getFieldName());
         addSaltToReturn(myReturnMeta.get(),pos++);
     }
     return myReturnMeta;

@@ -492,7 +492,6 @@ main() {
             std::getline(std::cin,curQuery);
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
             processSchemaInfo(*schema);
-
             continue;
         }        
         std::cout<<GREEN_BEGIN<<"curQuery: "<<

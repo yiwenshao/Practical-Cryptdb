@@ -27,8 +27,10 @@ public:
 
 private:
     const bool is_salt;
-    //比如对于select 1+1, 这里的field_called就是"1+1"
+    //for select 1+1, the field_called value is "1+1", so is the feild is not salt, this is the plaintext name 
+    //of the field.
     const std::string field_called;
+    //if the field is not salt, olk.key should get the fieldmeta
     const OLK olk;      // if !olk.key, field is not encrypted
     const int salt_pos; // position of salt of this field in
                         // the query results, or -1 if such

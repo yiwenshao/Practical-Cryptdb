@@ -107,7 +107,7 @@ class InsertHandler : public DMLHandler {
         std::vector<FieldMeta *> fmVec;
         std::vector<Item *> implicit_defaults;
 
-        //对于insert, 有可能出现指定field list的情况.
+        //For insert, we can choose to specify field list or omit it.
         if (lex->field_list.head()) {
             auto it = List_iterator<Item>(lex->field_list);
             List<Item> newList;
