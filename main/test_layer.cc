@@ -95,101 +95,21 @@ static std::map<std::string, WrapperState*> clients;
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
 
-//Return values got by using directly the MySQL c Client
-struct rawReturnValue{
-    std::vector<std::vector<std::string> > rowValues;
-    std::vector<std::string> fieldNames;
-    std::vector<int> fieldTypes;
-};
 
-
-//must be static, or we get "no previous declaration"
-//execute the query and getthe rawReturnVale, this struct can be copied.
-static 
-rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
-    std::unique_ptr<DBResult> dbres;
-    curConn->execute(query, &dbres);
-    rawReturnValue myRaw;
-    
-    if(dbres==nullptr||dbres->n==NULL){
-        std::cout<<"no results"<<std::endl;
-        return myRaw;
-    }
-
-    int num = mysql_num_rows(dbres->n);
-    std::cout<<"num of rows: "<<num<<std::endl;
-    
-    int numOfFields = mysql_num_fields(dbres->n);
-    std::cout<<"num of fields: "<<numOfFields<<std::endl;
-
-    MYSQL_FIELD *field;
-    MYSQL_ROW row;
-
-    if(num!=0){
-        while( (row = mysql_fetch_row(dbres->n)) ){
-	    unsigned long * fieldLen = mysql_fetch_lengths(dbres->n);
-            std::vector<std::string> curRow;
-            for(int i=0;i<numOfFields;i++){
-                if (i == 0) {
-                    while( (field = mysql_fetch_field(dbres->n)) ) {
-                        myRaw.fieldNames.push_back(std::string(field->name));
-                        myRaw.fieldTypes.push_back(field->type);
-                    }
-                }
-                if(row[i]==NULL) curRow.push_back("NULL");
-                else curRow.push_back(std::string(row[i],fieldLen[i]));
-            }
-            myRaw.rowValues.push_back(curRow);
-        }
-    }
-    return myRaw;
-}
-
-
-/*
-//print RawReturnValue for testing purposes.
 static
-void printrawReturnValue(rawReturnValue & cur) {
-    int len = cur.fieldTypes.size();
-    if(len==0){
-        std::cout<<"zero output"<<std::endl;
-        return ;
-    }
-
-    if(static_cast<int>(cur.fieldNames.size())!=len||static_cast<int>(cur.rowValues[0].size())!=len){
-        std::cout<<RED_BEGIN<<"size mismatch in printrawReturnValue"<<COLOR_END<<std::endl;
-        return ;
-    }
-
-    for(int i=0;i<len;i++){
-        std::cout<<cur.fieldNames[i]<<":"<<cur.fieldTypes[i]<<"\t";
-    }
-
-    std::cout<<std::endl;
-    for(auto row:cur.rowValues){
-        for(auto rowItem:row){
-            std::cout<<rowItem<<"\t";
-        }
-        std::cout<<std::endl;
-    }
-}
-*/
-
 Item *
-encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
-                    const Analysis &a, uint64_t IV) {
+my_encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
+                   uint64_t IV) {
     assert(!RiboldMYSQL::is_null(i));
     //这里是onionMeta中的vector, enclayers.也就是洋葱不同层次的加解密通过Onionmeta以及
     //encLary中的加解密算法来完成.
-    const auto &enc_layers = a.getEncLayers(om);
+    const auto &enc_layers = om.getLayers();
     assert_s(enc_layers.size() > 0, "onion must have at least one layer");
     const Item *enc = &i;
     Item *new_enc = NULL;
     //这段代码体现了层次加密,也就是说, 通过IV,每个洋葱的层次通过enclayer来表示
     //直接调用其加密和解密函数, 就可以完成加密工作. 加密以后获得的是Item,最后返回加密以后的结果
     for (const auto &it : enc_layers) {
-        LOG(encl) << "encrypt layer "
-                  << TypeText<SECLEVEL>::toText(it->level()) << "\n";
         new_enc = it->encrypt(*enc, IV);
         assert(new_enc);
         enc = new_enc;
@@ -201,33 +121,28 @@ encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
 
 
 
-
+static
 void
-encrypt_item_all_onions(const Item &i, const FieldMeta &fm,
-                        uint64_t IV, Analysis &a, std::vector<Item*> *l)
+my_encrypt_item_all_onions(const Item &i, const FieldMeta &fm,
+                        uint64_t IV,std::vector<Item*> *l)
 {
     for (auto it : fm.orderedOnionMetas()) {
-
         const onion o = it.first->getValue();
         OnionMeta * const om = it.second;
         //一个fieldmeta表示一个field, 内部的不同洋葱表现在onionMeta,每个onionMeta的不同层次表现
         //在enclyer. 而保持的时候, 是onometekey,onoinmeta这种pair来让我们知道这个onionMeta是哪种
         //枚举的洋葱类型.
-        l->push_back(encrypt_item_layers(i, o, *om, a, IV));
+        l->push_back(my_encrypt_item_layers(i, o, *om,IV));
     }
 }
 
 
-
+static
 void
-typical_rewrite_insert_type(const Item &i, const FieldMeta &fm,
-                            Analysis &a, std::vector<Item *> *l) {
-
-
+my_typical_rewrite_insert_type(const Item &i, const FieldMeta &fm,
+                            std::vector<Item *> *l){
     const uint64_t salt = fm.getHasSalt() ? randomValue() : 0;
-
-    encrypt_item_all_onions(i, fm, salt, a, l);
-
+    my_encrypt_item_all_onions(i, fm, salt,l);
     //对于每种类型, 除了保存加密的洋葱, 还把fm中的salt也变成Int类型保存起来了, 所以会出现奇怪的多了一组数据的情况, 就看
     //这个东西是什么时候应用.
     if (fm.getHasSalt()) {
@@ -237,17 +152,7 @@ typical_rewrite_insert_type(const Item &i, const FieldMeta &fm,
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+/*
 //helper function for transforming the rawReturnValue
 static Item_null *
 make_null(const std::string &name = ""){
@@ -265,121 +170,14 @@ itemNullVector(unsigned int count)
     return out;
 }
 
-//transform rawReturnValue to ResType
-static 
-ResType MygetResTypeFromLuaTable(bool isNULL,rawReturnValue *inRow = NULL,int in_last_insert_id = 0){
-    std::vector<std::string> names;
-    std::vector<enum_field_types> types;
-    std::vector<std::vector<Item *> > rows;
-
-    //return NULL restype 
-    if(isNULL){
-        return ResType(true,0,0,std::move(names),
-                      std::move(types),std::move(rows));
-    } else {
-        for(auto inNames:inRow->fieldNames){
-            names.push_back(inNames);
-        }
-        for(auto inTypes:inRow->fieldTypes){
-            types.push_back(static_cast<enum_field_types>(inTypes));
-        }
-        for(auto inRows:inRow->rowValues) {
-            std::vector<Item *> curTempRow = itemNullVector(types.size());
-            for(int i=0;i< (int)(inRows.size());i++){
-                curTempRow[i] = (MySQLFieldTypeToItem(types[i],inRows[i]) );
-            }
-            rows.push_back(curTempRow);
-        }
-        uint64_t afrow = globalConn->get_affected_rows();
-	std::cout<<GREEN_BEGIN<<"Affected rows: "<<afrow<<COLOR_END<<std::endl;
-        return ResType(true, 0 ,
-                               in_last_insert_id, std::move(names),
-                                   std::move(types), std::move(rows));
-    }
-}
-
-//printResType for testing purposes
-static 
-void parseResType(const ResType &rd) {
-    std::cout<<RED_BEGIN<<"rd.affected_rows: "<<rd.affected_rows<<COLOR_END<<std::endl;
-    std::cout<<RED_BEGIN<<"rd.insert_id: "<<rd.insert_id<<COLOR_END<<std::endl;
-    
-    for(auto name:rd.names){
-        std::cout<<name<<"\t";
-    }
-    std::cout<<std::endl;    
-    for(auto row:rd.rows){
-        for(auto item:row){
-            std::cout<<ItemToString(*item)<<"\t";
-        }
-            std::cout<<std::endl;
-    }
-}
-
-
-//first step of back
-static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db = "tdb",
-                                                               std::string table="student1"){
-     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
-     Analysis analysis(db,schema,TK,
-                        SECURITY_RATING::SENSITIVE);
-     if(analysis.databaseMetaExists(db)){
-        const DatabaseMeta & dbm = analysis.getDatabaseMeta(db);
-        TableMeta & tbm = *dbm.getChild(IdentityMetaKey(table));
-    	return tbm.orderedFieldMetas();
-     }else{
-         std::cout<<"data base not exists"<<std::endl;
-	 return std::vector<FieldMeta *>();
-     }
-}
-
-//representation of one field.
-struct transField{
-    bool hasSalt;
-    FieldMeta *originalFm;
-    vector<int> choosenOnions;
-    //used to construct return meta
-    int onionIndex = 0;
-    int numOfOnions=0;
-    //onions
-    std::vector<std::string> fields;
-    std::vector<onion> onions;
-    std::vector<OnionMeta*>originalOm;
-    void show(){
-        for(auto i=0U;i<fields.size();i++){
-             cout<<fields[i]<<" : "<<gmp2[onions[i]]<<"\t";
-        }
-        cout<<endl;
-        if(hasSalt){
-            cout<<"has salt"<<endl;
-        }else cout<<"do not have salt"<<endl;
-    }
-};
-
-static std::vector<transField> getTransField(std::vector<FieldMeta *> pfms){
-    std::vector<transField> res;
-    //for every field
-    for(auto pfm:pfms){
-        transField tf;
-	    tf.originalFm = pfm;
-        for(std::pair<const OnionMetaKey *, OnionMeta *> &ompair:pfm->orderedOnionMetas()){
-            tf.numOfOnions++;
-            tf.fields.push_back((ompair.second)->getAnonOnionName());
-            tf.onions.push_back(ompair.first->getValue());
-            tf.originalOm.push_back(ompair.second);
-        }
-        if(pfm->getHasSalt()){
-            tf.hasSalt=true;
-	        tf.fields.push_back(pfm->getSaltName());
-        }
-        res.push_back(tf);
-    }
-    return res;
-}
+*/
 
 
 static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
-    std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
+    //std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
+    std::string client="192.168.1.1:1234";
+    std::unique_ptr<Connect> e_conn(clients[client]->ps->getEConn().get());
+
     std::unique_ptr<SchemaInfo> schema(new SchemaInfo());
 
     std::function<DBMeta *(DBMeta *const)> loadChildren =
@@ -397,38 +195,7 @@ static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
 
 
 
-
-
-static void
-addToReturn(ReturnMeta *const rm, int pos, const OLK &constr,
-            bool has_salt, const std::string &name) {
-
-    const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
-
-    TEST_TextMessageError(test, "ReturnMeta has badly ordered"
-                                " ReturnFields!");
-
-    const int salt_pos = has_salt ? pos + 1 : -1;
-
-    std::pair<int, ReturnField>
-        pair(pos, ReturnField(false, name, constr, salt_pos));
-
-    rm->rfmeta.insert(pair);
-}
-
-static void
-addSaltToReturn(ReturnMeta *const rm, int pos) {
-
-    const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
-    TEST_TextMessageError(test, "ReturnMeta has badly ordered"
-                                " ReturnFields!");
-
-    std::pair<int, ReturnField>
-        pair(pos, ReturnField(true, "", OLK::invalidOLK(), -1));
-    rm->rfmeta.insert(pair);
-}
-
-
+/*
 static Item *
 decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
                     uint64_t IV) {
@@ -452,11 +219,10 @@ decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
     return out_i;
 }
 
-/*
-structure of return field. 
-map<int,returnField>, int is the index of names
-returnField, represent a field, if the field is not salt, then fieldCalled is the plaintex name
-*/
+//structure of return field. 
+//map<int,returnField>, int is the index of names
+//returnField, represent a field, if the field is not salt, then fieldCalled is the plaintex name
+
 static
 ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
     //num of rows
@@ -528,128 +294,43 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
                    std::move(dec_rows));
 }
 
-//get returnMeta
-//for each filed, we have a fieldmeta. we can chosse one onion under that field to construct a return meta.
-//in fact, a returnmeta can contain many fields.
-static
-std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vector<transField> &tfds){
-    assert(fms.size()==tfds.size());
-    std::shared_ptr<ReturnMeta> myReturnMeta = std::make_shared<ReturnMeta>();
-    int pos=0;
-    //construct OLK
-    for(auto i=0u;i<tfds.size();i++){
-        OLK curOLK(tfds[i].onions[tfds[i].onionIndex],
-                tfds[i].originalOm[tfds[i].onionIndex]->getSecLevel(),tfds[i].originalFm);
-	addToReturn(myReturnMeta.get(),pos++,curOLK,true,tfds[i].originalFm->getFieldName());
-        addSaltToReturn(myReturnMeta.get(),pos++);
-    }
-    return myReturnMeta;
-}
+*/
 
-static
-std::string getBackupQuery(SchemaInfo &schema, std::vector<transField> &tfds,
-                                     std::string db="tdb",std::string table="student1") {
-    std::string res = "SELECT ";
-    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
-    //get databaseMeta, search in the map
-    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
-    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
-    std::string annotablename = tbm.getAnonTableName();
-    
-    //then a list of onion names
-    for(auto item:tfds){
-        for(auto index:item.choosenOnions){
-            res += std::string("hex(")+item.fields[index]+")";
-            res += " , ";
-        }
-    	if(item.hasSalt){
-            res += string("hex(")+item.originalFm->getSaltName()+") , ";
-        }
-    }
-    res = res.substr(0,res.size()-2);
-    res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
-    return res;
-}
 
-static
-std::string getInsertQuery(SchemaInfo &schema, std::vector<transField> &tfds,
-                                     std::string db,std::string table, rawReturnValue & rows){ 
-    std::string res = "INSERT INTO ";
-    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
-    //get databaseMeta, search in the map
-    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
-    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
-    std::string annotablename = tbm.getAnonTableName();
-    //Those are just headers
-    res +=  std::string("`")+db+std::string("`.`")+annotablename+"` VALUES ";
-
-    int startIndex=0;
-    while(startIndex < (int)rows.rowValues.size()){
-            string manyValues = "( ";
-            //first
-            if(startIndex<(int)rows.rowValues.size()){        
-                vector<string> &curStringVec = rows.rowValues[startIndex];
-                for(auto item:curStringVec){
-                    manyValues+=string("0x")+item+",";
-                }
-            }
-            //finish first query.
-            manyValues[manyValues.size()-1]=')';
-
-            manyValues = res + manyValues;
- 
-            //we can just parse a list of values
-            for(int i=1;i<numOfPipe;i++){
-                vector<string> &curStringVec = rows.rowValues[++startIndex];
-                manyValues+=", (";
-                for(auto item:curStringVec){
-                    manyValues+=string("0x")+item+",";
-                }
-                manyValues[manyValues.size()-1]=')';
-            }
-            manyValues+=";";
-            cout<<manyValues<<endl;
-            ++startIndex;
-    }
-    return res;
-}
-
-//query for testing purposes
-static
-std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
-                                     std::string db="tdb",std::string table="student1"){
-    std::string res = "SELECT ";
-    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
-    //get databaseMeta, search in the map
-    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
-    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
-    std::string annotablename = tbm.getAnonTableName();
-    
-    //then a list of onion names
-    for(auto item:tfds){
-        for(auto index:item.choosenOnions){
-            res += item.fields[index];
-            res += " , ";
-        }
-    	if(item.hasSalt){
-            res += item.originalFm->getSaltName()+" , ";
-        }
-    }
-
-    res = res.substr(0,res.size()-2);
-    res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
-    return res;
+//first step of back
+static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db = "tdb",
+                                                               std::string table="student1"){
+     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
+     Analysis analysis(db,schema,TK,
+                        SECURITY_RATING::SENSITIVE);
+     if(analysis.databaseMetaExists(db)){
+        const DatabaseMeta & dbm = analysis.getDatabaseMeta(db);
+        TableMeta & tbm = *dbm.getChild(IdentityMetaKey(table));
+    	return tbm.orderedFieldMetas();
+     }else{
+         std::cout<<"data base not exists"<<std::endl;
+	 return std::vector<FieldMeta *>();
+     }
 }
 
 
 
-void testEncrypt(){
-    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+
+static
+void testEncrypt(SchemaInfo &schema){
+    return;
+    string db="tdb",table="student";
+
     //get all the fields in the tables.
-    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-
-
-
+    std::vector<FieldMeta*> fms = getFieldMeta(schema,db,table);    
+    //try item_int here
+    //Item * iint = new Item_int(100);
+    string s = "hehe";
+    THD *thd = current_thd;
+    assert(thd);
+    Item *is = new Item_string(make_thd_string(s),s.length(),&my_charset_bin);
+    std::vector<Item *> l;
+    my_typical_rewrite_insert_type(*is,*fms[1],&l);
 }
 
 
@@ -661,6 +342,10 @@ main(int argc, char* argv[]) {
          }
          return 0;
      }
+     string db(argv[1]),table(argv[2]);
+     cout<<db<<":"<<table<<endl;
+
+
      gmp[SECLEVEL::INVALID]="INVALID";
      gmp[SECLEVEL::PLAINVAL]="PLAINVAL";
      gmp[SECLEVEL::OPE]="OPE";
@@ -689,80 +374,40 @@ main(int argc, char* argv[]) {
         perror("getcwd error");  
     }
     embeddedDir = std::string(buffer)+"/shadow";
+
+
+
     SharedProxyState *shared_ps = 
 			new SharedProxyState(ci, embeddedDir , master_key, 
                                             determineSecurityRating());
     assert(0 == mysql_thread_init());
+
     //we init embedded database here.
     clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
     clients[client]->ps->safeCreateEmbeddedTHD();
+
     //Connect end!!
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
-//-------------------------finish connection---------------------------------------
 
-    std::string curQuery = "backpart";
-    //unsigned long long _thread_id = globalConn->get_thread_id();
-    if(curQuery!="quit"){
-        if(curQuery=="test"){
-            std::string db,table;
-            std::cout<<"please input dbname "<<std::endl;
-            cin>>db;
-    	    std::cout<<"please input table name "<<std::endl;
-            cin>>table;
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);    
-            for(auto &item:res){
-                item.choosenOnions.push_back(0);
-            }
-    	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-            std::string backq = getTestQuery(*schema,res,db,table);
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-    	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
-            auto finalresults = decryptResults(rawtorestype,*rm);
-    	    parseResType(finalresults);
-        }else if(curQuery=="backall"){
-            std::string db,table;
-            std::cout<<"please input dbname "<<std::endl;
-            cin>>db;
-    	    std::cout<<"please input table name "<<std::endl;
-            cin>>table;
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);
-            //for each filed, we choose all the onions and salts.
-            for(auto &item:res){
-                assert(item.choosenOnions.size()==0u);
-                assert(item.onions.size()==item.originalOm.size());
-                assert(item.fields.size()==item.originalOm.size() ||
-                       item.fields.size()==item.originalOm.size()+1);
-                for(unsigned int i=0u;i<item.onions.size();i++) {
-                    item.choosenOnions.push_back(i);
-                }
-            }
-            std::string backq = getBackupQuery(*schema,res,db,table);
-            cout<<backq<<endl;
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-            getInsertQuery(*schema,res,db,table,resraw);
-        }else if(curQuery=="backpart"){
-            std::string db(argv[1]),table(argv[2]);
-            std::cout<<db<<":"<<table<<std::endl;
-            auto res = getTransField(fms);
-            //for each filed, we choose all the onions and salts.
-            for(auto &item:res){
-                assert(item.choosenOnions.size()==0u);
-                assert(item.onions.size()==item.originalOm.size());
-                assert(item.fields.size()==item.originalOm.size() ||
-                       item.fields.size()==item.originalOm.size()+1);
-                item.choosenOnions.push_back(0);
-            }
-            std::string backq = getBackupQuery(*schema,res,db,table);
-            cout<<backq<<endl;
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-            getInsertQuery(*schema,res,db,table,resraw);
-        }
-    }
+    THD *thd = current_thd;
+
+    assert(thd);
+    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+
+    assert(0 == mysql_thread_init());
+
+    //we init embedded database here.
+    clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
+    clients[client]->ps->safeCreateEmbeddedTHD();
+
+    thd = current_thd;
+    if(schema.get()==NULL){}
+
+
+    assert(thd);
+
+
+    testEncrypt(*schema);
+
     return 0;
 }
