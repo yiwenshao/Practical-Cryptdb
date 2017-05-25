@@ -7,7 +7,7 @@ CRYPTDB_SRCS := schema.cc Translator.cc Connect.cc \
 		rewrite_func.cc rewrite_sum.cc metadata_tables.cc \
 		error.cc stored_procedures.cc rewrite_ds.cc rewrite_main.cc
 
-CRYPTDB_PROGS:= cdb_test mbk test_layer
+CRYPTDB_PROGS:= cdb_test mbk test_layer test_schema
 
 
 CRYPTDBPROGOBJS	:= $(patsubst %,$(OBJDIR)/main/%,$(CRYPTDB_PROGS))

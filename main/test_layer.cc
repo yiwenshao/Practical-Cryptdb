@@ -360,6 +360,13 @@ void testEncrypt2(SchemaInfo &schema){
     cout<<string(s.ptr(), s.length())<<endl;
 }
 
+static 
+void myAdjustOnion(){
+
+
+
+}
+
 
 int
 main(int argc, char* argv[]) {
@@ -430,5 +437,6 @@ main(int argc, char* argv[]) {
     assert(thd);
     testEncrypt(*schema);
     testEncrypt2(*schema);
+    myAdjustOnion();
     return 0;
 }

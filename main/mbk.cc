@@ -501,6 +501,58 @@ std::string getBackupQuery(SchemaInfo &schema, std::vector<transField> &tfds,
     return res;
 }
 
+
+static
+std::string getBackupQueryWithoutSalt(SchemaInfo &schema, std::vector<transField> &tfds,
+                                     std::string db="tdb",std::string table="student1") {
+    std::string res = "SELECT ";
+    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
+    //get databaseMeta, search in the map
+    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
+    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
+    std::string annotablename = tbm.getAnonTableName();
+    
+    int numOfChoosenField=0;
+    //then a list of onion names
+    for(auto item:tfds){
+        for(auto index:item.choosenOnions){
+            res += item.fields[index];
+            res += " , ";
+            numOfChoosenField++;
+        }
+    }
+    res = res.substr(0,res.size()-2);
+    res = res + "FROM `"+db+std::string("`.`")+annotablename+"` limit 1;";
+    rawReturnValue resraw =  executeAndGetResultRemote(globalConn,res);
+    assert(numOfChoosenField==(int)resraw.fieldTypes.size());
+    vector<bool> whetherToQuote;
+    for(auto i=0u;i<resraw.fieldTypes.size();i++){
+        if(IS_NUM(resraw.fieldTypes[i])) whetherToQuote.push_back(false);
+        else whetherToQuote.push_back(true);
+    }
+    int fieldIndex=0;
+    res = "SELECT ";
+
+    for(auto item:tfds){
+        for(auto index:item.choosenOnions){
+            if(whetherToQuote[fieldIndex]){
+                res +=string("QUOTE(")+item.fields[index]+")";
+                res += " , ";
+            }else{
+                res += item.fields[index];
+                res += " , ";
+            }
+            fieldIndex++;
+        }
+    }
+    res += "FROM `"+db+std::string("`.`")+annotablename+"`";
+    return res;
+}
+
+
+
+
+
 static
 std::string getInsertQuery(SchemaInfo &schema, std::vector<transField> &tfds,
                                      std::string db,std::string table, rawReturnValue & rows){ 
@@ -577,10 +629,15 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
 
 int
 main(int argc, char* argv[]) {
-     if(argc!=3){
+     if(argc!=4){
          for(int i=0;i<argc;i++){
              printf("%s\n",argv[i]);
          }
+         cout<<"./mbk dbname tablename option"
+               "0. back up and decrypt" 
+               "1. back up all" 
+               "2. back up the first onion with out dealing with quote "
+               "3. back up the first onion while dealing with quote "<<endl;
          return 0;
      }
      gmp[SECLEVEL::INVALID]="INVALID";
@@ -621,11 +678,8 @@ main(int argc, char* argv[]) {
     //Connect end!!
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
 //-------------------------finish connection---------------------------------------
-
-    std::string curQuery = "backpart";
     //unsigned long long _thread_id = globalConn->get_thread_id();
-    if(curQuery!="quit"){
-        if(curQuery=="test"){
+        if(string(argv[3])=="0"){
             std::string db,table;
             std::cout<<"please input dbname "<<std::endl;
             cin>>db;
@@ -644,7 +698,7 @@ main(int argc, char* argv[]) {
     	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
             auto finalresults = decryptResults(rawtorestype,*rm);
     	    parseResType(finalresults);
-        }else if(curQuery=="backall"){
+        }else if(string(argv[3])=="1"){
             std::string db,table;
             std::cout<<"please input dbname "<<std::endl;
             cin>>db;
@@ -668,7 +722,7 @@ main(int argc, char* argv[]) {
             cout<<backq<<endl;
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
             getInsertQuery(*schema,res,db,table,resraw);
-        }else if(curQuery=="backpart"){
+        }else if(string(argv[3])=="2"){
             std::string db(argv[1]),table(argv[2]);
             std::cout<<db<<":"<<table<<std::endl;
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
@@ -687,7 +741,27 @@ main(int argc, char* argv[]) {
             cout<<backq<<endl;
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
             getInsertQuery(*schema,res,db,table,resraw);
+        }else if(string(argv[3])=="3"){
+            std::string db(argv[1]),table(argv[2]);
+            std::cout<<db<<":"<<table<<std::endl;
+            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+            //get all the fields in the tables.
+    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+            auto res = getTransField(fms);
+            //for each filed, we choose all the onions and salts.
+            for(auto &item:res){
+                assert(item.choosenOnions.size()==0u);
+                assert(item.onions.size()==item.originalOm.size());
+                assert(item.fields.size()==item.originalOm.size() ||
+                       item.fields.size()==item.originalOm.size()+1);
+                item.choosenOnions.push_back(0);
+            }
+            std::string backq = getBackupQueryWithoutSalt(*schema,res,db,table);
+            cout<<backq<<endl;
+            //rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+            //getInsertQuery(*schema,res,db,table,resraw);
+
         }
-    }
+   
     return 0;
 }
