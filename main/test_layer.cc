@@ -195,12 +195,11 @@ static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
 
 
 
-/*
+
 static Item *
 decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
                     uint64_t IV) {
     assert(!RiboldMYSQL::is_null(i));
-
     const Item *dec = &i;
     Item *out_i = NULL;
     //we have fieldMeta, but only use part of it. we select the onion via the o in olk we constructed.
@@ -212,13 +211,12 @@ decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
         out_i = (*it)->decrypt(*dec, IV);
         assert(out_i);
         dec = out_i;
-        LOG(cdb_v) << "dec okay";
     }
-
     assert(out_i && out_i != &i);
     return out_i;
 }
 
+/*
 //structure of return field. 
 //map<int,returnField>, int is the index of names
 //returnField, represent a field, if the field is not salt, then fieldCalled is the plaintex name
@@ -296,7 +294,6 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
 
 */
 
-
 //first step of back
 static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db = "tdb",
                                                                std::string table="student1"){
@@ -313,7 +310,15 @@ static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db =
      }
 }
 
+static
+Item* getIntItem(int i){
+    return new Item_int(100);
+}
 
+static
+Item* getStringItem(string s){
+    return new Item_string(make_thd_string(s),s.length(),&my_charset_bin);
+}
 
 
 static
@@ -322,15 +327,37 @@ void testEncrypt(SchemaInfo &schema){
     string db="tdb",table="student";
 
     //get all the fields in the tables.
-    std::vector<FieldMeta*> fms = getFieldMeta(schema,db,table);    
+    std::vector<FieldMeta*> fms = getFieldMeta(schema,db,table);
     //try item_int here
-    //Item * iint = new Item_int(100);
+    Item * iint = new Item_int(100);
     string s = "hehe";
     THD *thd = current_thd;
     assert(thd);
-    Item *is = new Item_string(make_thd_string(s),s.length(),&my_charset_bin);
+    //Item *is = new Item_string(make_thd_string(s),s.length(),&my_charset_bin);
     std::vector<Item *> l;
-    my_typical_rewrite_insert_type(*is,*fms[1],&l);
+    my_typical_rewrite_insert_type(*iint,*fms[0],&l);
+
+    Item * is = getStringItem("zhao");
+    if(is==NULL){}
+    std::vector<Item *> l2;
+    my_encrypt_item_all_onions(*getIntItem(100),*fms[0],100,&l2);
+}
+
+//oDET,oOPE,oAGG,
+
+static 
+void testEncrypt2(SchemaInfo &schema){
+    string db="tdb",table="student";
+    //get all the fields in the tables.
+    std::vector<FieldMeta*> fms = getFieldMeta(schema,db,table);
+    Item * iint = new Item_int(100);
+    OnionMeta *om = fms[0]->getOnionMeta(oDET);
+    Item* enc = my_encrypt_item_layers(*iint,oDET,*om,110);
+    Item* dec = decrypt_item_layers(*enc,fms[0],oDET,110);
+    String s;
+    //for string, the result will automatically be escaped.
+    dec->print(&s, QT_ORDINARY);
+    cout<<string(s.ptr(), s.length())<<endl;
 }
 
 
@@ -375,8 +402,6 @@ main(int argc, char* argv[]) {
     }
     embeddedDir = std::string(buffer)+"/shadow";
 
-
-
     SharedProxyState *shared_ps = 
 			new SharedProxyState(ci, embeddedDir , master_key, 
                                             determineSecurityRating());
@@ -402,12 +427,8 @@ main(int argc, char* argv[]) {
 
     thd = current_thd;
     if(schema.get()==NULL){}
-
-
     assert(thd);
-
-
     testEncrypt(*schema);
-
+    testEncrypt2(*schema);
     return 0;
 }
