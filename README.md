@@ -45,3 +45,5 @@ obselete functions deleted
 ### features to be added
 
 + extended-insert
++ QUOTE
++ Search
