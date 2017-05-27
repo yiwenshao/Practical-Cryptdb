@@ -4,13 +4,13 @@ if [ $# = 0 ];then
 fi
 
 function inittable {
-    mysql -uroot -pletmein -h127.0.0.1 -P3399 -e "drop database if exists tpcc1000"
-    mysql -uroot -pletmein -h127.0.0.1 -P3399 -e "create database tpcc1000"
-    mysql -uroot -pletmein -h127.0.0.1 -P3399 -e "use tpcc1000; drop table if exists student"
+    mysql -uroot -pletmein -h127.0.0.1  -e "drop database if exists tpcc1000"
+    mysql -uroot -pletmein -h127.0.0.1  -e "create database tpcc1000"
+    mysql -uroot -pletmein -h127.0.0.1  -e "use tpcc1000; drop table if exists student"
     len=$[$1+0]
     #not supported
     #mysql -uroot -pletmein -h127.0.0.1 -P3399 -e "create table if not exists tpcc1000.student(name varchar(${len}))"
-    mysql -uroot -pletmein -h127.0.0.1 -P3399 -e "use tpcc1000; create table if not exists student(name varchar(${len}))"
+    mysql -uroot -pletmein -h127.0.0.1 -e "use tpcc1000; create table if not exists student(name varchar(${len}))"
     echo "create table if not exists tpcc1000.student(name varchar(${len}))"
 }
 
@@ -50,7 +50,7 @@ done
 
 
 inittable $1
-mysql -uroot -pletmein -h127.0.0.1 -P3399 tpcc1000 < load.sql
+mysql -uroot -pletmein -h127.0.0.1 tpcc1000 < load.sql
 mysqldump --skip-extended-insert -uroot -pletmein -h127.0.0.1 --hex-blob --compact tpcc1000 > back.sql
 
 

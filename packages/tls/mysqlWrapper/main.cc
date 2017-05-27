@@ -6,19 +6,48 @@
 using namespace std;
 extern Connect *con;
 
+string createSelect(string database,string table){
+    auto dbresult = con->execute(string("SELECT * FROM `")+database+"`.`"+string(table)+"` LIMIT 1;");
+    DBResult * result = dbresult.get();
+    vector<vector<string>> rows = result->getRows();
+    vector<enum_field_types> types = result->getTypes();
+    vector<string> fields = result->getFields();
+    string head = "SELECT ";
+    for(int i=0;i<types.size();i++){
+        if(IS_NUM(types[i])){
+            head += fields[i]+",";
+        }
+        else{
+            head+=string("QUOTE(")+fields[i]+"),";
+        }
+    }
+    head[head.size()-1]=' ';
+    head += "FROM `"+database+"`.`"+table+"`";
+    cout<<head<<endl;
+    return head;
+}
+
 //http://php.net/manual/zh/function.mysql-escape-string.php
 //https://dev.mysql.com/doc/refman/5.7/en/string-functions.html#function_quote
 //backup in configurable extended version
 static int numOfPipe = 3;
-void backupselect(){
-    string query,table;
-    getline(cin,query);
-    cin>>table;
+void backupselect(string query,string table){
     auto dbresult = con->execute(query);
     DBResult * result = dbresult.get();
     vector<vector<string>> rows = result->getRows();
     vector<enum_field_types> types = result->getTypes();
+    vector<string> fieldNames = result->getFields();
     string head = string("INSERT INTO ")+"`"+table+"`"+string(" VALUES (");
+
+    system("rm -rf allColumns");
+    system("mkdir allColumns");
+    vector<FILE *> files;
+    for(auto i=0u;i<types.size();i++){
+         FILE * cur = fopen((string("allColumns/")+fieldNames[i]).c_str(),"w");
+         if(cur==NULL) exit(1);
+         files.push_back(cur);
+    }
+
     for(auto i=0;i<rows.size();i++){
         string cur=head;          
         for(int j=0;j<rows[i].size();j++){
@@ -46,13 +75,27 @@ void backupselect(){
         cur+=";";
         cout<<cur<<endl;
     }
+
+    for(auto i=0u;i<files.size();i++ ){
+         for(auto item:rows){
+            fwrite(item[i].c_str(),1,item[i].size(),files[i]);
+            fprintf(files[i],"\n");
+        }       
+    }
+    for(auto i=0u;i<files.size();i++)
+        fclose(files[i]);
 }
 
 int main(int argc,char**argv){
-    if(argc!=2) return 0;
+    if(argc!=4){
+        cout<<"numOfpipe, db, table"<<endl;
+        return 0;
+    }
     string num = string(argv[1]);
     numOfPipe = stoi(num);
-    backupselect(); 
+    string query = createSelect(string(argv[2]),string(argv[3]));
+
+    backupselect(query,string(argv[3])); 
     return 0;
 }
 
