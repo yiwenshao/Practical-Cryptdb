@@ -9,7 +9,7 @@ extern Connect *con;
 //http://php.net/manual/zh/function.mysql-escape-string.php
 //https://dev.mysql.com/doc/refman/5.7/en/string-functions.html#function_quote
 //backup in configurable extended version
-static const int numOfPipe = 3;
+static int numOfPipe = 3;
 void backupselect(){
     string query,table;
     getline(cin,query);
@@ -48,7 +48,10 @@ void backupselect(){
     }
 }
 
-int main(){
+int main(int argc,char**argv){
+    if(argc!=2) return 0;
+    string num = string(argv[1]);
+    numOfPipe = stoi(num);
     backupselect(); 
     return 0;
 }

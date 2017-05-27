@@ -5,9 +5,7 @@
 #include <string>
 using namespace std;
 extern Connect *con;
-void createSelect(){
-    string database,table;
-    cin>>database>>table;
+void createSelect(string database,string table){
     auto dbresult = con->execute(string("SELECT * FROM `")+database+"`.`"+string(table)+"` LIMIT 1;");
     DBResult * result = dbresult.get();
     vector<vector<string>> rows = result->getRows();
@@ -27,8 +25,9 @@ void createSelect(){
     cout<<head<<endl;
 }
 
-int main(){
-    createSelect();
+int main(int argc,char**argv){
+    if(argc==3)return 0;    
+    createSelect(string(argv[1]),string(argv[2]));
     return 0;
 }
 
