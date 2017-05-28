@@ -47,6 +47,7 @@
 using std::cout;
 using std::cin;
 using std::endl;
+using std::string;
 std::map<SECLEVEL,std::string> gmp;
 std::map<onion,std::string> gmp2;
 
@@ -107,15 +108,17 @@ rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
     rawReturnValue myRaw;
     
     if(dbres==nullptr||dbres->n==NULL){
-        std::cout<<"no results"<<std::endl;
+        //std::cout<<"no results"<<std::endl;
         return myRaw;
     }
 
     int num = mysql_num_rows(dbres->n);
-    std::cout<<"num of rows: "<<num<<std::endl;
-    
+    if(num!=0)
+        std::cout<<"num of rows: "<<num<<std::endl;
+
     int numOfFields = mysql_num_fields(dbres->n);
-    std::cout<<"num of fields: "<<numOfFields<<std::endl;
+    if(numOfFields!=0)
+        std::cout<<"num of fields: "<<numOfFields<<std::endl;
 
     MYSQL_FIELD *field;
     MYSQL_ROW row;
@@ -145,7 +148,7 @@ static
 void printrawReturnValue(rawReturnValue & cur) {
     int len = cur.fieldTypes.size();
     if(len==0){
-        std::cout<<"zero output"<<std::endl;
+        //std::cout<<"zero output"<<std::endl;
         return ;
     }
 
@@ -182,7 +185,7 @@ bool myRewrite(std::string curQuery,unsigned long long _thread_id,std::string cl
     ProxyState *const ps = c_wrapper->ps.get();
     assert(ps);
     c_wrapper->last_query = curQuery;
-    std::cout<<RED_BEGIN<<"start my rewrite"<<COLOR_END<<std::endl;
+    //std::cout<<RED_BEGIN<<"start my rewrite"<<COLOR_END<<std::endl;
     try{
         TEST_Text(retrieveDefaultDatabase(_thread_id, ps->getConn(),
                                               &c_wrapper->default_db),
@@ -244,8 +247,8 @@ ResType MygetResTypeFromLuaTable(bool isNULL,rawReturnValue *inRow = NULL,int in
             }
             rows.push_back(curTempRow);
         }
-        uint64_t afrow = globalConn->get_affected_rows();
-	std::cout<<GREEN_BEGIN<<"Affected rows: "<<afrow<<COLOR_END<<std::endl;
+        //uint64_t afrow = globalConn->get_affected_rows();
+	//std::cout<<GREEN_BEGIN<<"Affected rows: "<<afrow<<COLOR_END<<std::endl;
         return ResType(true, 0 ,
                                in_last_insert_id, std::move(names),
                                    std::move(types), std::move(rows));
@@ -255,8 +258,8 @@ ResType MygetResTypeFromLuaTable(bool isNULL,rawReturnValue *inRow = NULL,int in
 //printResType for testing purposes
 static 
 void parseResType(const ResType &rd) {
-    std::cout<<RED_BEGIN<<"rd.affected_rows: "<<rd.affected_rows<<COLOR_END<<std::endl;
-    std::cout<<RED_BEGIN<<"rd.insert_id: "<<rd.insert_id<<COLOR_END<<std::endl;
+//    std::cout<<RED_BEGIN<<"rd.affected_rows: "<<rd.affected_rows<<COLOR_END<<std::endl;
+//    std::cout<<RED_BEGIN<<"rd.insert_id: "<<rd.insert_id<<COLOR_END<<std::endl;
     
     for(auto name:rd.names){
         std::cout<<name<<"\t";
@@ -294,7 +297,7 @@ void myNext(std::string client,bool isFirst,ResType inRes) {
         switch (result_type){
             //execute the query, fetch the results, and call next again
         case AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN: {
-            std::cout<<RED_BEGIN<<"case one"<<COLOR_END<<std::endl;
+            //std::cout<<RED_BEGIN<<"case one"<<COLOR_END<<std::endl;
             const auto &output =
                 std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
             const auto &next_query = output.second;
@@ -308,7 +311,7 @@ void myNext(std::string client,bool isFirst,ResType inRes) {
 
         //only execute the query, without processing the retults
         case AbstractQueryExecutor::ResultType::QUERY_USE_RESULTS:{
-            std::cout<<RED_BEGIN<<"case two"<<COLOR_END<<std::endl;
+            //std::cout<<RED_BEGIN<<"case two"<<COLOR_END<<std::endl;
             const auto &new_query =
                 std::get<1>(new_results)->extract<std::string>();
             auto resRemote = executeAndGetResultRemote(globalConn,new_query);
@@ -318,7 +321,7 @@ void myNext(std::string client,bool isFirst,ResType inRes) {
 
         //return the results to the client directly 
         case AbstractQueryExecutor::ResultType::RESULTS:{
-            std::cout<<RED_BEGIN<<"case three"<<COLOR_END<<std::endl;
+            //std::cout<<RED_BEGIN<<"case three"<<COLOR_END<<std::endl;
             const auto &res = new_results.second->extract<ResType>(); 
             parseResType(res);
             break;
@@ -338,7 +341,7 @@ void batchTogether(std::string client, std::string curQuery,unsigned long long _
     //the first step is to Rewrite, we abort this session if we fail here.
     bool resMyRewrite =  myRewrite(curQuery,_thread_id,client);
     if(!resMyRewrite){
-         std::cout<<"my rewrite error in batch"<<std::endl;
+         //std::cout<<"my rewrite error in batch"<<std::endl;
          return ; 
     }
     myNext(client,true, MygetResTypeFromLuaTable(true));
@@ -441,7 +444,7 @@ static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
 }
 
 int
-main() {
+main(int argc,char ** argv) {
      gmp[SECLEVEL::INVALID]="INVALID";
      gmp[SECLEVEL::PLAINVAL]="PLAINVAL";
      gmp[SECLEVEL::OPE]="OPE";
@@ -458,6 +461,11 @@ main() {
      gmp2[oPLAIN]="oPLAIN";
      gmp2[oBESTEFFORT]="oBESTEFFORT";
      gmp2[oINVALID]="oINVALID";
+
+     string targetDb;
+     if(argc==2){
+        targetDb = string(argv[1]);
+     }
 
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
@@ -484,8 +492,11 @@ main() {
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
     std::string curQuery = "SHOW DATABASES;";
     std::cout<<"please input a new query:######################################################"<<std::endl;
-    std::getline(std::cin,curQuery);
+    if(targetDb.size()==0)
+        std::getline(std::cin,curQuery);
+    else curQuery = string("use ")+targetDb;
     unsigned long long _thread_id = globalConn->get_thread_id();
+    long long countWrapper = 0;
     while(curQuery!="quit"){
         if(curQuery.size()==0){
             std::cout<<std::endl;
@@ -493,12 +504,15 @@ main() {
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
             processSchemaInfo(*schema);
             continue;
-        }        
-        std::cout<<GREEN_BEGIN<<"curQuery: "<<
-                               curQuery<<"\n"<<COLOR_END<<std::endl;
+        }
+        countWrapper++;
         batchTogether(client,curQuery,_thread_id);
         std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
         std::getline(std::cin,curQuery);
+        if(countWrapper==2){
+            cout<<"bingo"<<endl;
+            countWrapper=0;
+        }
     }
     return 0;
 }
