@@ -1,3 +1,8 @@
+/*
+used to check to schema info of all the current databases
+
+*/
+
 #include <cstdlib>
 #include <cstdio>
 #include <string>
@@ -59,53 +64,60 @@ static void processLayers(const EncLayer &enc){
 
 
 
-static void processOnionMeta(const OnionMeta &onion){
-    std::cout<<GREEN_BEGIN<<"PRINT OnionMeta"<<COLOR_END<<std::endl;
-    std::cout<<"onionmeta->getAnonOnionName(): "<<onion.getAnonOnionName()<<std::endl; 
+static void processOnionMeta(const OnionMeta &onion,std::string pre="\t\t\t"){
+    //std::cout<<GREEN_BEGIN<<"PRINT OnionMeta"<<COLOR_END<<std::endl;
+    //std::cout<<"onionmeta->getAnonOnionName(): "<<onion.getAnonOnionName()<<std::endl; 
     auto &layers = onion.getLayers();
     for(auto &slayer:layers){
+	std::cout<<pre;        
         processLayers(*(slayer.get()));
     }
 }
 
-static void processFieldMeta(const FieldMeta &field){
-    std::cout<<GREEN_BEGIN<<"PRINT FieldMeta"<<COLOR_END<<std::endl;
+static void processFieldMeta(const FieldMeta &field,std::string pre="\t\t"){
+    //std::cout<<GREEN_BEGIN<<"PRINT FieldMeta"<<COLOR_END<<std::endl;
     for(const auto & onion: field.getChildren()){
-        std::cout<<onion.second->getDatabaseID()<<":"<<onion.first.getValue()<<std::endl;
+	std::cout<<pre;
+        //std::cout<<onion.second->getDatabaseID()<<":"<<onion.first.getValue()<<std::endl;
+        std::cout<<onion.second->getAnonOnionName()<<std::endl;
         processOnionMeta(*(onion.second));
     }
 }
 
-static void processTableMeta(const TableMeta &table){
-    std::cout<<GREEN_BEGIN<<"PRINT TableMeta"<<COLOR_END<<std::endl;
+static void processTableMeta(const TableMeta &table,std::string pre="\t"){
+    //std::cout<<GREEN_BEGIN<<"PRINT TableMeta"<<COLOR_END<<std::endl;
     for(const auto & field: table.getChildren()){
-          std::cout<<"fieldmeta->stringify: "<<field.second->stringify()<<std::endl; 
-          std::cout<<"fieldmeta->stringify: "<<field.second->getFieldName()<<std::endl;
-        std::cout<<field.second->getDatabaseID()<<":"<<field.first.getValue()<<std::endl;
+	std::cout<<pre;
+          //std::cout<<"fieldmeta->stringify: "<<field.second->stringify()<<std::endl; 
+        std::cout<<field.second->getFieldName()<<std::endl;
+        //std::cout<<field.second->getDatabaseID()<<":"<<field.first.getValue()<<std::endl;
         processFieldMeta(*(field.second));
     }
 }
 
 
-static void processDatabaseMeta(const DatabaseMeta & db) {
-    std::cout<<GREEN_BEGIN<<"PRINT DatabaseMeta"<<COLOR_END<<std::endl;
+static void processDatabaseMeta(const DatabaseMeta & db,std::string pre = "") {
+    //std::cout<<GREEN_BEGIN<<"PRINT DatabaseMeta"<<COLOR_END<<std::endl;
     for(const auto & table: db.getChildren()){
-         std::cout<<table.second->getDatabaseID()<<":"<<table.first.getValue()<<":"<<
-            table.first.getSerial()<<std::endl;
-        std::cout<<"tableMeta->getAnonTableName: "<<table.second->getAnonTableName()<<std::endl;
+	std::cout<<pre;
+        //std::cout<<table.second->getDatabaseID()<<":"<<table.first.getValue()<<":"<<
+        //    table.first.getSerial()<<std::endl;
+        std::cout<<"tableMeta->getAnonTableName: "<<table.second->getAnonTableName()<<" : "<<table.first.getValue() <<std::endl;
         processTableMeta(*(table.second));
     }
 }
 
 
 
-static void processSchemaInfo(SchemaInfo &schema){
+static void processSchemaInfo(SchemaInfo &schema,std::string pre = ""){
     //we have a map here
-     std::cout<<GREEN_BEGIN<<"PRINT SchemaInfo"<<COLOR_END<<std::endl;
+     //std::cout<<GREEN_BEGIN<<"PRINT SchemaInfo"<<COLOR_END<<std::endl;
     //only const auto & is allowed, now copying. or we meet use of deleted function.
     for(const auto & child : schema.getChildren()) {
-        std::cout<<child.second->getDatabaseID()<<":"<<child.first.getValue()<<":"<<
-            child.first.getSerial()<<std::endl;
+        //std::cout<<child.second->getDatabaseID()<<":"<<child.first.getValue()<<":"<<
+        //    child.first.getSerial()<<std::endl;
+        //std::cout<<GREEN_BEGIN<<child.first.getValue()<<COLOR_END<<std::endl;
+        std::cout<<child.first.getValue()<<std::endl;
         processDatabaseMeta(*(child.second));
     }
 }
