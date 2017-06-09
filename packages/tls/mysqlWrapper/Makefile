@@ -7,7 +7,10 @@ CXX=g++
 
 .PHONY: all
 
-all: main createSelect backFieldsToFiles
+
+executables:=main createSelect backFieldsToFiles
+
+all: $(executables)
 
 createSelect: obj/createSelect.o $(OBJFILES)
 	$(CXX) -o createSelect $^ $(LDFLAGS)
@@ -31,4 +34,4 @@ obj/%.o:mysqllib/%.cc
 	$(CXX) -MMD $(CXXFLAGS) -g -c $< -o $@
 
 clean:
-	-rm -rf obj main 
+	-rm -rf obj $(executables)
