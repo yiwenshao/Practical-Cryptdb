@@ -22,6 +22,7 @@ cur=1234567
 multi=""
 function getMultipleFields {
     num=$1
+    cur=`date +%s`
     multi=\($cur\)
     for((i=1;i<$num;i++))do
         multi=${multi}\,\($cur\)
