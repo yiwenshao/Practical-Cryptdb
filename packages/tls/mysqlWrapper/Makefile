@@ -7,13 +7,16 @@ CXX=g++
 
 .PHONY: all
 
-all: main createSelect
+all: main createSelect backFieldsToFiles
 
 createSelect: obj/createSelect.o $(OBJFILES)
 	$(CXX) -o createSelect $^ $(LDFLAGS)
 
 main: obj/main.o $(OBJFILES)
 	$(CXX) -o main $^ $(LDFLAGS)
+
+backFieldsToFiles: obj/backFieldsToFiles.o $(OBJFILES)
+	$(CXX) -o backFieldsToFiles $^ $(LDFLAGS)
 .PHONY:clean
 
 
