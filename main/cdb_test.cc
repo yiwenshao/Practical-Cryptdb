@@ -297,7 +297,7 @@ void myNext(std::string client,bool isFirst,ResType inRes) {
         switch (result_type){
             //execute the query, fetch the results, and call next again
         case AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN: {
-            //std::cout<<RED_BEGIN<<"case one"<<COLOR_END<<std::endl;
+            std::cout<<RED_BEGIN<<"case one"<<COLOR_END<<std::endl;
             const auto &output =
                 std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
             const auto &next_query = output.second;
@@ -311,7 +311,7 @@ void myNext(std::string client,bool isFirst,ResType inRes) {
 
         //only execute the query, without processing the retults
         case AbstractQueryExecutor::ResultType::QUERY_USE_RESULTS:{
-            //std::cout<<RED_BEGIN<<"case two"<<COLOR_END<<std::endl;
+            std::cout<<RED_BEGIN<<"case two"<<COLOR_END<<std::endl;
             const auto &new_query =
                 std::get<1>(new_results)->extract<std::string>();
             auto resRemote = executeAndGetResultRemote(globalConn,new_query);
@@ -321,7 +321,7 @@ void myNext(std::string client,bool isFirst,ResType inRes) {
 
         //return the results to the client directly 
         case AbstractQueryExecutor::ResultType::RESULTS:{
-            //std::cout<<RED_BEGIN<<"case three"<<COLOR_END<<std::endl;
+            std::cout<<RED_BEGIN<<"case three"<<COLOR_END<<std::endl;
             const auto &res = new_results.second->extract<ResType>(); 
             parseResType(res);
             break;

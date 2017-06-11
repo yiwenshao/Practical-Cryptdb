@@ -108,8 +108,7 @@ IntFromBytes(const unsigned char * bytes, unsigned int noBytes)
 }
 
 uint64_t
-uint64FromZZ(ZZ val)
-{
+uint64FromZZ(ZZ val){
     uint64_t res = 0;
     uint64_t mul = 1;
     while (val > 0) {

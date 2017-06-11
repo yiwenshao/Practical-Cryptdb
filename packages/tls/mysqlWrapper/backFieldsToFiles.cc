@@ -7,7 +7,7 @@
 using namespace std;
 extern Connect *con;
 
-string createSelect(string database,string table,bool isQuote=true){
+string createSelect(string database,string table,int quote){
     auto dbresult = con->execute(string("SELECT * FROM `")+database+"`.`"+string(table)+"` LIMIT 1;");
     DBResult * result = dbresult.get();
     vector<vector<string>> rows = result->getRows();
@@ -17,11 +17,11 @@ string createSelect(string database,string table,bool isQuote=true){
     for(int i=0;i<types.size();i++){
         if(IS_NUM(types[i])){
             head += fields[i]+",";
-        }
-        else{
-            if(isQuote)
+        }else{
+            if(quote==1)
                 head+=string("QUOTE(")+fields[i]+") AS quo"+fields[i]+" ,";
-            else head+=string("HEX(")+fields[i]+") AS hex"+fields[i]+" ,";
+            else if(quote==2) head+=string("HEX(")+fields[i]+") AS hex"+fields[i]+" ,";
+            else if(quote==3) head += fields[i]+","; 
         }
     }
     head[head.size()-1]=' ';
@@ -72,16 +72,17 @@ vector<string> getTables(string db){
 int main(int argc,char**argv){
     system("rm -rf allTables");
     system("mkdir allTables");
-    if(argc!=2){
-        cout<<"db"<<endl;
+    if(argc!=3){
+        cout<<"db, 1quote/2hex/3plain"<<endl;
         return 0;
     }
+    string option(argv[2]);
+
     string num = string(argv[1]);
     vector<string> tablesprefix = getTables(string(argv[1]));
     for(auto item:tablesprefix){
-        string query = createSelect(string(argv[1]),item);
+        string query = createSelect(string(argv[1]),item,stoi(option));
         backupselect(query,string("allTables/")+item+"/");
-
     }
 
     return 0;
