@@ -297,7 +297,7 @@ void myNext(std::string client,bool isFirst,ResType inRes) {
         switch (result_type){
             //execute the query, fetch the results, and call next again
         case AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN: {
-            std::cout<<RED_BEGIN<<"case one"<<COLOR_END<<std::endl;
+        //    std::cout<<RED_BEGIN<<"case one"<<COLOR_END<<std::endl;
             const auto &output =
                 std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
             const auto &next_query = output.second;
@@ -311,7 +311,7 @@ void myNext(std::string client,bool isFirst,ResType inRes) {
 
         //only execute the query, without processing the retults
         case AbstractQueryExecutor::ResultType::QUERY_USE_RESULTS:{
-            std::cout<<RED_BEGIN<<"case two"<<COLOR_END<<std::endl;
+        //    std::cout<<RED_BEGIN<<"case two"<<COLOR_END<<std::endl;
             const auto &new_query =
                 std::get<1>(new_results)->extract<std::string>();
             auto resRemote = executeAndGetResultRemote(globalConn,new_query);
@@ -321,7 +321,7 @@ void myNext(std::string client,bool isFirst,ResType inRes) {
 
         //return the results to the client directly 
         case AbstractQueryExecutor::ResultType::RESULTS:{
-            std::cout<<RED_BEGIN<<"case three"<<COLOR_END<<std::endl;
+        //    std::cout<<RED_BEGIN<<"case three"<<COLOR_END<<std::endl;
             const auto &res = new_results.second->extract<ResType>(); 
             parseResType(res);
             break;
@@ -466,7 +466,6 @@ main(int argc,char ** argv) {
      if(argc==2){
         targetDb = string(argv[1]);
      }
-
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
     clients[client] = new WrapperState();    
@@ -480,8 +479,6 @@ main(int argc,char ** argv) {
         perror("getcwd error");  
     }
     embeddedDir = std::string(buffer)+"/shadow";
-
-
     SharedProxyState *shared_ps = 
 			new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
     assert(0 == mysql_thread_init());
@@ -491,14 +488,17 @@ main(int argc,char ** argv) {
     //Connect end!!
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
     std::string curQuery = "SHOW DATABASES;";
-    std::cout<<"please input a new query:######################################################"<<std::endl;
+    //int count=0;
+    //std::cout<<"please input a new query:######################################################"<<std::endl;
     if(targetDb.size()==0)
         std::getline(std::cin,curQuery);
+
     else curQuery = string("use ")+targetDb;
     unsigned long long _thread_id = globalConn->get_thread_id();
     long long countWrapper = 0;
     while(curQuery!="quit"){
         if(curQuery.size()==0){
+            return 0;
             std::cout<<std::endl;
             std::getline(std::cin,curQuery);
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
@@ -507,12 +507,14 @@ main(int argc,char ** argv) {
         }
         countWrapper++;
         batchTogether(client,curQuery,_thread_id);
-        std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
+        //std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
         std::getline(std::cin,curQuery);
-        if(countWrapper==2){
+        if(countWrapper==3){
             cout<<"bingo"<<endl;
             countWrapper=0;
         }
     }
     return 0;
 }
+
+
