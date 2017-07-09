@@ -216,8 +216,80 @@ class CItemSum : public CItemSubtypeST<Item_sum_sum, SFT> {
 
 static CItemSum<Item_sum::Sumfunctype::SUM_FUNC> ANON;
 static CItemSum<Item_sum::Sumfunctype::SUM_DISTINCT_FUNC> ANON;
-static CItemSum<Item_sum::Sumfunctype::AVG_FUNC> ANON;
-static CItemSum<Item_sum::Sumfunctype::AVG_DISTINCT_FUNC> ANON;
+//static CItemSum<Item_sum::Sumfunctype::AVG_FUNC> ANON;
+//static CItemSum<Item_sum::Sumfunctype::AVG_DISTINCT_FUNC> ANON;
+
+
+template<Item_sum::Sumfunctype SFT>
+class CItemAvg : public CItemSubtypeST<Item_sum_sum, SFT> {
+    virtual RewritePlan *
+    do_gather_type(const Item_sum_sum &i, Analysis &a) const
+    {
+        LOG(cdb_v) << "gather Item_sum_sum " << i << std::endl;
+
+        const unsigned int arg_count = RiboldMYSQL::get_arg_count(i);
+        TEST_BadItemArgumentCount(i.type(), 1, arg_count);
+        const Item *const child_item = RiboldMYSQL::get_arg(i, 0);
+
+        std::vector<std::shared_ptr<RewritePlan> >
+            childr_rp({std::shared_ptr<RewritePlan>(gather(*child_item,
+                                                           a))});
+
+        if (i.has_with_distinct()) {
+            UNIMPLEMENTED;
+        }
+
+        const EncSet &my_es = ADD_EncSet;
+        const EncSet &solution = my_es.intersect(childr_rp[0]->es_out);
+        const std::string &why = "summation";
+        TEST_NoAvailableEncSet(solution, i.type(), my_es, why,
+                               childr_rp);
+
+        reason rsn(solution, why, i);
+        return new RewritePlanWithChildren(solution, rsn, childr_rp);
+    }
+
+    virtual Item *
+    do_rewrite_type(const Item_sum_sum &i, const OLK &constr,
+                    const RewritePlan &rp, Analysis &a) const
+    {
+        auto rp_wc = static_cast<const RewritePlanWithChildren &>(rp);
+        assert(rp_wc.childr_rp.size() == 1);
+
+        TEST_Text(rp.es_out.contains(constr),
+          "summation cannot support it's argument");
+        std::cout<<"avg!!!!!!!!"<<std::endl;
+        a.summation_hack = true;
+        Item *const new_child =
+            itemTypes.do_rewrite(*RiboldMYSQL::get_arg(i, 0), constr,
+                                 *rp_wc.childr_rp[0].get(), a);
+        a.summation_hack = false;
+        assert(new_child);
+
+        if (oAGG == constr.o) {
+            OnionMeta *const om = constr.key->getOnionMeta(oAGG);
+            assert(om);
+            EncLayer const &el = a.getBackEncLayer(*om);
+            TEST_UnexpectedSecurityLevel(oAGG, SECLEVEL::HOM,
+                                         el.level());
+            return static_cast<const HOM &>(el).sumUDA(new_child);
+        } else {
+            TEST_UnexpectedSecurityLevel(constr.o, SECLEVEL::PLAINVAL,
+                                         constr.l);
+
+            // FIXME: we cannot blindly return Item_sum_sum because we may
+            // have an AVG(...)
+            // > account for ``Item_sum_avg''
+            return new Item_sum_sum(new_child, i.has_with_distinct());
+        }
+    }
+};
+
+static CItemAvg<Item_sum::Sumfunctype::AVG_FUNC> ANON;
+static CItemAvg<Item_sum::Sumfunctype::AVG_DISTINCT_FUNC> ANON;
+
+
+
 
 static class ANON : public CItemSubtypeST<Item_sum_bit, Item_sum::Sumfunctype::SUM_BIT_FUNC> {
     virtual RewritePlan *
