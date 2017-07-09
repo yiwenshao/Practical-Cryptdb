@@ -1,0 +1,9 @@
+customer,total_count 30000
+district,total_count 10
+history,total_count 30000
+item,total_count 100000
+new_orders,total_count 9000
+order_line,total_count 299810
+orders,total_count 30000
+stock,total_count 100000
+warehouse,total_count 1

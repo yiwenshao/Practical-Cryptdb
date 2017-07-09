@@ -8,7 +8,7 @@ CXX=g++
 .PHONY: all
 
 
-executables:=main createSelect backFieldsToFiles
+executables:=main createSelect backFieldsToFiles analysis
 
 all: $(executables)
 
@@ -20,6 +20,10 @@ main: obj/main.o $(OBJFILES)
 
 backFieldsToFiles: obj/backFieldsToFiles.o $(OBJFILES)
 	$(CXX) -o backFieldsToFiles $^ $(LDFLAGS)
+
+analysis: obj/analysis.o $(OBJFILES)
+	$(CXX) -o analysis $^ $(LDFLAGS)
+
 .PHONY:clean
 
 

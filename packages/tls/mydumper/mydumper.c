@@ -778,7 +778,6 @@ void *process_queue_less_locking(struct thread_data *td) {
 	mysql_thread_end();
 	return NULL;
 }
-
 #ifdef WITH_BINLOG
 MYSQL *reconnect_for_binlog(MYSQL *thrconn) {
 	if (thrconn) {
@@ -801,7 +800,6 @@ MYSQL *reconnect_for_binlog(MYSQL *thrconn) {
 	return thrconn;
 }
 #endif
-
 int main(int argc, char *argv[])
 {
 	GError *error = NULL;
@@ -854,7 +852,7 @@ int main(int argc, char *argv[])
 	//clarify binlog coordinates with trx_consistency_only
 	if(trx_consistency_only)
 		g_warning("Using trx_consistency_only, binlog coordinates will not be accurate if you are writing to non transactional tables.");
-
+	//if no output directory specified, then auto generate a directory
 	if (!output_directory)
 		output_directory = g_strdup_printf("%s-%04d%02d%02d-%02d%02d%02d",DIRECTORY,
 			tval.tm_year+1900, tval.tm_mon+1, tval.tm_mday,
@@ -1273,6 +1271,7 @@ void start_dump(MYSQL *conn)
 	} else {
 		g_warning("Executing in no-locks mode, snapshot will notbe consistent");
 	}
+
 	if (mysql_get_server_version(conn) < 40108) {
 		mysql_query(conn, "CREATE TABLE IF NOT EXISTS mysql.mydumperdummy (a INT) ENGINE=INNODB");
 		need_dummy_read=1;
@@ -1312,7 +1311,6 @@ void start_dump(MYSQL *conn)
 
 	if (detected_server == SERVER_TYPE_MYSQL) {
 		mysql_query(conn, "/*!40101 SET NAMES binary*/");
-
 		write_snapshot_info(conn, mdfile);
 	}
 	

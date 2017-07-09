@@ -105,6 +105,8 @@ struct rawReturnValue{
     std::vector<std::vector<std::string> > rowValues;
     std::vector<std::string> fieldNames;
     std::vector<int> fieldTypes;
+    std::vector<int> lengths;
+    std::vector<int> maxlengths;
 };
 
 
@@ -139,6 +141,8 @@ rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
                     while( (field = mysql_fetch_field(dbres->n)) ) {
                         myRaw.fieldNames.push_back(std::string(field->name));
                         myRaw.fieldTypes.push_back(field->type);
+                        myRaw.lengths.push_back(field->length);
+                        myRaw.maxlengths.push_back(field->max_length);
                     }
                 }
                 if(row[i]==NULL) curRow.push_back("NULL");
@@ -538,6 +542,52 @@ std::string getBackupQuery(SchemaInfo &schema, std::vector<transField> &tfds,
     return res;
 }
 
+
+
+
+static
+void analyseCost(SchemaInfo &schema, std::vector<transField> &tfds,
+                                     std::string db="tdb",std::string table="student1"){
+
+    std::string res = "SELECT ";
+    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
+    //get databaseMeta, search in the map
+    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
+    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
+    std::string annotablename = tbm.getAnonTableName();    
+    int numOfChoosenField=0;
+    //then a list of onion names
+    for(auto item:tfds){
+        for(auto index:item.choosenOnions){
+            res += item.fields[index];
+            res += " , ";
+            numOfChoosenField++;
+        }
+    }
+    res = res.substr(0,res.size()-2);
+    res = res + "FROM `"+db+std::string("`.`")+annotablename+"` limit 1;";
+    rawReturnValue resraw =  executeAndGetResultRemote(globalConn,res);
+    assert(numOfChoosenField==(int)resraw.fieldTypes.size());
+
+    vector<bool> whetherToQuote;
+    vector<bool> lengths;
+    for(auto i=0u;i<resraw.fieldTypes.size();i++){
+        if(IS_NUM(resraw.fieldTypes[i])) whetherToQuote.push_back(false);
+        else whetherToQuote.push_back(true);
+        lengths.push_back(resraw.maxlengths[i]);
+    }
+    for(auto i=0u;i<lengths.size();i++){
+        std::cout<<resraw.fieldNames[i]<<" : "<<whetherToQuote[i]<<" : "<<lengths[i]<<std::endl;
+    } 
+
+
+}
+
+
+
+
+
+
 static
 std::string getInsertQuery(SchemaInfo &schema, std::vector<transField> &tfds,
                                      std::string db,std::string table, rawReturnValue & rows,bool isHex=false){ 
@@ -647,7 +697,8 @@ main(int argc, char* argv[]) {
                "2. back up the first onion With salt \n"
                "3. back up the first onion Without salt\n"
                "4. back up all onions and salts in a hirechy\n"
-               "5. to be implemented\n"
+               "5. analysis the backup \n"
+               "6. tobe implemented"
          <<endl;
          return 0;
      }
@@ -806,10 +857,28 @@ main(int argc, char* argv[]) {
             }
             std::string backq = getBackupQuery(*schema,res,db,table,useHex,true);
             cout<<backq<<endl;
+
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);           
             writeResultsColumns(resraw);
+        }else if(string(argv[3])=="5"){
+            std::string db(argv[1]),table(argv[2]);
+            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+            //get all the fields in the tables.
+    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+            auto res = getTransField(fms);
+            //for each filed, we choose all the onions and salts.
+            for(auto &item:res){
+                assert(item.choosenOnions.size()==0u);
+                assert(item.onions.size()==item.originalOm.size());
+                assert(item.fields.size()==item.originalOm.size() ||
+                       item.fields.size()==item.originalOm.size()+1);
+                for(unsigned int i=0u;i<item.onions.size();i++) {
+                    item.choosenOnions.push_back(i);
+                }
+            }
+            analyseCost(*schema,res,db,table);
         }else{
-            
+
         }
         fclose(stream);
         return 0;

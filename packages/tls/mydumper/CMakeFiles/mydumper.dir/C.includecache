@@ -6,25 +6,25 @@
 
 #IncludeRegexTransform: 
 
-/home/casualet/github/mydumper/binlog.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/binlog.h
 mydumper.h
-/home/casualet/github/mydumper/mydumper.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/mydumper.h
 
-/home/casualet/github/mydumper/common.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/common.h
 
-/home/casualet/github/mydumper/config.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/config.h
 
-/home/casualet/github/mydumper/g_unix_signal.c
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/g_unix_signal.c
 signal.h
 -
 glib.h
 -
 
-/home/casualet/github/mydumper/g_unix_signal.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/g_unix_signal.h
 glib.h
 -
 
-/home/casualet/github/mydumper/mydumper.c
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/mydumper.c
 mysql.h
 -
 unistd.h
@@ -52,23 +52,23 @@ signal.h
 glib/gstdio.h
 -
 config.h
-/home/casualet/github/mydumper/config.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/config.h
 binlog.h
-/home/casualet/github/mydumper/binlog.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/binlog.h
 mydumper.h
-/home/casualet/github/mydumper/mydumper.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/mydumper.h
 server_detect.h
-/home/casualet/github/mydumper/server_detect.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/server_detect.h
 common.h
-/home/casualet/github/mydumper/common.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/common.h
 g_unix_signal.h
-/home/casualet/github/mydumper/g_unix_signal.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/g_unix_signal.h
 math.h
 -
 
-/home/casualet/github/mydumper/mydumper.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/mydumper.h
 
-/home/casualet/github/mydumper/server_detect.c
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/server_detect.c
 pcre.h
 -
 glib.h
@@ -76,9 +76,9 @@ glib.h
 string.h
 -
 server_detect.h
-/home/casualet/github/mydumper/server_detect.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/server_detect.h
 
-/home/casualet/github/mydumper/server_detect.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/server_detect.h
 mysql.h
 -
 

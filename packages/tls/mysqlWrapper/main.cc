@@ -23,7 +23,7 @@ string createSelect(string database,string table){
     }
     head[head.size()-1]=' ';
     head += "FROM `"+database+"`.`"+table+"`";
-    cout<<head<<endl;
+    //cout<<head<<endl;
     return head;
 }
 

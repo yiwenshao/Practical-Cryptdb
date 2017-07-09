@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/casualet/github/mydumper
+CMAKE_SOURCE_DIR = /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/casualet/github/mydumper
+CMAKE_BINARY_DIR = /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -124,14 +124,14 @@ edit_cache/fast: edit_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/casualet/github/mydumper && $(CMAKE_COMMAND) -E cmake_progress_start /home/casualet/github/mydumper/CMakeFiles /home/casualet/github/mydumper/docs/CMakeFiles/progress.marks
-	cd /home/casualet/github/mydumper && $(MAKE) -f CMakeFiles/Makefile2 docs/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/casualet/github/mydumper/CMakeFiles 0
+	cd /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper && $(CMAKE_COMMAND) -E cmake_progress_start /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/CMakeFiles /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/docs/CMakeFiles/progress.marks
+	cd /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper && $(MAKE) -f CMakeFiles/Makefile2 docs/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/casualet/github/mydumper && $(MAKE) -f CMakeFiles/Makefile2 docs/clean
+	cd /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper && $(MAKE) -f CMakeFiles/Makefile2 docs/clean
 .PHONY : clean
 
 # The main clean target
@@ -141,17 +141,17 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/casualet/github/mydumper && $(MAKE) -f CMakeFiles/Makefile2 docs/preinstall
+	cd /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper && $(MAKE) -f CMakeFiles/Makefile2 docs/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/casualet/github/mydumper && $(MAKE) -f CMakeFiles/Makefile2 docs/preinstall
+	cd /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper && $(MAKE) -f CMakeFiles/Makefile2 docs/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/casualet/github/mydumper && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Help Target
@@ -177,6 +177,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/casualet/github/mydumper && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

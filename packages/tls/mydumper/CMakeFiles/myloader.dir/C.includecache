@@ -6,11 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/home/casualet/github/mydumper/common.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/common.h
 
-/home/casualet/github/mydumper/config.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/config.h
 
-/home/casualet/github/mydumper/myloader.c
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/myloader.c
 mysql.h
 -
 unistd.h
@@ -32,13 +32,13 @@ errno.h
 zlib.h
 -
 common.h
-/home/casualet/github/mydumper/common.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/common.h
 myloader.h
-/home/casualet/github/mydumper/myloader.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/myloader.h
 config.h
-/home/casualet/github/mydumper/config.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/config.h
 
-/home/casualet/github/mydumper/myloader.h
+/home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/myloader.h
 
 /usr/include/glib-2.0/glib.h
 glib/galloca.h

@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/casualet/github/mydumper
+CMAKE_SOURCE_DIR = /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/casualet/github/mydumper
+CMAKE_BINARY_DIR = /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper
 
 # Utility rule file for dist.
 
@@ -54,7 +54,7 @@ CMAKE_BINARY_DIR = /home/casualet/github/mydumper
 include CMakeFiles/dist.dir/progress.make
 
 CMakeFiles/dist:
-	bzr export --root=mydumper-0.9.2 /home/casualet/github/mydumper/mydumper-0.9.2.tar.gz
+	bzr export --root=mydumper-0.9.2 /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/mydumper-0.9.2.tar.gz
 
 dist: CMakeFiles/dist
 dist: CMakeFiles/dist.dir/build.make
@@ -71,6 +71,6 @@ CMakeFiles/dist.dir/clean:
 .PHONY : CMakeFiles/dist.dir/clean
 
 CMakeFiles/dist.dir/depend:
-	cd /home/casualet/github/mydumper && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/casualet/github/mydumper /home/casualet/github/mydumper /home/casualet/github/mydumper /home/casualet/github/mydumper /home/casualet/github/mydumper/CMakeFiles/dist.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper /home/casualet/github/Practical-Cryptdb/packages/tls/mydumper/CMakeFiles/dist.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/dist.dir/depend
 
