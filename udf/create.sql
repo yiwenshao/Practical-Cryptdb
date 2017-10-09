@@ -34,6 +34,7 @@
    END IF;
  END
 
+
  CREATE PROCEDURE remote_db.generic_prefix_adjustOnion
        (IN completion_id INTEGER,
         IN adjust_query0 VARBINARY(500),

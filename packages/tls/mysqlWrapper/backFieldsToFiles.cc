@@ -84,6 +84,5 @@ int main(int argc,char**argv){
         string query = createSelect(string(argv[1]),item,stoi(option));
         backupselect(query,string("allTables/")+item+"/");
     }
-
     return 0;
 }

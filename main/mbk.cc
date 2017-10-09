@@ -44,12 +44,15 @@
 #include <sstream>
 #include <unistd.h>
 #include <map>
+#include <fstream>
+
 
 using std::cout;
 using std::cin;
 using std::endl;
 using std::vector;
 using std::string;
+using std::to_string;
 
 std::map<SECLEVEL,std::string> gmp;
 std::map<onion,std::string> gmp2;
@@ -104,9 +107,40 @@ Connect  *globalConn;
 struct rawReturnValue{
     std::vector<std::vector<std::string> > rowValues;
     std::vector<std::string> fieldNames;
-    std::vector<int> fieldTypes;
+    std::vector<enum_field_types> fieldTypes;
     std::vector<int> lengths;
     std::vector<int> maxlengths;
+    void show(){
+        cout<<"rowvalues:"<<endl;
+        for(auto item_vec:rowValues){
+            for(auto item:item_vec){
+                cout<<item.size()<<"\t";
+            }
+            cout<<endl;
+        }
+        cout<<"types:"<<endl;
+        for(auto item:fieldTypes){
+            cout<<IS_NUM(item)<<"\t";
+        }
+        cout<<endl;
+        cout<<"fieldNames:"<<endl;
+        for(auto item:fieldNames){
+            cout<<item<<"\t";
+        }
+        cout<<endl;
+
+        cout<<"lengths:"<<endl;
+        for(auto item:lengths){
+            cout<<item<<"\t";
+        }
+        cout<<endl;
+
+        cout<<"maxlengths:"<<endl;
+        for(auto item:maxlengths){
+           cout<<item<<"\t";
+        }
+        cout<<endl;
+    }
 };
 
 
@@ -184,7 +218,9 @@ void printrawReturnValue(rawReturnValue & cur) {
 }
 */
 
+
 //helper function for transforming the rawReturnValue
+
 static Item_null *
 make_null(const std::string &name = ""){
     char *const n = current_thd->strdup(name.c_str());
@@ -685,6 +721,149 @@ void writeResultsColumns(rawReturnValue & raw){
 }
 
 
+static void write_meta(rawReturnValue& resraw,string db,string table){
+    //write metadata
+    FILE * localmeta = NULL;
+    localmeta = fopen("metadata.data","a");
+
+    string s = string("database:")+db;
+    s+="\n";
+    fwrite(s.c_str(),1,s.size(),localmeta);
+
+    s = string("table:")+table;
+    s+="\n";
+    fwrite(s.c_str(),1,s.size(),localmeta);
+
+    s = string("num_of_fields:")+to_string(resraw.fieldNames.size())+"\n";
+    fwrite(s.c_str(),1,s.size(),localmeta);
+
+    s = string("field_types:");
+    for(auto item:resraw.fieldTypes){
+        if(IS_NUM(item)){
+            s+=string("N ");
+        }else s+=string("S ");
+    }
+    s.back()='\n';
+    fwrite(s.c_str(),1,s.size(),localmeta);
+
+    s = string("field_lengths:");
+    for(auto item : resraw.lengths){
+        s+=to_string(item)+=" ";
+    }
+    s.back()='\n';
+    fwrite(s.c_str(),1,s.size(),localmeta);
+
+    s = string("field_names:");
+    for(auto item : resraw.fieldNames){
+        s+=item+=" ";
+    }
+    s.back()='\n';
+    fwrite(s.c_str(),1,s.size(),localmeta);
+
+    fclose(localmeta);
+}
+
+struct meta_file{
+    string db,table;
+    int num_of_fields;
+    vector<string> field_types;
+    vector<int> field_lengths;
+    vector<string> field_names;
+
+    void show(){
+        cout<<db<<endl;
+        cout<<table<<endl;
+        cout<<num_of_fields<<endl;
+
+        for(auto item:field_types){
+            cout<<item<<"\t";
+        }
+        cout<<endl;
+        for(auto item:field_lengths){
+            cout<<item<<"\t";
+        }
+	cout<<endl;
+        for(auto item:field_names){
+            cout<<item<<"\t";
+        }
+	cout<<endl;
+    }
+};
+
+
+#include <sstream>
+static meta_file load_meta(string filename){
+    //FILE * meta = NULL;
+    //localmeta = fopen(filename.c_str(),"r");
+    std::ifstream infile(filename);
+    string line;
+    meta_file res;
+    while(std::getline(infile,line)){
+        int index = line.find(":");
+        string head = line.substr(0,index);
+        if(head=="database"){
+            res.db = line.substr(index+1);
+        }else if(head=="table"){
+            res.table = line.substr(index+1);
+        }else if(head=="num_of_fields"){
+            res.num_of_fields = std::stoi(line.substr(index+1));
+        }else if(head=="field_types"){
+            string types = line.substr(index+1);
+            int start=0,next=0;
+            while((next=types.find(' ',start))!=-1){
+                string item = types.substr(start,next-start);
+                res.field_types.push_back(item);
+                start = next+1;
+            }
+            string item = types.substr(start);
+            res.field_types.push_back(item);
+
+        }else if(head=="field_lengths"){
+            string lengths = line.substr(index+1);
+            int start=0,next=0;
+            while((next=lengths.find(' ',start))!=-1){
+                string item = lengths.substr(start,next-start);
+                res.field_lengths.push_back(std::stoi(item));
+                start = next+1;
+            }
+            string item = lengths.substr(start);
+            res.field_lengths.push_back(std::stoi(item));
+        }else if(head=="field_names"){
+            string names = line.substr(index+1);
+            int start=0,next=0;
+            while((next=names.find(' ',start))!=-1){
+                string item = names.substr(start,next-start);
+                res.field_names.push_back(item);
+                start = next+1;
+            }
+            string item = names.substr(start);
+            res.field_names.push_back(item);
+        }
+    }
+    return res;
+}
+
+
+static
+void write_raw_data_to_files(rawReturnValue& resraw,string db,string table){
+    //write metafiles
+    write_meta(resraw,db,table);
+
+    //write datafiles
+
+}
+
+/*
+rawReturnValue load_raw_data_from_files(){
+
+
+
+}*/
+
+
+
+
+
 int
 main(int argc, char* argv[]) {
      if(argc!=5){
@@ -701,7 +880,7 @@ main(int argc, char* argv[]) {
                "6. tobe implemented"
          <<endl;
          return 0;
-     }
+     }     
      string hexstring(argv[4]);   
      bool useHex=false;
      if(hexstring=="hex"){
@@ -772,6 +951,12 @@ main(int argc, char* argv[]) {
     	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
             std::string backq = getTestQuery(*schema,res,db,table);
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+            if(1==2)
+                write_raw_data_to_files(resraw,db,table);
+            else{
+                load_meta("metadata.data");
+            }
+            resraw.show();
     	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
             auto finalresults = decryptResults(rawtorestype,*rm);
     	    parseResType(finalresults);
@@ -878,7 +1063,8 @@ main(int argc, char* argv[]) {
             }
             analyseCost(*schema,res,db,table);
         }else{
-
+            meta_file res = load_meta("metadata.data");
+            res.show();
         }
         fclose(stream);
         return 0;
