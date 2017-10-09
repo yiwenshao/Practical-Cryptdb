@@ -110,6 +110,7 @@ struct rawReturnValue{
     std::vector<enum_field_types> fieldTypes;
     std::vector<int> lengths;
     std::vector<int> maxlengths;
+    std::vector<int> choosen_onions;
     void show(){
         cout<<"rowvalues:"<<endl;
         for(auto item_vec:rowValues){
@@ -724,7 +725,7 @@ void writeResultsColumns(rawReturnValue & raw){
 static void write_meta(rawReturnValue& resraw,string db,string table){
     //write metadata
     FILE * localmeta = NULL;
-    localmeta = fopen("metadata.data","a");
+    localmeta = fopen("metadata.data","w");
 
     string s = string("database:")+db;
     s+="\n";
@@ -760,6 +761,12 @@ static void write_meta(rawReturnValue& resraw,string db,string table){
     s.back()='\n';
     fwrite(s.c_str(),1,s.size(),localmeta);
 
+    s = string("choosen_onions:");
+    for(auto item : resraw.choosen_onions){
+        s+=to_string(item)+=" ";
+    }
+    s.back()='\n';
+    fwrite(s.c_str(),1,s.size(),localmeta);
     fclose(localmeta);
 }
 
@@ -769,7 +776,7 @@ struct meta_file{
     vector<string> field_types;
     vector<int> field_lengths;
     vector<string> field_names;
-
+    vector<int> choosen_onions;
     void show(){
         cout<<db<<endl;
         cout<<table<<endl;
@@ -787,6 +794,10 @@ struct meta_file{
             cout<<item<<"\t";
         }
 	cout<<endl;
+        for(auto item:choosen_onions){
+           cout<<item<<"\t";
+        }
+        cout<<endl;
     }
 };
 
@@ -838,6 +849,16 @@ static meta_file load_meta(string filename){
             }
             string item = names.substr(start);
             res.field_names.push_back(item);
+        }else if(head=="choosen_onions"){
+            string c_onions = line.substr(index+1);
+            int start=0,next=0;
+            while((next=c_onions.find(' ',start))!=-1){
+                string item = c_onions.substr(start,next-start);
+                res.choosen_onions.push_back(std::stoi(item));
+                start = next+1;
+            }
+            string item = c_onions.substr(start);
+            res.choosen_onions.push_back(std::stoi(item));
         }
     }
     return res;
@@ -944,13 +965,19 @@ main(int argc, char* argv[]) {
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
             //get all the fields in the tables.
     	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);    
+            auto res = getTransField(fms);
             for(auto &item:res){
                 item.choosenOnions.push_back(0);
             }
     	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
             std::string backq = getTestQuery(*schema,res,db,table);
             rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+
+            for(auto &item:res){
+                resraw.choosen_onions.push_back(item.choosenOnions[0]);
+            }
+
+            
             if(1==2)
                 write_raw_data_to_files(resraw,db,table);
             else{
@@ -958,6 +985,7 @@ main(int argc, char* argv[]) {
             }
             resraw.show();
     	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
+
             auto finalresults = decryptResults(rawtorestype,*rm);
     	    parseResType(finalresults);
         }else if(string(argv[3])=="1"){//back up all the onions and salts
@@ -1062,9 +1090,29 @@ main(int argc, char* argv[]) {
                 }
             }
             analyseCost(*schema,res,db,table);
-        }else{
+        }else if(string(argv[3])=="9"){
             meta_file res = load_meta("metadata.data");
             res.show();
+        }else if(string(argv[3])=="8"){
+            std::string db="tdb",table="student";
+            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+            //get all the fields in the tables.
+            std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+            auto res = getTransField(fms);
+            for(auto &item:res){
+                item.choosenOnions.push_back(0);
+            }
+            std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+            std::string backq = getTestQuery(*schema,res,db,table);
+            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+            for(auto &item:res){
+                resraw.choosen_onions.push_back(item.choosenOnions[0]);
+            }
+            write_raw_data_to_files(resraw,db,table);
+            resraw.show();
+            ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
+            auto finalresults = decryptResults(rawtorestype,*rm);
+            parseResType(finalresults);
         }
         fclose(stream);
         return 0;
