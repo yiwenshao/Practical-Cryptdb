@@ -104,13 +104,14 @@ static std::map<std::string, WrapperState*> clients;
 Connect  *globalConn;
 
 //Return values got by using directly the MySQL c Client
-struct rawReturnValue{
-    std::vector<std::vector<std::string> > rowValues;
+struct rawReturnValue {
+    std::vector<std::vector<std::string>> rowValues;
     std::vector<std::string> fieldNames;
     std::vector<enum_field_types> fieldTypes;
     std::vector<int> lengths;
     std::vector<int> maxlengths;
     std::vector<int> choosen_onions;
+ 
     void show(){
         cout<<"rowvalues:"<<endl;
         for(auto item_vec:rowValues){
@@ -119,10 +120,12 @@ struct rawReturnValue{
             }
             cout<<endl;
         }
+
         cout<<"types:"<<endl;
         for(auto item:fieldTypes){
             cout<<IS_NUM(item)<<"\t";
         }
+
         cout<<endl;
         cout<<"fieldNames:"<<endl;
         for(auto item:fieldNames){
@@ -865,17 +868,40 @@ static meta_file load_meta(string filename){
 }
 
 
+static void write_row_data(rawReturnValue& resraw){
+    vector<FILE*> data_files;
+    for(auto item:resraw.fieldNames){
+        item=string("data/")+item;
+        FILE * data  = fopen(item.c_str(),"w");
+        data_files.push_back(data);
+    }
+    const string token = "\n";
+    for(auto &item : resraw.rowValues){        
+        for(unsigned int i=0u;i<item.size();i++){
+           fwrite(item[i].c_str(),1,item[i].size(),data_files[i]);
+           if(IS_NUM(resraw.fieldTypes[i])){
+               fwrite(token.c_str(),1,token.size(),data_files[i]);
+           }               
+        }
+    }
+    for(auto item:data_files){
+        fclose(item);
+    }
+}
+
+
 static
 void write_raw_data_to_files(rawReturnValue& resraw,string db,string table){
     //write metafiles
     write_meta(resraw,db,table);
-
     //write datafiles
-
+    write_row_data(resraw);
 }
 
 /*
 rawReturnValue load_raw_data_from_files(){
+
+
 
 
 
