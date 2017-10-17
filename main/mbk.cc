@@ -46,6 +46,12 @@
 #include <map>
 #include <fstream>
 
+#include<sys/stat.h>
+#include<sys/types.h>
+
+#include <fcntl.h>
+#include <unistd.h>
+
 
 using std::cout;
 using std::cin;
@@ -172,6 +178,7 @@ rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
 
     if(num!=0){
         while( (row = mysql_fetch_row(dbres->n)) ){
+            //what's the difference between fieldlen
 	    unsigned long * fieldLen = mysql_fetch_lengths(dbres->n);
             std::vector<std::string> curRow;
             for(int i=0;i<numOfFields;i++){
@@ -179,8 +186,11 @@ rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
                     while( (field = mysql_fetch_field(dbres->n)) ) {
                         myRaw.fieldNames.push_back(std::string(field->name));
                         myRaw.fieldTypes.push_back(field->type);
-                        myRaw.lengths.push_back(field->length);
+                        //myRaw.lengths.push_back(field->length);
+                        //myRaw.lengths.push_back(fieldLen[i]);
+                        myRaw.lengths.push_back(field->max_length);
                         myRaw.maxlengths.push_back(field->max_length);
+                        cout<<field->length<<"::"<<field->max_length<<endl;
                     }
                 }
                 if(row[i]==NULL) curRow.push_back("NULL");
@@ -724,11 +734,36 @@ void writeResultsColumns(rawReturnValue & raw){
         fclose(files[i]);
 }
 
+/*
+only support relative path
+*/
+static bool make_path(string directory){
+    struct stat st;
+    if(directory.size()==0||directory[0]=='/') return false;
+    if(directory.back()=='/') directory.pop_back();
+    int start = 0,next=0;
+    while(stat(directory.c_str(),&st)==-1&&next!=-1){
+        next = directory.find('/',start);
+        if(next!=-1){
+            string sub = directory.substr(0,next);
+            if(stat(sub.c_str(),&st)==-1)
+                mkdir(sub.c_str(),0700);
+            start =  next + 1;
+        }else{
+            mkdir(directory.c_str(),0700);
+        }
+    }
+    return true;
+}
+
 
 static void write_meta(rawReturnValue& resraw,string db,string table){
     //write metadata
     FILE * localmeta = NULL;
-    localmeta = fopen("metadata.data","w");
+    string prefix = string("data/")+db+"/"+table;
+    make_path(prefix);
+    
+    localmeta = fopen((prefix+"/metadata.data").c_str(),"w");
 
     string s = string("database:")+db;
     s+="\n";
@@ -780,11 +815,11 @@ struct meta_file{
     vector<int> field_lengths;
     vector<string> field_names;
     vector<int> choosen_onions;
+
     void show(){
         cout<<db<<endl;
         cout<<table<<endl;
         cout<<num_of_fields<<endl;
-
         for(auto item:field_types){
             cout<<item<<"\t";
         }
@@ -792,6 +827,7 @@ struct meta_file{
         for(auto item:field_lengths){
             cout<<item<<"\t";
         }
+
 	cout<<endl;
         for(auto item:field_names){
             cout<<item<<"\t";
@@ -805,10 +841,12 @@ struct meta_file{
 };
 
 
+
 #include <sstream>
-static meta_file load_meta(string filename){
+static meta_file load_meta(string db="tdb", string table="student", string filename="metadata.data"){
     //FILE * meta = NULL;
     //localmeta = fopen(filename.c_str(),"r");
+    filename = string("data/")+db+"/"+table+"/"+filename;
     std::ifstream infile(filename);
     string line;
     meta_file res;
@@ -868,10 +906,11 @@ static meta_file load_meta(string filename){
 }
 
 
-static void write_row_data(rawReturnValue& resraw){
+static void write_row_data(rawReturnValue& resraw,string db, string table){
     vector<FILE*> data_files;
+    string prefix = string("data/")+db+"/"+table+"/";
     for(auto item:resraw.fieldNames){
-        item=string("data/")+item;
+        item=prefix+item;
         FILE * data  = fopen(item.c_str(),"w");
         data_files.push_back(data);
     }
@@ -895,20 +934,102 @@ void write_raw_data_to_files(rawReturnValue& resraw,string db,string table){
     //write metafiles
     write_meta(resraw,db,table);
     //write datafiles
-    write_row_data(resraw);
+    write_row_data(resraw,db,table);
 }
 
-/*
-rawReturnValue load_raw_data_from_files(){
 
+static void load_num(string filename,vector<string> &res){
+    cout<<"load num"<<endl;
+    std::ifstream infile(filename);
+    string line;
+    while(std::getline(infile,line)){
+        res.push_back(line);        
+    }
+    infile.close();
+}
 
+static void load_string(string filename, vector<string> &res,unsigned long length){
+    char *buf = new char[length];
+    int fd = open(filename.c_str(),O_RDONLY);
+    while(read(fd,buf,length)!=0){
+        res.push_back(string(buf,length));
+    }
+    close(fd);
+}
 
+static vector<vector<string>> load_table_fields(meta_file & input) {
+    cout<<"load_table_fields"<<endl;
+    string db = input.db;
+    string table = input.table;
+    vector<vector<string>> res;
+    string prefix = string("data/")+db+"/"+table+"/";
 
+    vector<string> datafiles;
+    for(auto item:input.field_names){
+        datafiles.push_back(prefix+item);
+    }
 
-}*/
+    for(unsigned int i=0u;i<input.field_names.size();i++){
+       vector<string> column;
+       if(input.field_types[i]=="N"){
+           load_num(datafiles[i],column);
+       }else{
+           load_string(datafiles[i],column,input.field_lengths[i]);
+       }
+       cout<<"column_size: "<<column.size()<<endl;
+       for(unsigned int j=0u; j<column.size(); j++){
+           if(j>=res.size()){
+               res.push_back(vector<string>());
+           }
+           res[j].push_back(column[j]);
+       }
+    }
+    return res;
+}
 
+static void normal(){
+    std::string db("tdb"),table("student");
+    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+    //get all the fields in the tables.
+    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+    auto res = getTransField(fms);
+    for(auto &item:res){
+	item.choosenOnions.push_back(0);
+    }
+    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+    std::string backq = getTestQuery(*schema,res,db,table);
+    rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
 
+    for(auto &item:res){
+	resraw.choosen_onions.push_back(item.choosenOnions[0]);
+    }           
+    resraw.show();
+    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
+    auto finalresults = decryptResults(rawtorestype,*rm);
+    parseResType(finalresults);
+}
 
+static bool cmp(rawReturnValue &resraw){
+    meta_file res_meta = load_meta();
+    vector<vector<string>> res_field = load_table_fields(res_meta); 
+    if(resraw.fieldNames==res_meta.field_names){
+        cout<<"field_name equal"<<endl;
+    }else{
+        cout<<"field_name not equal"<<endl;
+        return false;
+    }
+
+    if(resraw.rowValues.size()==res_field.size()){
+        cout<<"size match"<<endl;
+    }else{
+        cout<<"size mismatch: "<<resraw.rowValues.size()<<" ## "<<res_field.size()<<endl;
+        return false;
+    }
+    for(unsigned int i=0u;i<resraw.rowValues.size();i++){
+         cout<<resraw.rowValues[i][2].size()<< "::" <<resraw.rowValues[i][2]<<endl;
+    }
+    return true;
+}
 
 
 int
@@ -983,37 +1104,7 @@ main(int argc, char* argv[]) {
 //-------------------------finish connection---------------------------------------
     //unsigned long long _thread_id = globalConn->get_thread_id();
         if(string(argv[3])=="0"){
-            std::string db,table;
-            std::cout<<"please input dbname "<<std::endl;
-            cin>>db;
-    	    std::cout<<"please input table name "<<std::endl;
-            cin>>table;
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);
-            for(auto &item:res){
-                item.choosenOnions.push_back(0);
-            }
-    	    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-            std::string backq = getTestQuery(*schema,res,db,table);
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-
-            for(auto &item:res){
-                resraw.choosen_onions.push_back(item.choosenOnions[0]);
-            }
-
-            
-            if(1==2)
-                write_raw_data_to_files(resraw,db,table);
-            else{
-                load_meta("metadata.data");
-            }
-            resraw.show();
-    	    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
-
-            auto finalresults = decryptResults(rawtorestype,*rm);
-    	    parseResType(finalresults);
+            normal();
         }else if(string(argv[3])=="1"){//back up all the onions and salts
             std::string db(argv[1]),table(argv[2]);
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
@@ -1117,8 +1208,25 @@ main(int argc, char* argv[]) {
             }
             analyseCost(*schema,res,db,table);
         }else if(string(argv[3])=="9"){
-            meta_file res = load_meta("metadata.data");
-            res.show();
+            meta_file res_meta = load_meta();
+            vector<vector<string>> res_field = load_table_fields(res_meta);
+            std::string db="tdb",table="student";
+            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+	    //get all the fields in the tables.
+	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+	    auto res = getTransField(fms);
+	    for(auto &item:res){
+	        item.choosenOnions.push_back(0);
+	    }
+            std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);            
+            rawReturnValue resraw;
+            resraw.rowValues = res_field;
+            resraw.fieldNames = res_meta.field_names;
+            resraw.fieldTypes = vector<enum_field_types>(res_field.size(),
+                                                   static_cast<enum_field_types>(0));
+            ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
+            auto finalresults = decryptResults(rawtorestype,*rm);
+            parseResType(finalresults);
         }else if(string(argv[3])=="8"){
             std::string db="tdb",table="student";
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
@@ -1134,12 +1242,13 @@ main(int argc, char* argv[]) {
             for(auto &item:res){
                 resraw.choosen_onions.push_back(item.choosenOnions[0]);
             }
-            write_raw_data_to_files(resraw,db,table);
             resraw.show();
+            write_raw_data_to_files(resraw,db,table);
+	    cmp(resraw);
             ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
             auto finalresults = decryptResults(rawtorestype,*rm);
             parseResType(finalresults);
-        }
-        fclose(stream);
-        return 0;
+    }
+    fclose(stream);
+    return 0;
 }
