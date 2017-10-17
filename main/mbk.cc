@@ -778,9 +778,7 @@ static void write_meta(rawReturnValue& resraw,string db,string table){
 
     s = string("field_types:");
     for(auto item:resraw.fieldTypes){
-        if(IS_NUM(item)){
-            s+=string("N ");
-        }else s+=string("S ");
+        s+=std::to_string(item)+=" ";
     }
     s.back()='\n';
     fwrite(s.c_str(),1,s.size(),localmeta);
@@ -971,7 +969,7 @@ static vector<vector<string>> load_table_fields(meta_file & input) {
 
     for(unsigned int i=0u;i<input.field_names.size();i++){
        vector<string> column;
-       if(input.field_types[i]=="N"){
+       if(IS_NUM(std::stoi(input.field_types[i]))){
            load_num(datafiles[i],column);
        }else{
            load_string(datafiles[i],column,input.field_lengths[i]);
