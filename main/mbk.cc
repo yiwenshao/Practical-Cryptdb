@@ -1026,7 +1026,12 @@ static bool cmp(rawReturnValue &resraw){
         return false;
     }
     for(unsigned int i=0u;i<resraw.rowValues.size();i++){
-         cout<<resraw.rowValues[i][2].size()<< "::" <<resraw.rowValues[i][2]<<endl;
+         //cout<<resraw.rowValues[i][2].size()<< "::" <<resraw.rowValues[i][2]<<endl;
+         if(resraw.rowValues[i]==res_field[i]){
+             cout<<"field_match"<<endl;
+         }else{
+             cout<<"field_mismatch"<<endl;
+         }
     }
     return true;
 }
