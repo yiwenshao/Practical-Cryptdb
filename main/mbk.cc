@@ -168,10 +168,8 @@ rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
     }
 
     int num = mysql_num_rows(dbres->n);
-    std::cout<<"num of rows: "<<num<<std::endl;
     
     int numOfFields = mysql_num_fields(dbres->n);
-    std::cout<<"num of fields: "<<numOfFields<<std::endl;
 
     MYSQL_FIELD *field;
     MYSQL_ROW row;
@@ -936,7 +934,6 @@ void write_raw_data_to_files(rawReturnValue& resraw,string db,string table){
 
 
 static void load_num(string filename,vector<string> &res){
-    cout<<"load num"<<endl;
     std::ifstream infile(filename);
     string line;
     while(std::getline(infile,line)){
@@ -955,7 +952,6 @@ static void load_string(string filename, vector<string> &res,unsigned long lengt
 }
 
 static vector<vector<string>> load_table_fields(meta_file & input) {
-    cout<<"load_table_fields"<<endl;
     string db = input.db;
     string table = input.table;
     vector<vector<string>> res;
@@ -973,7 +969,6 @@ static vector<vector<string>> load_table_fields(meta_file & input) {
        }else{
            load_string(datafiles[i],column,input.field_lengths[i]);
        }
-       cout<<"column_size: "<<column.size()<<endl;
        for(unsigned int j=0u; j<column.size(); j++){
            if(j>=res.size()){
                res.push_back(vector<string>());
@@ -1032,6 +1027,7 @@ static bool cmp(rawReturnValue &resraw){
     }
     return true;
 }
+
 /*
 void static cmp2(rawReturnValue & res1,rawReturnValue & res2){
     if(res1.fieldNames == res2.fieldNames){
@@ -1060,6 +1056,34 @@ void static cmp2(rawReturnValue & res1,rawReturnValue & res2){
 }
 */
 
+static rawReturnValue with_remote(){
+    std::string db="tdb",table="student";
+    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+    //get all the fields in the tables.
+    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+    auto res = getTransField(fms);
+
+    meta_file res_meta = load_meta();
+    for(unsigned int i=0;i<res_meta.choosen_onions.size();i++){
+	res[i].choosenOnions.push_back(res_meta.choosen_onions[i]);
+    }
+    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+    std::string backq = "show databases";
+    executeAndGetResultRemote(globalConn,backq);
+    rawReturnValue resraw2;
+    vector<vector<string>> res_field = load_table_fields(res_meta);
+    resraw2.rowValues = res_field;
+    resraw2.fieldNames = res_meta.field_names;
+    resraw2.choosen_onions = res_meta.choosen_onions;
+    for(unsigned int i=0;i<res_meta.field_types.size();++i){
+	resraw2.fieldTypes.push_back(static_cast<enum_field_types>(std::stoi(res_meta.field_types[i])));
+    }
+    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
+    auto finalresults = decryptResults(rawtorestype,*rm);
+    parseResType(finalresults);
+
+    return resraw2;
+}
 
 int
 main(int argc, char* argv[]) {
@@ -1278,30 +1302,7 @@ main(int argc, char* argv[]) {
             auto finalresults = decryptResults(rawtorestype,*rm);
             parseResType(finalresults);
     }else{
-            std::string db="tdb",table="student";
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-            std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);
-
-            meta_file res_meta = load_meta();
-            for(unsigned int i=0;i<res_meta.choosen_onions.size();i++){
-                res[i].choosenOnions.push_back(res_meta.choosen_onions[i]);
-            }
-            std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-            std::string backq = getTestQuery(*schema,res,db,table);
-            executeAndGetResultRemote(globalConn,backq);
-            rawReturnValue resraw2;
-            vector<vector<string>> res_field = load_table_fields(res_meta);
-            resraw2.rowValues = res_field;
-            resraw2.fieldNames = res_meta.field_names;
-            resraw2.choosen_onions = res_meta.choosen_onions;
-            for(unsigned int i=0;i<res_meta.field_types.size();++i){
-                resraw2.fieldTypes.push_back(static_cast<enum_field_types>(std::stoi(res_meta.field_types[i])));
-            }
-            ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
-            auto finalresults = decryptResults(rawtorestype,*rm);
-            parseResType(finalresults);
+        with_remote();
     }
     fclose(stream);
     return 0;
