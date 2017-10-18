@@ -60,16 +60,9 @@ using std::vector;
 using std::string;
 using std::to_string;
 
-std::map<SECLEVEL,std::string> gmp;
 std::map<onion,std::string> gmp2;
 
-static const int numOfPipe = 1;
-
 static std::string embeddedDir="/t/cryt/shadow";
-
-
-vector<bool> whetherToQuoteGlobal;
-
 
 //My WrapperState.
 class WrapperState {
@@ -199,37 +192,6 @@ rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
     }
     return myRaw;
 }
-
-
-/*
-//print RawReturnValue for testing purposes.
-static
-void printrawReturnValue(rawReturnValue & cur) {
-    int len = cur.fieldTypes.size();
-    if(len==0){
-        std::cout<<"zero output"<<std::endl;
-        return ;
-    }
-
-    if(static_cast<int>(cur.fieldNames.size())!=len||static_cast<int>(cur.rowValues[0].size())!=len){
-        std::cout<<RED_BEGIN<<"size mismatch in printrawReturnValue"<<COLOR_END<<std::endl;
-        return ;
-    }
-
-    for(int i=0;i<len;i++){
-        std::cout<<cur.fieldNames[i]<<":"<<cur.fieldTypes[i]<<"\t";
-    }
-
-    std::cout<<std::endl;
-    for(auto row:cur.rowValues){
-        for(auto rowItem:row){
-            std::cout<<rowItem<<"\t";
-        }
-        std::cout<<std::endl;
-    }
-}
-*/
-
 
 //helper function for transforming the rawReturnValue
 
@@ -533,58 +495,6 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vect
     return myReturnMeta;
 }
 
-
-
-/*
-
-static
-std::string getInsertQuery(SchemaInfo &schema, std::vector<transField> &tfds,
-                                     std::string db,std::string table, rawReturnValue & rows,bool isHex=false){ 
-    std::string res = "INSERT INTO ";
-    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
-    //get databaseMeta, search in the map
-    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
-    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
-    std::string annotablename = tbm.getAnonTableName();
-    //Those are just headers
-    res +=  std::string("`")+annotablename+"` VALUES";
-
-    int startIndex=0;
-    while(startIndex < (int)rows.rowValues.size()){
-            string manyValues = "(";
-            //first
-            if(startIndex<(int)rows.rowValues.size()){        
-                vector<string> &curStringVec = rows.rowValues[startIndex];
-                for(auto item:curStringVec){
-                    if(!isHex)
-                        manyValues+=item+",";
-                    else manyValues+=string("0x")+item+",";
-                }
-            }
-            //finish first query.
-            manyValues[manyValues.size()-1]=')';
-
-            manyValues = res + manyValues;
- 
-            //we can just parse a list of values
-            for(int i=1;i<numOfPipe;i++){
-                vector<string> &curStringVec = rows.rowValues[++startIndex];
-                manyValues+=", (";
-                for(auto item:curStringVec){
-                    if(!isHex)
-                        manyValues+=item+",";
-                    else manyValues += string("0x")+item+",";
-                }
-                manyValues[manyValues.size()-1]=')';
-            }
-            manyValues+=";";
-            cout<<manyValues<<endl;
-            ++startIndex;
-    }
-    return res;
-}
-
-*/
 //query for testing purposes
 static
 std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
@@ -594,8 +504,7 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
     //get databaseMeta, search in the map
     DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
     const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
-    std::string annotablename = tbm.getAnonTableName();
-    
+    std::string annotablename = tbm.getAnonTableName();    
     //then a list of onion names
     for(auto item:tfds){
         for(auto index:item.choosenOnions){
@@ -606,15 +515,13 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
             res += item.originalFm->getSaltName()+" , ";
         }
     }
-
     res = res.substr(0,res.size()-2);
     res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
     return res;
 }
 
-
 /*
-only support relative path
+    only support relative path
 */
 static bool make_path(string directory){
     struct stat st;
@@ -640,21 +547,16 @@ static void write_meta(rawReturnValue& resraw,string db,string table){
     //write metadata
     FILE * localmeta = NULL;
     string prefix = string("data/")+db+"/"+table;
-    make_path(prefix);
-    
+    make_path(prefix);    
     localmeta = fopen((prefix+"/metadata.data").c_str(),"w");
-
     string s = string("database:")+db;
     s+="\n";
     fwrite(s.c_str(),1,s.size(),localmeta);
-
     s = string("table:")+table;
     s+="\n";
     fwrite(s.c_str(),1,s.size(),localmeta);
-
     s = string("num_of_fields:")+to_string(resraw.fieldNames.size())+"\n";
     fwrite(s.c_str(),1,s.size(),localmeta);
-
     s = string("field_types:");
     for(auto item:resraw.fieldTypes){
         s+=std::to_string(item)+=" ";
@@ -907,37 +809,6 @@ main(int argc, char* argv[]) {
          <<endl;
          return 0;
      }     
-     string hexstring(argv[4]);   
-
-     if(hexstring=="hex"){
-
-     }else if(hexstring=="quote"){
-
-     }else return 0;
-
-     const char *filename = "results";
-     FILE *stream = fopen(filename,"w");
-     if(stream == NULL){
-         fclose(stream);
-         return 0;
-     }
-
-     gmp[SECLEVEL::INVALID]="INVALID";
-     gmp[SECLEVEL::PLAINVAL]="PLAINVAL";
-     gmp[SECLEVEL::OPE]="OPE";
-     gmp[SECLEVEL::DETJOIN]="DETJOIN";
-     gmp[SECLEVEL::OPEFOREIGN]="OPEFOREIGN";
-     gmp[SECLEVEL::DET]="DET";
-     gmp[SECLEVEL::SEARCH]="SEARCH";
-     gmp[SECLEVEL::HOM]="HOM";
-     gmp[SECLEVEL::RND]="RND";
-     gmp2[oDET]="oDET";
-     gmp2[oOPE]="oOPE";
-     gmp2[oAGG]="oAGG";
-     gmp2[oSWP]="oSWP";
-     gmp2[oPLAIN]="oPLAIN";
-     gmp2[oBESTEFFORT]="oBESTEFFORT";
-     gmp2[oINVALID]="oINVALID";
 
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
@@ -981,6 +852,5 @@ main(int argc, char* argv[]) {
         }else{
             with_remote();
         }
-    fclose(stream);
     return 0;
 }
