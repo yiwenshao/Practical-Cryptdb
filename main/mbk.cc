@@ -867,7 +867,6 @@ static meta_file load_meta(string db="tdb", string table="student", string filen
             }
             string item = types.substr(start);
             res.field_types.push_back(item);
-
         }else if(head=="field_lengths"){
             string lengths = line.substr(index+1);
             int start=0,next=0;
@@ -1033,6 +1032,33 @@ static bool cmp(rawReturnValue &resraw){
     }
     return true;
 }
+
+void static cmp2(rawReturnValue & res1,rawReturnValue & res2){
+    if(res1.fieldNames == res2.fieldNames){
+        cout<<"field name pass"<<endl;
+    }else{
+        cout<<"field name not pass"<<endl;
+    }
+
+    if(res1.fieldTypes == res2.fieldTypes){
+        cout<<"field types pass"<<endl;
+    }else{
+        cout<<"field types not pass"<<endl;
+    }
+
+    if(res1.rowValues==res2.rowValues){
+        cout<<"row values pass"<<endl;
+    }else{
+        cout<<"row values not pass"<<endl;
+    }
+    
+    if(res1.choosen_onions==res2.choosen_onions){
+        cout<<"choosen onions pass"<<endl;
+    }else{
+        cout<<"choosen onions not pass"<<endl;
+    }
+}
+
 
 
 int
@@ -1249,6 +1275,37 @@ main(int argc, char* argv[]) {
             write_raw_data_to_files(resraw,db,table);
 	    cmp(resraw);
             ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
+            auto finalresults = decryptResults(rawtorestype,*rm);
+            parseResType(finalresults);
+    }else{
+            std::string db="tdb",table="student";
+            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+            //get all the fields in the tables.
+            std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+            auto res = getTransField(fms);
+
+            meta_file res_meta = load_meta();
+            for(unsigned int i=0;i<res_meta.choosen_onions.size();i++){
+                res[i].choosenOnions.push_back(res_meta.choosen_onions[i]);
+            }
+            std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+            std::string backq = getTestQuery(*schema,res,db,table);
+            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+            
+            for(auto &item:res){
+                resraw.choosen_onions.push_back(item.choosenOnions[0]);
+            }
+
+            rawReturnValue resraw2;
+            vector<vector<string>> res_field = load_table_fields(res_meta);
+            resraw2.rowValues = res_field;
+            resraw2.fieldNames = res_meta.field_names;
+            resraw2.choosen_onions = res_meta.choosen_onions;
+            for(unsigned int i=0;i<res_meta.field_types.size();++i){
+                resraw2.fieldTypes.push_back(static_cast<enum_field_types>(std::stoi(res_meta.field_types[i])));
+            }
+	    cmp2(resraw,resraw2);
+            ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
             auto finalresults = decryptResults(rawtorestype,*rm);
             parseResType(finalresults);
     }
