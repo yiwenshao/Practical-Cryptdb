@@ -1032,7 +1032,7 @@ static bool cmp(rawReturnValue &resraw){
     }
     return true;
 }
-
+/*
 void static cmp2(rawReturnValue & res1,rawReturnValue & res2){
     if(res1.fieldNames == res2.fieldNames){
         cout<<"field name pass"<<endl;
@@ -1058,7 +1058,7 @@ void static cmp2(rawReturnValue & res1,rawReturnValue & res2){
         cout<<"choosen onions not pass"<<endl;
     }
 }
-
+*/
 
 
 int
@@ -1290,12 +1290,7 @@ main(int argc, char* argv[]) {
             }
             std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
             std::string backq = getTestQuery(*schema,res,db,table);
-            rawReturnValue remote_res =  executeAndGetResultRemote(globalConn,backq);
-            
-            for(auto &item:res){
-                remote_res.choosen_onions.push_back(item.choosenOnions[0]);
-            }
-
+            executeAndGetResultRemote(globalConn,backq);
             rawReturnValue resraw2;
             vector<vector<string>> res_field = load_table_fields(res_meta);
             resraw2.rowValues = res_field;
@@ -1304,7 +1299,6 @@ main(int argc, char* argv[]) {
             for(unsigned int i=0;i<res_meta.field_types.size();++i){
                 resraw2.fieldTypes.push_back(static_cast<enum_field_types>(std::stoi(res_meta.field_types[i])));
             }
-	    cmp2(remote_res,resraw2);
             ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
             auto finalresults = decryptResults(rawtorestype,*rm);
             parseResType(finalresults);
