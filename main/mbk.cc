@@ -188,7 +188,7 @@ rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
                         //myRaw.lengths.push_back(fieldLen[i]);
                         myRaw.lengths.push_back(field->max_length);
                         myRaw.maxlengths.push_back(field->max_length);
-                        cout<<field->length<<"::"<<field->max_length<<endl;
+                        //cout<<field->length<<"::"<<field->max_length<<endl;
                     }
                 }
                 if(row[i]==NULL) curRow.push_back("NULL");
@@ -1261,25 +1261,22 @@ main(int argc, char* argv[]) {
             }
             analyseCost(*schema,res,db,table);
         }else if(string(argv[3])=="9"){
-            meta_file res_meta = load_meta();
-            vector<vector<string>> res_field = load_table_fields(res_meta);
+            //back up data
             std::string db="tdb",table="student";
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-	    //get all the fields in the tables.
-	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-	    auto res = getTransField(fms);
-	    for(auto &item:res){
-	        item.choosenOnions.push_back(0);
-	    }
-            std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);            
-            rawReturnValue resraw;
-            resraw.rowValues = res_field;
-            resraw.fieldNames = res_meta.field_names;
-            resraw.fieldTypes = vector<enum_field_types>(res_field.size(),
-                                                   static_cast<enum_field_types>(0));
-            ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
-            auto finalresults = decryptResults(rawtorestype,*rm);
-            parseResType(finalresults);
+            //get all the fields in the tables.
+            std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+            auto res = getTransField(fms);
+            for(auto &item:res){
+                item.choosenOnions.push_back(0);
+            }
+            std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+            std::string backq = getTestQuery(*schema,res,db,table);
+            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+            for(auto &item:res){
+                resraw.choosen_onions.push_back(item.choosenOnions[0]);
+            }
+            write_raw_data_to_files(resraw,db,table);
         }else if(string(argv[3])=="8"){
             std::string db="tdb",table="student";
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
@@ -1297,7 +1294,7 @@ main(int argc, char* argv[]) {
             }
             resraw.show();
             write_raw_data_to_files(resraw,db,table);
-	    cmp(resraw);
+            cmp(resraw);
             ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
             auto finalresults = decryptResults(rawtorestype,*rm);
             parseResType(finalresults);
