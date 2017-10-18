@@ -533,108 +533,9 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vect
     return myReturnMeta;
 }
 
-static
-std::string getBackupQuery(SchemaInfo &schema, std::vector<transField> &tfds,
-                                     std::string db="tdb",std::string table="student1",bool withHex=false,bool withSalt=true) {
-
-    std::string res = "SELECT ";
-    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
-    //get databaseMeta, search in the map
-    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
-    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
-    std::string annotablename = tbm.getAnonTableName();    
-    int numOfChoosenField=0;
-    //then a list of onion names
-    for(auto item:tfds){
-        for(auto index:item.choosenOnions){
-            res += item.fields[index];
-            res += " , ";
-            numOfChoosenField++;
-        }
-    }
-    res = res.substr(0,res.size()-2);
-    res = res + "FROM `"+db+std::string("`.`")+annotablename+"` limit 1;";
-    rawReturnValue resraw =  executeAndGetResultRemote(globalConn,res);
-    assert(numOfChoosenField==(int)resraw.fieldTypes.size());
-    vector<bool> whetherToQuote;
-    for(auto i=0u;i<resraw.fieldTypes.size();i++){
-        if(IS_NUM(resraw.fieldTypes[i])) whetherToQuote.push_back(false);
-        else whetherToQuote.push_back(true);
-    }
-    int fieldIndex=0;
-    res = "SELECT ";
-
-    for(auto item:tfds){
-        for(auto index:item.choosenOnions){
-            if(whetherToQuote[fieldIndex]){
-                if(!withHex){
-                    res +=string("QUOTE(")+item.fields[index]+") AS Q"+item.fields[index];
-                    res += " , ";
-                }else{
-                    res +=string("HEX(")+item.fields[index]+") AS H"+item.fields[index];
-                    res += " , ";
-                }
-            }else{
-                res += item.fields[index];
-                res += " , ";
-            }
-            fieldIndex++;
-        }
-    	if(item.hasSalt&&withSalt){
-            res += item.originalFm->getSaltName()+" , ";
-        }
-    }
-    whetherToQuoteGlobal = whetherToQuote;
-    res = res.substr(0,res.size()-2);
-    res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
-    return res;
-}
 
 
-
-
-static
-void analyseCost(SchemaInfo &schema, std::vector<transField> &tfds,
-                                     std::string db="tdb",std::string table="student1"){
-
-    std::string res = "SELECT ";
-    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
-    //get databaseMeta, search in the map
-    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
-    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
-    std::string annotablename = tbm.getAnonTableName();    
-    int numOfChoosenField=0;
-    //then a list of onion names
-    for(auto item:tfds){
-        for(auto index:item.choosenOnions){
-            res += item.fields[index];
-            res += " , ";
-            numOfChoosenField++;
-        }
-    }
-    res = res.substr(0,res.size()-2);
-    res = res + "FROM `"+db+std::string("`.`")+annotablename+"` limit 1;";
-    rawReturnValue resraw =  executeAndGetResultRemote(globalConn,res);
-    assert(numOfChoosenField==(int)resraw.fieldTypes.size());
-
-    vector<bool> whetherToQuote;
-    vector<bool> lengths;
-    for(auto i=0u;i<resraw.fieldTypes.size();i++){
-        if(IS_NUM(resraw.fieldTypes[i])) whetherToQuote.push_back(false);
-        else whetherToQuote.push_back(true);
-        lengths.push_back(resraw.maxlengths[i]);
-    }
-    for(auto i=0u;i<lengths.size();i++){
-        std::cout<<resraw.fieldNames[i]<<" : "<<whetherToQuote[i]<<" : "<<lengths[i]<<std::endl;
-    } 
-
-
-}
-
-
-
-
-
+/*
 
 static
 std::string getInsertQuery(SchemaInfo &schema, std::vector<transField> &tfds,
@@ -683,6 +584,7 @@ std::string getInsertQuery(SchemaInfo &schema, std::vector<transField> &tfds,
     return res;
 }
 
+*/
 //query for testing purposes
 static
 std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
@@ -710,27 +612,6 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
     return res;
 }
 
-static
-void writeResultsColumns(rawReturnValue & raw){
-    system("rm -rf allColumns");
-    system("mkdir allColumns");
-    vector<FILE *> files;
-    for(auto i=0u;i<raw.fieldNames.size();i++){
-         FILE * cur = fopen((string("allColumns/")+raw.fieldNames[i]).c_str(),"w");
-         if(cur==NULL) exit(1);
-         files.push_back(cur);
-    }
-    //write each columns to each file;
-    for(auto i=0u;i<raw.fieldNames.size();i++){
-        for(auto item:raw.rowValues){
-            fwrite(item[i].c_str(),1,item[i].size(),files[i]);
-            fprintf(files[i],"\n");
-        }
-    }
-
-    for(auto i=0u;i<files.size();i++)
-        fclose(files[i]);
-}
 
 /*
 only support relative path
@@ -979,82 +860,6 @@ static vector<vector<string>> load_table_fields(meta_file & input) {
     return res;
 }
 
-static void normal(){
-    std::string db("tdb"),table("student");
-    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-    //get all the fields in the tables.
-    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-    auto res = getTransField(fms);
-    for(auto &item:res){
-	item.choosenOnions.push_back(0);
-    }
-    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-    std::string backq = getTestQuery(*schema,res,db,table);
-    rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-
-    for(auto &item:res){
-	resraw.choosen_onions.push_back(item.choosenOnions[0]);
-    }           
-    resraw.show();
-    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
-    auto finalresults = decryptResults(rawtorestype,*rm);
-    parseResType(finalresults);
-}
-
-static bool cmp(rawReturnValue &resraw){
-    meta_file res_meta = load_meta();
-    vector<vector<string>> res_field = load_table_fields(res_meta); 
-    if(resraw.fieldNames==res_meta.field_names){
-        cout<<"field_name equal"<<endl;
-    }else{
-        cout<<"field_name not equal"<<endl;
-        return false;
-    }
-
-    if(resraw.rowValues.size()==res_field.size()){
-        cout<<"size match"<<endl;
-    }else{
-        cout<<"size mismatch: "<<resraw.rowValues.size()<<" ## "<<res_field.size()<<endl;
-        return false;
-    }
-    for(unsigned int i=0u;i<resraw.rowValues.size();i++){
-         //cout<<resraw.rowValues[i][2].size()<< "::" <<resraw.rowValues[i][2]<<endl;
-         if(resraw.rowValues[i]==res_field[i]){
-             cout<<"field_match"<<endl;
-         }else{
-             cout<<"field_mismatch"<<endl;
-         }
-    }
-    return true;
-}
-
-/*
-void static cmp2(rawReturnValue & res1,rawReturnValue & res2){
-    if(res1.fieldNames == res2.fieldNames){
-        cout<<"field name pass"<<endl;
-    }else{
-        cout<<"field name not pass"<<endl;
-    }
-
-    if(res1.fieldTypes == res2.fieldTypes){
-        cout<<"field types pass"<<endl;
-    }else{
-        cout<<"field types not pass"<<endl;
-    }
-
-    if(res1.rowValues==res2.rowValues){
-        cout<<"row values pass"<<endl;
-    }else{
-        cout<<"row values not pass"<<endl;
-    }
-    
-    if(res1.choosen_onions==res2.choosen_onions){
-        cout<<"choosen onions pass"<<endl;
-    }else{
-        cout<<"choosen onions not pass"<<endl;
-    }
-}
-*/
 
 static rawReturnValue with_remote(){
     std::string db="tdb",table="student";
@@ -1103,11 +908,11 @@ main(int argc, char* argv[]) {
          return 0;
      }     
      string hexstring(argv[4]);   
-     bool useHex=false;
+
      if(hexstring=="hex"){
-         useHex=true; 
+
      }else if(hexstring=="quote"){
-         useHex=false;
+
      }else return 0;
 
      const char *filename = "results";
@@ -1156,111 +961,7 @@ main(int argc, char* argv[]) {
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
 //-------------------------finish connection---------------------------------------
     //unsigned long long _thread_id = globalConn->get_thread_id();
-        if(string(argv[3])=="0"){
-            normal();
-        }else if(string(argv[3])=="1"){//back up all the onions and salts
-            std::string db(argv[1]),table(argv[2]);
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);
-            //for each filed, we choose all the onions and salts.
-            for(auto &item:res){
-                assert(item.choosenOnions.size()==0u);
-                assert(item.onions.size()==item.originalOm.size());
-                assert(item.fields.size()==item.originalOm.size() ||
-                       item.fields.size()==item.originalOm.size()+1);
-                for(unsigned int i=0u;i<item.onions.size();i++) {
-                    item.choosenOnions.push_back(i);
-                }
-            }
-            std::string backq = getBackupQuery(*schema,res,db,table,useHex,true);
-            cout<<backq<<endl;
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-            getInsertQuery(*schema,res,db,table,resraw);
-        }else if(string(argv[3])=="2"){//backup onion det with salt
-            std::string db(argv[1]),table(argv[2]);
-            std::cout<<db<<":"<<table<<std::endl;
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);
-            //for each filed, we choose all the onions and salts.
-            for(auto &item:res){
-                assert(item.choosenOnions.size()==0u);
-                assert(item.onions.size()==item.originalOm.size());
-                assert(item.fields.size()==item.originalOm.size() ||
-                       item.fields.size()==item.originalOm.size()+1);
-                item.choosenOnions.push_back(0);
-            }
-            std::string backq = getBackupQuery(*schema,res,db,table,useHex,true);
-            cout<<backq<<endl;
-            timer t;
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-            fprintf(stream,"2: time to get rows : %.4lf\n",t.lap()*1.0/1000000);
-            getInsertQuery(*schema,res,db,table,resraw);
-            fprintf(stream,"2: time to sync inserts : %.4lf\n",t.lap()*1.0/1000000);
-        }else if(string(argv[3])=="3"){//backup onion det without salt
-            std::string db(argv[1]),table(argv[2]);
-            std::cout<<db<<":"<<table<<std::endl;
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);
-            //for each filed, we choose all the onions and salts.
-            for(auto &item:res){
-                assert(item.choosenOnions.size()==0u);
-                assert(item.onions.size()==item.originalOm.size());
-                assert(item.fields.size()==item.originalOm.size() ||
-                       item.fields.size()==item.originalOm.size()+1);
-                item.choosenOnions.push_back(0);
-            }            
-            std::string backq = getBackupQuery(*schema,res,db,table,useHex,false);
-            cout<<backq<<endl;
-            timer t;
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-            fprintf(stream,"3: time to get rows : %.4lf\n",t.lap()*1.0/1000000);
-            getInsertQuery(*schema,res,db,table,resraw);
-            fprintf(stream,"3: time to sync inserts : %.4lf\n",t.lap()*1.0/1000000);
-        }else if(string(argv[3])=="4"){
-            std::string db(argv[1]),table(argv[2]);
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);
-            //for each filed, we choose all the onions and salts.
-            for(auto &item:res){
-                assert(item.choosenOnions.size()==0u);
-                assert(item.onions.size()==item.originalOm.size());
-                assert(item.fields.size()==item.originalOm.size() ||
-                       item.fields.size()==item.originalOm.size()+1);
-                for(unsigned int i=0u;i<item.onions.size();i++) {
-                    item.choosenOnions.push_back(i);
-                }
-            }
-            std::string backq = getBackupQuery(*schema,res,db,table,useHex,true);
-            cout<<backq<<endl;
-
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);           
-            writeResultsColumns(resraw);
-        }else if(string(argv[3])=="5"){
-            std::string db(argv[1]),table(argv[2]);
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-    	    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);
-            //for each filed, we choose all the onions and salts.
-            for(auto &item:res){
-                assert(item.choosenOnions.size()==0u);
-                assert(item.onions.size()==item.originalOm.size());
-                assert(item.fields.size()==item.originalOm.size() ||
-                       item.fields.size()==item.originalOm.size()+1);
-                for(unsigned int i=0u;i<item.onions.size();i++) {
-                    item.choosenOnions.push_back(i);
-                }
-            }
-            analyseCost(*schema,res,db,table);
-        }else if(string(argv[3])=="9"){
+        if(string(argv[3])=="9"){
             //back up data
             std::string db="tdb",table="student";
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
@@ -1277,30 +978,9 @@ main(int argc, char* argv[]) {
                 resraw.choosen_onions.push_back(item.choosenOnions[0]);
             }
             write_raw_data_to_files(resraw,db,table);
-        }else if(string(argv[3])=="8"){
-            std::string db="tdb",table="student";
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-            std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);
-            for(auto &item:res){
-                item.choosenOnions.push_back(0);
-            }
-            std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-            std::string backq = getTestQuery(*schema,res,db,table);
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-            for(auto &item:res){
-                resraw.choosen_onions.push_back(item.choosenOnions[0]);
-            }
-            resraw.show();
-            write_raw_data_to_files(resraw,db,table);
-            cmp(resraw);
-            ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
-            auto finalresults = decryptResults(rawtorestype,*rm);
-            parseResType(finalresults);
-    }else{
-        with_remote();
-    }
+        }else{
+            with_remote();
+        }
     fclose(stream);
     return 0;
 }
