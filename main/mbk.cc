@@ -1290,10 +1290,10 @@ main(int argc, char* argv[]) {
             }
             std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
             std::string backq = getTestQuery(*schema,res,db,table);
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+            rawReturnValue remote_res =  executeAndGetResultRemote(globalConn,backq);
             
             for(auto &item:res){
-                resraw.choosen_onions.push_back(item.choosenOnions[0]);
+                remote_res.choosen_onions.push_back(item.choosenOnions[0]);
             }
 
             rawReturnValue resraw2;
@@ -1304,7 +1304,7 @@ main(int argc, char* argv[]) {
             for(unsigned int i=0;i<res_meta.field_types.size();++i){
                 resraw2.fieldTypes.push_back(static_cast<enum_field_types>(std::stoi(res_meta.field_types[i])));
             }
-	    cmp2(resraw,resraw2);
+	    cmp2(remote_res,resraw2);
             ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
             auto finalresults = decryptResults(rawtorestype,*rm);
             parseResType(finalresults);
