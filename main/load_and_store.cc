@@ -51,6 +51,9 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include "big_proxy.hh"
+
+
 
 
 using std::cout;
@@ -60,41 +63,8 @@ using std::vector;
 using std::string;
 using std::to_string;
 
-std::map<onion,std::string> gmp2;
-
 static std::string embeddedDir="/t/cryt/shadow";
 
-//My WrapperState.
-class WrapperState {
-    WrapperState(const WrapperState &other);
-    WrapperState &operator=(const WrapperState &rhs);
-    KillZone kill_zone;
-public:
-    std::string last_query;
-    std::string default_db;
-
-    WrapperState() {}
-    ~WrapperState() {}
-    const std::unique_ptr<QueryRewrite> &getQueryRewrite() const {
-        assert(this->qr);
-        return this->qr;
-    }
-    void setQueryRewrite(std::unique_ptr<QueryRewrite> &&in_qr) {
-        this->qr = std::move(in_qr);
-    }
-    void selfKill(KillZone::Where where) {
-        kill_zone.die(where);
-    }
-    void setKillZone(const KillZone &kz) {
-        kill_zone = kz;
-    }
-    
-    std::unique_ptr<ProxyState> ps;
-    std::vector<SchemaInfoRef> schema_info_refs;
-
-private:
-    std::unique_ptr<QueryRewrite> qr;
-};
 
 //global map, for each client, we have one WrapperState which contains ProxyState.
 static std::map<std::string, WrapperState*> clients;
@@ -262,7 +232,6 @@ void parseResType(const ResType &rd) {
     }
 }
 
-
 //first step of back
 static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db = "tdb",
                                                                std::string table="student1"){
@@ -293,7 +262,7 @@ struct transField{
     std::vector<OnionMeta*>originalOm;
     void show(){
         for(auto i=0U;i<fields.size();i++){
-             cout<<fields[i]<<" : "<<gmp2[onions[i]]<<"\t";
+             //cout<<fields[i]<<" : "<<gmp2[onions[i]]<<"\t";
         }
         cout<<endl;
         if(hasSalt){
@@ -763,18 +732,17 @@ static vector<vector<string>> load_table_fields(meta_file & input) {
 }
 
 
-static rawReturnValue with_remote(){
-    std::string db="tdb",table="student";
+static ResType load_files(std::string db="tdb", std::string table="student"){
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
     auto res = getTransField(fms);
-
     meta_file res_meta = load_meta();
     for(unsigned int i=0;i<res_meta.choosen_onions.size();i++){
 	res[i].choosenOnions.push_back(res_meta.choosen_onions[i]);
     }
     std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+    //why do we need this??
     std::string backq = "show databases";
     executeAndGetResultRemote(globalConn,backq);
     rawReturnValue resraw2;
@@ -788,28 +756,11 @@ static rawReturnValue with_remote(){
     ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
     auto finalresults = decryptResults(rawtorestype,*rm);
     parseResType(finalresults);
-
-    return resraw2;
+    //return resraw2;
+    return finalresults;
 }
 
-int
-main(int argc, char* argv[]) {
-     if(argc!=5){
-         for(int i=0;i<argc;i++){
-             printf("%s\n",argv[i]);
-         }
-         cout<<"./mbk dbname tablename option \n"
-               "0. back up and decrypt\n" 
-               "1. back up all onions With Salt\n" 
-               "2. back up the first onion With salt \n"
-               "3. back up the first onion Without salt\n"
-               "4. back up all onions and salts in a hirechy\n"
-               "5. analysis the backup \n"
-               "6. tobe implemented"
-         <<endl;
-         return 0;
-     }     
-
+static void init(){
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
     clients[client] = new WrapperState();    
@@ -830,11 +781,10 @@ main(int argc, char* argv[]) {
     clients[client]->ps->safeCreateEmbeddedTHD();
     //Connect end!!
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
-//-------------------------finish connection---------------------------------------
-    //unsigned long long _thread_id = globalConn->get_thread_id();
-        if(string(argv[3])=="9"){
-            //back up data
-            std::string db="tdb",table="student";
+}
+
+
+static void store(std::string db, std::string table){
             std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
             //get all the fields in the tables.
             std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
@@ -849,8 +799,66 @@ main(int argc, char* argv[]) {
                 resraw.choosen_onions.push_back(item.choosenOnions[0]);
             }
             write_raw_data_to_files(resraw,db,table);
-        }else{
-            with_remote();
+}
+
+static void add(rawReturnValue & str,ResType & item ){
+    for(auto row : item.rows){
+        std::vector<string> temp;
+        for(auto item : row){
+            temp.push_back(ItemToString(*item));
         }
+        str.rowValues.push_back(temp);
+    }
+}
+
+
+static void construct_insert(rawReturnValue & str,std::string table,std::vector<string> &res){
+    
+    std::string head = string("INSERT INTO `")+table+"` VALUES ";
+    int num_of_pipe = 3;
+    int cnt = 0;
+    string cur=head;
+    for(unsigned int i=0u; i<str.rowValues.size();i++){
+        ++cnt;
+        cur+="(";        
+        for(unsigned int j=0u;j<str.rowValues[i].size();j++){
+            cur+=str.rowValues[i][j]+=",";
+        }
+        cur.back()=')';
+        cur+=",";
+        if(cnt == num_of_pipe){
+            cnt = 0;
+            cur.back()=';';
+            res.push_back(cur);
+            cur=head;
+        }
+    }
+    if(cnt!=0){
+        cur.back()=';';
+        res.push_back(cur);
+    }
+}
+
+int
+main(int argc, char* argv[]) {
+    if(argc!=2){
+        return 0;
+    }
+    init();
+    std::string option(argv[1]);
+    std::string db="tdb",table="student";
+    if(option=="store"){
+        store(db,table);
+    }else if(option == "load"){
+        auto res =  load_files(db,table);
+        rawReturnValue str;
+        add(str,res);
+        std::vector<string> res_query;
+        construct_insert(str,table,res_query);
+
+        for(auto item:res_query){
+            cout<<item<<endl;
+        }
+    }
     return 0;
 }

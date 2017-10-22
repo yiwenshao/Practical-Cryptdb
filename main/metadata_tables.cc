@@ -87,6 +87,7 @@ MetaData::initialize(const std::unique_ptr<Connect> &conn,
     static bool initialized = false;
     if (initialized) {
         return false;
+        //return true;
     }
 
     // Prefix handling must be done first.

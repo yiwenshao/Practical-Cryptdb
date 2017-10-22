@@ -5,7 +5,12 @@ using std::string;
 int
 main(int argc,char ** argv) {
     big_proxy b;
-    b.go("show databases");
+    std::string query;
+    std::getline(std::cin,query);
+    while(query != "quit"){
+        b.go(query);
+        std::getline(std::cin,query);
+    }
     return 0;
 }
 
