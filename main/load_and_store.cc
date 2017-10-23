@@ -809,11 +809,11 @@ static void add(rawReturnValue & str,ResType & item ){
         }
         str.rowValues.push_back(temp);
     }
+    str.fieldTypes = item.types;
 }
 
 
-static void construct_insert(rawReturnValue & str,std::string table,std::vector<string> &res){
-    
+static void construct_insert(rawReturnValue & str,std::string table,std::vector<string> &res){    
     std::string head = string("INSERT INTO `")+table+"` VALUES ";
     int num_of_pipe = 3;
     int cnt = 0;
@@ -822,7 +822,12 @@ static void construct_insert(rawReturnValue & str,std::string table,std::vector<
         ++cnt;
         cur+="(";        
         for(unsigned int j=0u;j<str.rowValues[i].size();j++){
-            cur+=str.rowValues[i][j]+=",";
+            if(IS_NUM(str.fieldTypes[j])) {
+                cout<<str.fieldTypes[j]<<endl;
+                cur+=str.rowValues[i][j]+=",";
+            }else{
+                cur+=string("\"")+=str.rowValues[i][j]+="\",";
+            }
         }
         cur.back()=')';
         cur+=",";
@@ -855,7 +860,6 @@ main(int argc, char* argv[]) {
         add(str,res);
         std::vector<string> res_query;
         construct_insert(str,table,res_query);
-
         for(auto item:res_query){
             cout<<item<<endl;
         }
