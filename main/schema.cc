@@ -62,8 +62,7 @@ OnionMeta::OnionMeta(onion o, std::vector<SECLEVEL> levels,
                      const Create_field &cf, unsigned long uniq_count,
                      SECLEVEL minimum_seclevel)
     : onionname(getpRandomName() + TypeText<onion>::toText(o)),
-      uniq_count(uniq_count), minimum_seclevel(minimum_seclevel)
-{
+      uniq_count(uniq_count), minimum_seclevel(minimum_seclevel) {
     assert(levels.size() >= 1);
 
     const Create_field * newcf = &cf;
@@ -81,7 +80,6 @@ OnionMeta::OnionMeta(onion o, std::vector<SECLEVEL> levels,
 
         this->layers.push_back(std::move(el));
     }
-
     assert(this->layers.size() >= 1);
 }
 

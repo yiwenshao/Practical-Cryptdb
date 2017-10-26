@@ -2,9 +2,11 @@
 
 #include <functional>
 #include <memory>
+#include <algorithm>
 
 #include <util/enum_text.hh>
 #include <main/serializers.hh>
+
 
 // FIXME: Maybe should inherit from DBObject.
 class AbstractMetaKey : public NormalAlloc {
@@ -104,9 +106,13 @@ private:
     }
 };
 
+
+/*
+* DBObject intends to give each object of this type an 
+* id, which can be written into the embeeded database.
+*/
 class DBObject {
     const unsigned int id;
-
 public:
     // 0 indicates that the object does not have a database id.
     // This is the state of the object before it is written to
@@ -145,14 +151,14 @@ public:
 
     // FIXME: Use rtti.
     virtual std::string typeName() const = 0;
+    /* */
     virtual std::vector<DBMeta *>
         fetchChildren(const std::unique_ptr<Connect> &e_conn) = 0;
-    // Stops processing on error.
+    /* */
     virtual bool
-        applyToChildren(std::function<bool(const DBMeta &)>)
-        const = 0;
-    virtual AbstractMetaKey const &getKey(const DBMeta &child)
-        const = 0;
+        applyToChildren(std::function<bool(const DBMeta &)>) const = 0;
+    /*traverse the map to get the key for the conresponding child(reference MappedDBMeta)*/
+    virtual AbstractMetaKey const &getKey(const DBMeta &child) const = 0;
 
 protected:
     std::vector<DBMeta*>
@@ -169,19 +175,16 @@ public:
     LeafDBMeta(unsigned int id) : DBMeta(id) {}
 
     std::vector<DBMeta *>
-        fetchChildren(const std::unique_ptr<Connect> &e_conn)
-    {
+        fetchChildren(const std::unique_ptr<Connect> &e_conn) {
         return std::vector<DBMeta *>();
     }
 
     bool applyToChildren(std::function<bool(const DBMeta &)>
-        fn) const
-    {
+        fn) const {
         return true;
     }
 
-    AbstractMetaKey const &getKey(const DBMeta &child) const
-    {
+    AbstractMetaKey const &getKey(const DBMeta &child) const {
         // FIXME:
         assert(false);
     }
@@ -192,19 +195,29 @@ public:
 //   'const' back on the members.
 // > FIXME: The key in children is a pointer so this means our lookup is
 //   slow. Use std::reference_wrapper.
+
+/*
+* ChildType is an instance of EncLayer, and KeyType could be MetaKey.
+*/
 template <typename ChildType, typename KeyType>
 class MappedDBMeta : public DBMeta {
 public:
     MappedDBMeta() {}
     MappedDBMeta(unsigned int id) : DBMeta(id) {}
     virtual ~MappedDBMeta() {}
+
     virtual bool addChild(KeyType key, std::unique_ptr<ChildType> meta);
-    virtual bool childExists(const KeyType &key) const;
+    virtual bool childExists(const KeyType &key) const;    
     virtual ChildType * getChild(const KeyType &key) const;
+
+    /*the return type is different from that of DBMeta, what are the consequences?*/
     KeyType const &getKey(const DBMeta &child) const;
+
     virtual std::vector<DBMeta *>
         fetchChildren(const std::unique_ptr<Connect> &e_conn);
+    /*what if we remove this declaration?*/
     bool applyToChildren(std::function<bool(const DBMeta &)> fn) const;
+
     const std::map<KeyType, std::unique_ptr<ChildType> > &
         getChildren() const {
                     return children;
@@ -213,14 +226,17 @@ public:
         getChildWithGChild(const DBMeta &gchild) const;
 
 private:
+/*store the hirechy of metadata as a map. For example, each database has sever tables,
+*then in the databasemeta stores a map of tables. The keys are of type string(metakey),
+*and the values are of type DBMeta.
+*/
     std::map<KeyType, std::unique_ptr<ChildType> > children;
 };
 
 
-//#include <main/dbobject.tt>
 
-#include <algorithm>
 
+/*template implemented in dbobject.hh*/
 template <typename KeyType>
 bool MetaKey<KeyType>::operator <(const MetaKey<KeyType> &rhs) const
 {
@@ -342,11 +358,9 @@ getChildWithGChild(const DBMeta &gchild) const
                     };
 
         it.second->applyToChildren(misGet);
-
         if (true == match) {
             return it.second.get();
         }
     }
-
     return nullptr;
 }
