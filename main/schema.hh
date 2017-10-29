@@ -184,6 +184,7 @@ public:
     std::string serialize(const DBObject &parent) const;
     std::string getAnonTableName() const;
     std::vector<FieldMeta *> orderedFieldMetas() const;
+    /* return fieldmeta of fields that has default value */
     std::vector<FieldMeta *> defaultedFieldMetas() const;
     TYPENAME("tableMeta")
     std::string getAnonIndexName(const std::string &index_name,

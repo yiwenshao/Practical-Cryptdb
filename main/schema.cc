@@ -527,6 +527,7 @@ std::vector<FieldMeta *> TableMeta::orderedFieldMetas() const
     return v;
 }
 
+/*use fm->hasDefault() to test whether the filed has default value*/
 std::vector<FieldMeta *> TableMeta::defaultedFieldMetas() const
 {
     std::vector<FieldMeta *> v;

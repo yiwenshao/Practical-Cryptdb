@@ -125,7 +125,7 @@ public:
     // FIXME: This should possibly be a part of DBMeta.
     // > Parent will definitely be DBMeta.
     // > Parent-Child semantics aren't really added until DBMeta.
-    virtual std::string serialize(const DBObject &parent) const = 0;
+
 };
 
 class Connect;
@@ -159,7 +159,7 @@ public:
         applyToChildren(std::function<bool(const DBMeta &)>) const = 0;
     /*traverse the map to get the key for the conresponding child(reference MappedDBMeta)*/
     virtual AbstractMetaKey const &getKey(const DBMeta &child) const = 0;
-
+    virtual std::string serialize(const DBObject &parent) const = 0;
 protected:
     std::vector<DBMeta*>
         doFetchChildren(const std::unique_ptr<Connect> &e_conn,
