@@ -1,10 +1,12 @@
+/*
+To make this work properly, you should at least make sure that the database tdb exists.
+*/
 #include <iostream>
 #include <vector>
 #include <functional>
 #include <unistd.h>
 #include <sys/types.h>
 #include <dirent.h>
-
 #include <main/Connect.hh>
 #include <main/rewrite_util.hh>
 #include <main/sql_handler.hh>
@@ -14,8 +16,7 @@
 
 static std::string embeddedDir="/t/cryt/shadow";
 
-static void myTestCreateTableHandler(std::string query){
-
+static void testCreateTableHandler(std::string query){
     std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
     std::unique_ptr<SchemaInfo> schema(new SchemaInfo());
 
@@ -74,7 +75,7 @@ main() {
     std::vector<std::string> querys{query1,query2,query3,query4,query5,query6,query7,query8,query9};
     for(auto item:querys){
         std::cout<<item<<std::endl;
-        myTestCreateTableHandler(item);
+        testCreateTableHandler(item);
         std::cout<<std::endl;
     }
     return 0;
