@@ -591,74 +591,70 @@ metaSanityCheck(const std::unique_ptr<Connect> &e_conn)
     return true;
 }
 
+
+
+
+
 // This function will not build all of our tables when it is run
 // on an empty database.  If you don't have a parent, your table won't be
 // built.  We probably want to seperate our database logic into 3 parts.
 //  1> Schema buildling (CREATE TABLE IF NOT EXISTS...)
 //  2> INSERTing
 //  3> SELECTing
+
+/*
+*Now I want to separate the original loadSchemaInfo into two parts.
+*/
+
+
+static DBMeta* loadChildren(DBMeta *const parent,const std::unique_ptr<Connect> &e_conn){
+    auto kids = parent->fetchChildren(e_conn);
+    for (auto it : kids) {
+        loadChildren(it,e_conn);
+    }
+    return parent;
+}
+
 std::unique_ptr<SchemaInfo>
 loadSchemaInfo(const std::unique_ptr<Connect> &conn,
-               const std::unique_ptr<Connect> &e_conn)
-{
+               const std::unique_ptr<Connect> &e_conn){
     // Must be done before loading the children.
     assert(deltaSanityCheck(conn, e_conn));
-
     std::unique_ptr<SchemaInfo>schema(new SchemaInfo());
-
     // Recursively rebuild the AbstractMeta<Whatever> and it's children.
-    std::function<DBMeta *(DBMeta *const)> loadChildren =
-        [&loadChildren, &e_conn](DBMeta *const parent) {
-            auto kids = parent->fetchChildren(e_conn);
-            for (auto it : kids) {
-                loadChildren(it);
-            }
-
-            return parent;  /* lambda */
-        };
-
-    loadChildren(schema.get());
-
+    loadChildren(schema.get(),e_conn);
     //check from the upmost to the lowest
     assert(sanityCheck(*schema.get()));
     //check metaobject and bleeding table are identical
     assert(metaSanityCheck(e_conn));
     // compares SHOW TABLES on embedded and remote with the SchemaInfo
     assert(tablesSanityCheck(*schema.get(), e_conn, conn));
-
     return std::move(schema);
 }
 
 template <typename Type> static void
 translatorHelper(std::vector<std::string> texts,
-                 std::vector<Type> enums)
-{
+                 std::vector<Type> enums){
     TypeText<Type>::addSet(enums, texts);
 }
 
 static bool
-buildTypeTextTranslator()
-{
+buildTypeTextTranslator(){
     // Onions.
-    const std::vector<std::string> onion_strings
-    {
+    const std::vector<std::string> onion_strings {
         "oINVALID", "oPLAIN", "oEq", "oOrder", "oADD", "oSWP"
     };
-    const std::vector<onion> onions
-    {
+    const std::vector<onion> onions {
         oINVALID, oPLAIN, oDET, oOPE, oAGG, oSWP
     };
     RETURN_FALSE_IF_FALSE(onion_strings.size() == onions.size());
     translatorHelper<onion>(onion_strings, onions);
-
     // SecLevels.
-    const std::vector<std::string> seclevel_strings
-    {
+    const std::vector<std::string> seclevel_strings{
         "RND", "DET", "DETJOIN","OPEFOREIGN" ,"OPE", "HOM", "SEARCH", "PLAINVAL",
         "INVALID"
     };
-    const std::vector<SECLEVEL> seclevels
-    {
+    const std::vector<SECLEVEL> seclevels{
         SECLEVEL::RND, SECLEVEL::DET, SECLEVEL::DETJOIN, SECLEVEL::OPEFOREIGN,SECLEVEL::OPE,
         SECLEVEL::HOM, SECLEVEL::SEARCH, SECLEVEL::PLAINVAL,
         SECLEVEL::INVALID
@@ -667,8 +663,7 @@ buildTypeTextTranslator()
     translatorHelper(seclevel_strings, seclevels);
 
     // MYSQL types.
-    const std::vector<std::string> mysql_type_strings
-    {
+    const std::vector<std::string> mysql_type_strings{
         "MYSQL_TYPE_DECIMAL", "MYSQL_TYPE_TINY", "MYSQL_TYPE_SHORT",
         "MYSQL_TYPE_LONG", "MYSQL_TYPE_FLOAT", "MYSQL_TYPE_DOUBLE",
         "MYSQL_TYPE_NULL", "MYSQL_TYPE_TIMESTAMP", "MYSQL_TYPE_LONGLONG",
@@ -681,8 +676,7 @@ buildTypeTextTranslator()
         "MYSQL_TYPE_VAR_STRING", "MYSQL_TYPE_STRING",
         "MYSQL_TYPE_GEOMETRY"
     };
-    const std::vector<enum enum_field_types> mysql_types
-    {
+    const std::vector<enum enum_field_types> mysql_types{
         MYSQL_TYPE_DECIMAL, MYSQL_TYPE_TINY, MYSQL_TYPE_SHORT,
         MYSQL_TYPE_LONG, MYSQL_TYPE_FLOAT, MYSQL_TYPE_DOUBLE,
         MYSQL_TYPE_NULL, MYSQL_TYPE_TIMESTAMP, MYSQL_TYPE_LONGLONG,
@@ -701,8 +695,7 @@ buildTypeTextTranslator()
     translatorHelper(mysql_type_strings, mysql_types);
 
     // MYSQL item types.
-    const std::vector<std::string> mysql_item_strings
-    {
+    const std::vector<std::string> mysql_item_strings{
         "FIELD_ITEM", "FUNC_ITEM", "SUM_FUNC_ITEM", "STRING_ITEM",
         "INT_ITEM", "REAL_ITEM", "NULL_ITEM", "VARBIN_ITEM",
         "COPY_STR_ITEM", "FIELD_AVG_ITEM", "DEFAULT_VALUE_ITEM",
@@ -712,8 +705,7 @@ buildTypeTextTranslator()
         "PARAM_ITEM", "TRIGGER_FIELD_ITEM", "DECIMAL_ITEM",
         "XPATH_NODESET", "XPATH_NODESET_CMP", "VIEW_FIXER_ITEM"
     };
-    const std::vector<enum Item::Type> mysql_item_types
-    {
+    const std::vector<enum Item::Type> mysql_item_types{
         Item::Type::FIELD_ITEM, Item::Type::FUNC_ITEM,
         Item::Type::SUM_FUNC_ITEM, Item::Type::STRING_ITEM,
         Item::Type::INT_ITEM, Item::Type::REAL_ITEM,
@@ -734,13 +726,11 @@ buildTypeTextTranslator()
     translatorHelper(mysql_item_strings, mysql_item_types);
 
     // ALTER TABLE [table] DISABLE/ENABLE KEYS
-    const std::vector<std::string> disable_enable_keys_strings
-    {
+    const std::vector<std::string> disable_enable_keys_strings{
         "DISABLE", "ENABLE", "LEAVE_AS_IS"
     };
     const std::vector<enum enum_enable_or_disable>
-        disable_enable_keys_types
-    {
+        disable_enable_keys_types{
         DISABLE, ENABLE, LEAVE_AS_IS
     };
     RETURN_FALSE_IF_FALSE(disable_enable_keys_strings.size() ==
@@ -749,15 +739,12 @@ buildTypeTextTranslator()
                      disable_enable_keys_types);
 
     // Onion Layouts.
-    const std::vector<std::string> onion_layout_strings
-    {
+    const std::vector<std::string> onion_layout_strings{
         "PLAIN_ONION_LAYOUT", "NUM_ONION_LAYOUT",
         "BEST_EFFORT_NUM_ONION_LAYOUT", "STR_ONION_LAYOUT",
-        "BEST_EFFORT_STR_ONION_LAYOUT"
-        
+        "BEST_EFFORT_STR_ONION_LAYOUT"        
     };
-    const std::vector<onionlayout> onion_layouts
-    {
+    const std::vector<onionlayout> onion_layouts{
         PLAIN_ONION_LAYOUT, NUM_ONION_LAYOUT,
         BEST_EFFORT_NUM_ONION_LAYOUT, STR_ONION_LAYOUT,
         BEST_EFFORT_STR_ONION_LAYOUT
@@ -767,14 +754,12 @@ buildTypeTextTranslator()
     translatorHelper(onion_layout_strings, onion_layouts);
 
     // Geometry type.
-    const std::vector<std::string> geometry_type_strings
-    {
+    const std::vector<std::string> geometry_type_strings{
         "GEOM_GEOMETRY", "GEOM_POINT", "GEOM_LINESTRING", "GEOM_POLYGON",
         "GEOM_MULTIPOINT", "GEOM_MULTILINESTRING", "GEOM_MULTIPOLYGON",
         "GEOM_GEOMETRYCOLLECTION"
     };
-    std::vector<Field::geometry_type> geometry_types
-    {
+    std::vector<Field::geometry_type> geometry_types{
         Field::GEOM_GEOMETRY, Field::GEOM_POINT, Field::GEOM_LINESTRING,
         Field::GEOM_POLYGON, Field::GEOM_MULTIPOINT,
         Field::GEOM_MULTILINESTRING, Field::GEOM_MULTIPOLYGON,
@@ -785,12 +770,10 @@ buildTypeTextTranslator()
     translatorHelper(geometry_type_strings, geometry_types);
 
     // Security Rating.
-    const std::vector<std::string> security_rating_strings
-    {
+    const std::vector<std::string> security_rating_strings{
         "SENSITIVE", "BEST_EFFORT", "PLAIN"
     };
-    const std::vector<SECURITY_RATING> security_rating_types
-    {
+    const std::vector<SECURITY_RATING> security_rating_types {
         SECURITY_RATING::SENSITIVE, SECURITY_RATING::BEST_EFFORT,
         SECURITY_RATING::PLAIN
     };
@@ -818,10 +801,8 @@ buildTypeTextTranslator()
 // buildTypeTextTranslator, handle it as a static constant in
 // Rewriter and panic when it fails.
 static bool
-buildTypeTextTranslatorHack()
-{
+buildTypeTextTranslatorHack(){
     assert(buildTypeTextTranslator());
-
     return true;
 }
 

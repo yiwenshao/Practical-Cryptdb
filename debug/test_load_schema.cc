@@ -95,23 +95,7 @@ static DBMeta* loadChildren(DBMeta *const parent,std::unique_ptr<Connect> &e_con
 static std::unique_ptr<SchemaInfo> myLoadSchemaInfo(){
     std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
     std::unique_ptr<SchemaInfo> schema(new SchemaInfo());
-
     loadChildren(schema.get(),e_conn);
-//    auto load = std::bind(loadChildren,std::placeholders::_1,e_conn);
-/*    std::function<DBMeta *(DBMeta *const)> loadChildren =
-        [&loadChildren, &e_conn](DBMeta *const parent) {
-            auto kids = parent->fetchChildren(e_conn);
-            for (auto it : kids) {
-                loadChildren(it);
-            }
-            return parent;
-        };*/
-    //load all metadata and then store it in schema
-    //loadChildren(schema.get());
-//    load(schema.get());
-
-    //Analysis analysis(std::string("student"),*schema,std::unique_ptr<AES_KEY>(getKey(std::string("113341234"))),
-    //                    SECURITY_RATING::SENSITIVE);
     return schema;
 }
 
