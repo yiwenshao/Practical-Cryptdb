@@ -76,16 +76,21 @@ $(OBJDIR)/%.o: $(OBJDIR)/%.cc
 	@mkdir -p $(@D)
 	$(CXX) -MD $(CXXFLAGS) -c $< -o $@
 
+mtl/%:$(OBJDIR)/debug/%.o
+	@mkdir -p $(@D)
+	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+
+
+
+
 include crypto/Makefrag
 include parser/Makefrag
 include main/Makefrag
-#include test/Makefrag
 include util/Makefrag
 include udf/Makefrag
 include mysqlproxy/Makefrag
-#include tools/import/Makefrag
-#include tools/learn/Makefrag
-#include scripts/Makefrag
+include debug/Makefrag
+
 
 $(OBJDIR)/.deps: $(foreach dir, $(OBJDIRS), $(wildcard $(OBJDIR)/$(dir)/*.d))
 	@mkdir -p $(@D)
