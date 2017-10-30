@@ -117,23 +117,34 @@ static void processSchemaInfo(SchemaInfo &schema){
     }
 }
 
-static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
+static DBMeta* loadChildren(DBMeta *const parent,std::unique_ptr<Connect> &e_conn){
+    auto kids = parent->fetchChildren(e_conn);
+    for (auto it : kids) {
+        loadChildren(it,e_conn);
+    }
+    return parent;
+}
+
+static std::unique_ptr<SchemaInfo> myLoadSchemaInfo(){
     std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
     std::unique_ptr<SchemaInfo> schema(new SchemaInfo());
 
-    std::function<DBMeta *(DBMeta *const)> loadChildren =
+    loadChildren(schema.get(),e_conn);
+//    auto load = std::bind(loadChildren,std::placeholders::_1,e_conn);
+/*    std::function<DBMeta *(DBMeta *const)> loadChildren =
         [&loadChildren, &e_conn](DBMeta *const parent) {
             auto kids = parent->fetchChildren(e_conn);
             for (auto it : kids) {
                 loadChildren(it);
             }
             return parent;
-        };
+        };*/
     //load all metadata and then store it in schema
-    loadChildren(schema.get());
+    //loadChildren(schema.get());
+//    load(schema.get());
 
-    Analysis analysis(std::string("student"),*schema,std::unique_ptr<AES_KEY>(getKey(std::string("113341234"))),
-                        SECURITY_RATING::SENSITIVE);
+    //Analysis analysis(std::string("student"),*schema,std::unique_ptr<AES_KEY>(getKey(std::string("113341234"))),
+    //                    SECURITY_RATING::SENSITIVE);
     return schema;
 }
 
@@ -156,9 +167,6 @@ main() {
     clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
     clients[client]->ps->safeCreateEmbeddedTHD();
     //Connect end!!
-
-    globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
-
     std::unique_ptr<SchemaInfo> sm = myLoadSchemaInfo();
     processSchemaInfo(*sm);
     return 0;
