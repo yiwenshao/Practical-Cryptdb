@@ -21,7 +21,6 @@ class WrapperState {
 public:
     std::string last_query;
     std::string default_db;
-
     WrapperState() {}
     ~WrapperState() {}
     const std::unique_ptr<QueryRewrite> &getQueryRewrite() const {
@@ -44,12 +43,8 @@ public:
 private:
     std::unique_ptr<QueryRewrite> qr;
 };
-
 //global map, for each client, we have one WrapperState which contains ProxyState.
 static std::map<std::string, WrapperState*> clients;
-
-//This connection mimics the behaviour of MySQL-Proxy
-Connect  *globalConn;
 
 static void processFieldMeta(const FieldMeta &field){
     std::cout<<GREEN_BEGIN<<"PRINT FieldMeta"<<COLOR_END<<std::endl;
