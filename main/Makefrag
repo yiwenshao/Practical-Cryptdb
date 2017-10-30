@@ -30,10 +30,12 @@ $(OBJDIR)/libcryptdb.so: $(CRYPTDB_OBJS) \
 	$(CXX) -shared -g -o $@ $(CRYPTDB_OBJS) $(LDFLAGS) $(LDRPATH) \
 	       -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
-install: install_main
 
-.PHONY: install_main
-install_main: $(OBJDIR)/libcryptdb.so
-	install -m 644 $(OBJDIR)/libcryptdb.so /usr/lib
+
+#install: install_main
+
+#.PHONY: install_main
+#install_main: $(OBJDIR)/libcryptdb.so
+#	install -m 644 $(OBJDIR)/libcryptdb.so /usr/lib
 
 # vim: set noexpandtab:

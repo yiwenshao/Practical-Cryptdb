@@ -13,20 +13,27 @@
 #include <main/macro_util.hh>
 
 //对于schemaInfo而言, 先获得自己的id, 作为parent, 可以查找底下的databasemeta的serial,key以及id
-//然后通过lambda表达式,先把databasemeta加入到schemainfo的map中, 然后返回这个databasemeta供后续使用. 
+//然后通过lambda表达式,先把databasemeta加入到schemainfo的map中, 然后返回这写个databasemeta供后续使用. 
+
+/*
+*for example, we have schemaInfo, then in this function, it first fetch it's own id, and use it as parent
+*to fetch its children, the databasemeta. Then it adds those databasemeta as KV in the map, and return those
+*databasemeta as a vector for recursive processing.
+
+for this function, it only extract the dbmeta and 
+*/
 std::vector<DBMeta *>
 DBMeta::doFetchChildren(const std::unique_ptr<Connect> &e_conn,
                         std::function<DBMeta *(const std::string &,
                                                const std::string &,
                                                const std::string &)>
-                            deserialHandler)
-{
+                            deserialHandler) {
+    
     const std::string table_name = MetaData::Table::metaObject();
-
     // Now that we know the table exists, SELECT the data we want.
     std::vector<DBMeta *> out_vec;
     std::unique_ptr<DBResult> db_res;
-    //这个id来自于dbobject.
+    //this is the id of the current class.
     const std::string parent_id = std::to_string(this->getDatabaseID());
     const std::string serials_query =
         " SELECT " + table_name + ".serial_object,"
@@ -42,16 +49,13 @@ DBMeta::doFetchChildren(const std::unique_ptr<Connect> &e_conn,
     while ((row = mysql_fetch_row(db_res->n))) {
         unsigned long * const l = mysql_fetch_lengths(db_res->n);
         assert(l != NULL);
-
         const std::string child_serial_object(row[0], l[0]);
         const std::string child_key(row[1], l[1]);
         const std::string child_id(row[2], l[2]);
-
         DBMeta *const new_old_meta =
             deserialHandler(child_key, child_serial_object, child_id);
         out_vec.push_back(new_old_meta);
     }
-
     return out_vec;
 }
 

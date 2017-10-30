@@ -30,11 +30,9 @@
  */
 class OnionMeta : public DBMeta {
 public:
-    // New.
     OnionMeta(onion o, std::vector<SECLEVEL> levels,
               const AES_KEY * const m_key, const Create_field &cf,
               unsigned long uniq_count, SECLEVEL minimum_seclevel);
-
     // Restore.
     static std::unique_ptr<OnionMeta>
         deserialize(unsigned int id, const std::string &serial);
@@ -49,7 +47,9 @@ public:
     std::vector<DBMeta *>
         fetchChildren(const std::unique_ptr<Connect> &e_conn);
     bool applyToChildren(std::function<bool(const DBMeta &)>) const;
+
     UIntMetaKey const &getKey(const DBMeta &child) const;
+
     EncLayer *getLayerBack() const;
     EncLayer *getLayer(const SECLEVEL &sl) const;
     bool hasEncLayer(const SECLEVEL &sl) const;
@@ -67,6 +67,7 @@ private:
     const std::string onionname;
     const unsigned long uniq_count;
     SECLEVEL minimum_seclevel;
+    /*what are those keys used for?*/
     mutable std::list<std::unique_ptr<UIntMetaKey>> generated_keys;
 };
 
