@@ -170,7 +170,7 @@ public:
 
     bool apply(const std::unique_ptr<Connect> &e_conn,
                TableType table_type);
-
+    std::map<const DBMeta *, unsigned int> & get_id_cache(){return id_cache;}
 private:
     const std::unique_ptr<DBMeta> meta;
     std::map<const DBMeta *, unsigned int> id_cache;

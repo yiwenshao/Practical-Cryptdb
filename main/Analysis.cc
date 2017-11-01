@@ -469,8 +469,7 @@ void ProxyState::dumpTHDs()
     assert(0 == thds.size());
 }
 
-std::string Delta::tableNameFromType(TableType table_type) const
-{
+std::string Delta::tableNameFromType(TableType table_type) const {
     switch (table_type) {
         case REGULAR_TABLE: {
             return MetaData::Table::metaObject();
@@ -484,13 +483,70 @@ std::string Delta::tableNameFromType(TableType table_type) const
     }
 }
 
+
+static 
+bool helper(CreateDelta* this_is, const std::unique_ptr<Connect> &e_conn,Delta::TableType table_type,
+               std::string table_name, const DBMeta &object, const DBMeta &parent,
+               const AbstractMetaKey &k, const unsigned int parent_id){
+         //自己先序列化
+        const std::string &child_serial = object.serialize(parent);
+        //新建的id是0?
+        assert(0 == object.getDatabaseID());
+        //获得自己对象对应的key
+        const std::string &serial_key = k.getSerial();
+        const std::string &esc_serial_key =
+            escapeString(e_conn, serial_key);
+        // ------------------------
+        //    Build the queries.
+        // ------------------------
+
+        // On CREATE, the database generates a unique ID for us.
+        const std::string &esc_child_serial =
+            escapeString(e_conn, child_serial);
+        AssignOnce<unsigned int> old_object_id;
+        if (Delta::BLEEDING_TABLE == table_type) {
+            old_object_id = 0;          // forces the DB to assign an ID
+        } else {
+            assert(Delta::REGULAR_TABLE == table_type);
+            auto const &cached = this_is->get_id_cache().find(&object);
+            assert(cached != this_is->get_id_cache().end());
+            old_object_id = cached->second;
+        }
+        const std::string &query =
+            " INSERT INTO " + table_name + 
+            "    (serial_object, serial_key, parent_id, id) VALUES (" 
+            " '" + esc_child_serial + "',"
+            " '" + esc_serial_key + "',"
+            " " + std::to_string(parent_id) + ","
+            " " + std::to_string(old_object_id.get()) + ");";
+        RETURN_FALSE_IF_FALSE(e_conn->execute(query));
+
+        const unsigned int object_id = e_conn->last_insert_id();
+        //如果是bleeding table则直接插入数据, 并且在map中加入id, 到下一个table的时候,用到这个id
+        if (Delta::BLEEDING_TABLE == table_type) {
+            assert(this_is->get_id_cache().find(&object) == this_is->get_id_cache().end());
+            this_is->get_id_cache()[&object] = object_id;
+        } else {
+            assert(Delta::REGULAR_TABLE == table_type);
+            // should only be used one time
+            this_is->get_id_cache().erase(&object);
+        }
+        std::function<bool(const DBMeta &)> localCreateHandler =
+            [&object, object_id, this_is,&e_conn,table_type,table_name]
+                (const DBMeta &child)
+            {
+                return helper(this_is,e_conn, table_type, table_name,
+                             child, object, object.getKey(child), object_id);
+            };
+        return object.applyToChildren(localCreateHandler);
+}
+
 // Recursive.
 // > the hackery around BLEEDING v REGULAR ensures that both tables use the
 //   same ID for equivalent objects regardless of differences between
 //   auto_increment on the BLEEDING and REGULAR tables
 bool CreateDelta::apply(const std::unique_ptr<Connect> &e_conn,
-                        TableType table_type)
-{
+                        Delta::TableType table_type){
     //第一次apply,先写bleeding table.这个时候,map里面没有内容.
     if (BLEEDING_TABLE == table_type) {
         assert(0 == id_cache.size());
@@ -499,7 +555,7 @@ bool CreateDelta::apply(const std::unique_ptr<Connect> &e_conn,
     const std::string &table_name = tableNameFromType(table_type);
     //给出一个lambda表达式,用到了this, &e_conn, &helper, &table_type, &table_name外部参数,
     //传如的参数是自己, parent,key,parentid, 其希望构建的是一种meta层次关系
-    std::function<bool(const DBMeta &, const DBMeta &,
+    /*std::function<bool(const DBMeta &, const DBMeta &,
                        const AbstractMetaKey &,
                        const unsigned int)> helper =
         [this, &e_conn, &helper, &table_type, &table_name]
@@ -559,11 +615,13 @@ bool CreateDelta::apply(const std::unique_ptr<Connect> &e_conn,
             {
                 return helper(child, object, object.getKey(child), object_id);
             };
+
         return object.applyToChildren(localCreateHandler);
-    };
+    };*/
 
     const bool b =
-        helper(*meta.get(), parent_meta, key, parent_meta.getDatabaseID());
+        helper(this,e_conn,table_type,table_name,
+                  *meta.get(), parent_meta, key, parent_meta.getDatabaseID());
 
     if (BLEEDING_TABLE == table_type) {
         assert(0 != this->id_cache.size());
@@ -571,7 +629,6 @@ bool CreateDelta::apply(const std::unique_ptr<Connect> &e_conn,
         assert(REGULAR_TABLE == table_type);
         assert(0 == this->id_cache.size());
     }
-
     return b;
 }
 
