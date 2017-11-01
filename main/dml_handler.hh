@@ -15,7 +15,7 @@ public:
     ~DMLQueryExecutor() {}
     std::pair<ResultType, AbstractAnything *>
         nextImpl(const ResType &res, const NextParams &nparams);
-
+    std::string getQuery(){return query;}
 private:
     const std::string query;
     const ReturnMeta rmeta;
@@ -134,6 +134,13 @@ protected:
     DMLHandler() {;}
     virtual ~DMLHandler() {;}
 };
+
+class InsertHandler : public DMLHandler {
+    virtual void gather(Analysis &a, LEX *const lex)const;
+    virtual AbstractQueryExecutor *rewrite(Analysis &a, LEX *const lex)const;
+};
+
+
 
 SQLDispatcher *buildDMLDispatcher();
 

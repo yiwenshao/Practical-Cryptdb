@@ -62,9 +62,7 @@ void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
 }
 
 
-class InsertHandler : public DMLHandler {
-    virtual void gather(Analysis &a, LEX *const lex) const
-    {
+void InsertHandler::gather(Analysis &a, LEX *const lex) const {
         //only select xxx etc?不是的!!!
         process_select_lex(lex->select_lex, a);
 
@@ -79,11 +77,9 @@ class InsertHandler : public DMLHandler {
         return;
     }
 
-    virtual AbstractQueryExecutor *rewrite(Analysis &a, LEX *const lex)
-        const
-    {
+    AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex)
+        const{
         LEX *const new_lex = copyWithTHD(lex);
-
         const std::string &table =
             lex->select_lex.table_list.first->table_name;
         const std::string &db_name =
@@ -225,7 +221,9 @@ class InsertHandler : public DMLHandler {
         }
         return new DMLQueryExecutor(*new_lex, a.rmeta);
     }
-};
+
+
+
 
 class UpdateHandler : public DMLHandler {
     virtual void gather(Analysis &a, LEX *lex) const {
