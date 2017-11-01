@@ -7,7 +7,9 @@ To deploy this version, you need follow the following steps.
 + have ubuntu 16.04 installed
 + install mysql-server 5.5 or higher, with the root password 'letmein'
 	To verify this, you can use the command mysql -uroot -pletmein to log in
-+ download this repository and run the script using  **source INSTALL.sh**
++ ./INSTALL.sh
++ source ~/.bashrc
++ source setup.sh
 + run ./cdbserver.sh
 + run ./cdbclient.sh 
 + enjoy it!
@@ -39,8 +41,6 @@ obselete functions deleted
 
 + annotation
 + dbobject.tt
-
-
 
 ### features to be added
 
