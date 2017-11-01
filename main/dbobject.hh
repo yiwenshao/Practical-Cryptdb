@@ -351,7 +351,6 @@ MappedDBMeta<ChildType, KeyType>::applyToChildren(
             return false;
         }
     }
-
     return true;
 }
 

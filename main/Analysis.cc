@@ -10,7 +10,6 @@
 EncSet::EncSet(Analysis &a, FieldMeta * const fm) {
     TEST_TextMessageError(0 != fm->getChildren().size(),
                          "FieldMeta has no children!");
-
     osl.clear();
     for (const auto &pair : fm->getChildren()) {
         OnionMeta *const om = pair.second.get();
@@ -484,34 +483,30 @@ std::string Delta::tableNameFromType(TableType table_type) const {
 }
 
 
+/*insert into the metadata table (kv) and then apply this to childrens*/
 static 
-bool helper(CreateDelta* this_is, const std::unique_ptr<Connect> &e_conn,Delta::TableType table_type,
-               std::string table_name, const DBMeta &object, const DBMeta &parent,
-               const AbstractMetaKey &k, const unsigned int parent_id){
-         //自己先序列化
-        const std::string &child_serial = object.serialize(parent);
-        //新建的id是0?
-        assert(0 == object.getDatabaseID());
-        //获得自己对象对应的key
-        const std::string &serial_key = k.getSerial();
+bool create_delta_helper(CreateDelta* this_is, const std::unique_ptr<Connect> &e_conn,Delta::TableType table_type, std::string table_name, const DBMeta &meta_me, const DBMeta &parent,
+               const AbstractMetaKey &meta_me_key, const unsigned int parent_id){
+        /*serialize the metame and meta_me_key, and escape*/
+        const std::string &child_serial = meta_me.serialize(parent);
+        assert(0 == meta_me.getDatabaseID());
+        const std::string &serial_key = meta_me_key.getSerial();
         const std::string &esc_serial_key =
             escapeString(e_conn, serial_key);
-        // ------------------------
-        //    Build the queries.
-        // ------------------------
-
-        // On CREATE, the database generates a unique ID for us.
         const std::string &esc_child_serial =
             escapeString(e_conn, child_serial);
+
+        /*id is 0 for the first time, and after that we can fetch the id from the cache*/
         AssignOnce<unsigned int> old_object_id;
-        if (Delta::BLEEDING_TABLE == table_type) {
-            old_object_id = 0;          // forces the DB to assign an ID
+        if (Delta::BLEEDING_TABLE == table_type){
+            old_object_id = 0;
         } else {
             assert(Delta::REGULAR_TABLE == table_type);
-            auto const &cached = this_is->get_id_cache().find(&object);
+            auto const &cached = this_is->get_id_cache().find(&meta_me);
             assert(cached != this_is->get_id_cache().end());
             old_object_id = cached->second;
         }
+        /*(serial_object, serial_key, parent_id, id) is (meta_me,meta_me_key,parent_id,0)*/
         const std::string &query =
             " INSERT INTO " + table_name + 
             "    (serial_object, serial_key, parent_id, id) VALUES (" 
@@ -519,26 +514,29 @@ bool helper(CreateDelta* this_is, const std::unique_ptr<Connect> &e_conn,Delta::
             " '" + esc_serial_key + "',"
             " " + std::to_string(parent_id) + ","
             " " + std::to_string(old_object_id.get()) + ");";
+
         RETURN_FALSE_IF_FALSE(e_conn->execute(query));
 
+        //this is the id of meta_me, which should be the parent_id for the next layer.
         const unsigned int object_id = e_conn->last_insert_id();
-        //如果是bleeding table则直接插入数据, 并且在map中加入id, 到下一个table的时候,用到这个id
+
+        /*we first insert into bleeding_table {meta_me,last_insert_id}*/
         if (Delta::BLEEDING_TABLE == table_type) {
-            assert(this_is->get_id_cache().find(&object) == this_is->get_id_cache().end());
-            this_is->get_id_cache()[&object] = object_id;
+            assert(this_is->get_id_cache().find(&meta_me) == this_is->get_id_cache().end());
+            this_is->get_id_cache()[&meta_me] = object_id;
         } else {
+            /*and then erase the item from cache*/
             assert(Delta::REGULAR_TABLE == table_type);
             // should only be used one time
-            this_is->get_id_cache().erase(&object);
+            this_is->get_id_cache().erase(&meta_me);
         }
         std::function<bool(const DBMeta &)> localCreateHandler =
-            [&object, object_id, this_is,&e_conn,table_type,table_name]
-                (const DBMeta &child)
-            {
-                return helper(this_is,e_conn, table_type, table_name,
-                             child, object, object.getKey(child), object_id);
+            [&meta_me, object_id, this_is,&e_conn,table_type,table_name]
+                (const DBMeta &child){
+                return create_delta_helper(this_is,e_conn, table_type, table_name,
+                             child, meta_me, meta_me.getKey(child), object_id);
             };
-        return object.applyToChildren(localCreateHandler);
+        return meta_me.applyToChildren(localCreateHandler);
 }
 
 // Recursive.
@@ -551,78 +549,10 @@ bool CreateDelta::apply(const std::unique_ptr<Connect> &e_conn,
     if (BLEEDING_TABLE == table_type) {
         assert(0 == id_cache.size());
     }
-
     const std::string &table_name = tableNameFromType(table_type);
-    //给出一个lambda表达式,用到了this, &e_conn, &helper, &table_type, &table_name外部参数,
-    //传如的参数是自己, parent,key,parentid, 其希望构建的是一种meta层次关系
-    /*std::function<bool(const DBMeta &, const DBMeta &,
-                       const AbstractMetaKey &,
-                       const unsigned int)> helper =
-        [this, &e_conn, &helper, &table_type, &table_name]
-        (const DBMeta &object, const DBMeta &parent,
-         const AbstractMetaKey &k, const int parent_id)
-    {
-        //自己先序列化
-        const std::string &child_serial = object.serialize(parent);
-        //新建的id是0?
-        assert(0 == object.getDatabaseID());
-        //获得自己对象对应的key
-        const std::string &serial_key = k.getSerial();
-        const std::string &esc_serial_key =
-            escapeString(e_conn, serial_key);
-
-        // ------------------------
-        //    Build the queries.
-        // ------------------------
-
-        // On CREATE, the database generates a unique ID for us.
-        const std::string &esc_child_serial =
-            escapeString(e_conn, child_serial);
-
-        AssignOnce<unsigned int> old_object_id;
-        if (BLEEDING_TABLE == table_type) {
-            old_object_id = 0;          // forces the DB to assign an ID
-        } else {
-            assert(REGULAR_TABLE == table_type);
-            auto const &cached = this->id_cache.find(&object);
-            assert(cached != this->id_cache.end());
-            old_object_id = cached->second;
-        }
-
-        const std::string &query =
-            " INSERT INTO " + table_name + 
-            "    (serial_object, serial_key, parent_id, id) VALUES (" 
-            " '" + esc_child_serial + "',"
-            " '" + esc_serial_key + "',"
-            " " + std::to_string(parent_id) + ","
-            " " + std::to_string(old_object_id.get()) + ");";
-        RETURN_FALSE_IF_FALSE(e_conn->execute(query));
-
-        const unsigned int object_id = e_conn->last_insert_id();
-        //如果是bleeding table则直接插入数据, 并且在map中加入id, 到下一个table的时候,用到这个id
-        if (BLEEDING_TABLE == table_type) {
-            assert(this->id_cache.find(&object) == this->id_cache.end());
-            this->id_cache[&object] = object_id;
-        } else {
-            assert(REGULAR_TABLE == table_type);
-            // should only be used one time
-            this->id_cache.erase(&object);
-        }
-
-        std::function<bool(const DBMeta &)> localCreateHandler =
-            [&object, object_id, &helper]
-                (const DBMeta &child)
-            {
-                return helper(child, object, object.getKey(child), object_id);
-            };
-
-        return object.applyToChildren(localCreateHandler);
-    };*/
-
     const bool b =
-        helper(this,e_conn,table_type,table_name,
+        create_delta_helper(this,e_conn,table_type,table_name,
                   *meta.get(), parent_meta, key, parent_meta.getDatabaseID());
-
     if (BLEEDING_TABLE == table_type) {
         assert(0 != this->id_cache.size());
     } else {
@@ -631,6 +561,7 @@ bool CreateDelta::apply(const std::unique_ptr<Connect> &e_conn,
     }
     return b;
 }
+
 
 // FIXME: used incorrectly, as we should be doing copy construction
 // on the original object; not modifying it in place
