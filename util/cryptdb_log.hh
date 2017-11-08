@@ -41,21 +41,16 @@ LOG_GROUPS(__temp_m)
 class cryptdb_logger : public std::stringstream {
  public:
     cryptdb_logger(log_group g, const char *filearg, uint linearg, const char *fnarg)
-        : m(mask(g)), file(filearg), line(linearg), func(fnarg)
-    {
+        : m(mask(g)), file(filearg), line(linearg), func(fnarg){
     }
-
-    ~cryptdb_logger()
-    {
+    ~cryptdb_logger(){
         if (enable_mask & m)
             std::cerr << file << ":" << line
                       << " (" << func << "): "
                       << str() << std::endl;
     }
-
     static void
-    enable(log_group g)
-    {
+    enable(log_group g){
         if (g == log_group::log_all)
             enable_mask = ~0ULL;
         else
@@ -63,8 +58,7 @@ class cryptdb_logger : public std::stringstream {
     }
 
     static void
-    disable(log_group g)
-    {
+    disable(log_group g){
         if (g == log_group::log_all)
             enable_mask = 0;
         else
@@ -72,28 +66,24 @@ class cryptdb_logger : public std::stringstream {
     }
 
     static bool
-    enabled(log_group g)
-    {
+    enabled(log_group g){
         return enable_mask & mask(g);
     }
 
     static uint64_t
-    mask(log_group g)
-    {
+    mask(log_group g){
         return 1ULL << ((int) g);
     }
 
     static std::string
-    getConf()
-    {
+    getConf(){
         std::stringstream ss;
         ss << enable_mask;
         return ss.str();
     }
 
     static void
-    setConf(std::string conf)
-    {
+    setConf(std::string conf){
         std::stringstream ss(conf);
         ss >> enable_mask;
     }
@@ -103,11 +93,8 @@ class cryptdb_logger : public std::stringstream {
     const char *file;
     uint line;
     const char *func;
-
     static uint64_t enable_mask;
-
 };
 
 #define LOG(g) \
     (cryptdb_logger(log_group::log_ ## g, __FILE__, __LINE__, __func__))
-

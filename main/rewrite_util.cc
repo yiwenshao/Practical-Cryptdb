@@ -776,14 +776,14 @@ prettyPrintQuery(const std::string &query)
               << "QUERY: " << COLOR_END << terminalEscape(query) << std::endl;
 }
 
+
+/*use environment variable to load configuration*/
 SECURITY_RATING
-determineSecurityRating()
-{
+determineSecurityRating(){
     const char *const secure = getenv("SECURE_CRYPTDB");
     if (secure && equalsIgnoreCase("FALSE", secure)) {
         return SECURITY_RATING::BEST_EFFORT;
     }
-    
     return SECURITY_RATING::SENSITIVE;
 }
 

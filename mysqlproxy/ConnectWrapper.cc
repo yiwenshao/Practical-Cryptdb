@@ -16,23 +16,19 @@
 #include <parser/sql_utils.hh>
 #include <parser/mysql_type_metadata.hh>
 
-//为什么需要这个?
+//thread local variable
 __thread ProxyState *thread_ps = NULL;
 
-class WrapperState {
+//wrapperstate contains proxystate. one per client.
+class WrapperState{
     WrapperState(const WrapperState &other);
     WrapperState &operator=(const WrapperState &rhs);
-
     KillZone kill_zone;
-
 public:
     std::string last_query;
     std::string default_db;
     std::ofstream * PLAIN_LOG;
-
     WrapperState() {}
-    ~WrapperState() {}
-
     const std::unique_ptr<QueryRewrite> &getQueryRewrite() const {
         assert(this->qr);
         return this->qr;
@@ -46,36 +42,8 @@ public:
     void setKillZone(const KillZone &kz) {
         kill_zone = kz;
     }
-
     std::unique_ptr<ProxyState> ps;
-    // we are running cryptdb in a threaded environment without proper
-    // locking; this leads to crashes during onion adjustment unless we
-    // take some minimal precautions
-    // > everytime we process a query we take a reference to the SchemaInfo
-    //   so that we know the same SchemaInfo (and it's children) will be
-    //   available on the backend for Deltaz; this handles the following
-    //   known bad cases.
-    //   a. thread A marks the cache as stale; thread B sees that it is
-    //      stale and updates the cache; thread A crashes while
-    //      trying to do onion adjustment
-    //   b. we must take the reference at the same time we get the schema
-    //      from the cache, otherwise ...
-    //      + thread A takes the reference to SchemaInfo when the cache is
-    //        already stale, now he ``gets'' his SchemaInfo; because the
-    //        cache is stale the second SchemaInfo is a new object and the
-    //        reference doesn't protect it. now when thread B gets his
-    //        SchemaInfo the cache is still stale so he deletes the only
-    //        reference to the SchemaInfo thread A is using
-    //      + this case only applies if we aren't using the lock on each
-    //        function (connect, disonnect, rewrite, envoi); thread A
-    //        takes a reference to SchemaInfo then before he can ``get''
-    //        the SchemaInfo thread B stales the cache. now thread A
-    //        gets the SchemaInfo and his reference doesn't protect it.
-    //        when thread C gets his SchemaInfo the cache is stale so
-    //        he deletes the only reference to the SchemaInfo thread A
-    //        is using
     std::vector<SchemaInfoRef> schema_info_refs;
-
 private:
     std::unique_ptr<QueryRewrite> qr;
 };
@@ -83,19 +51,19 @@ private:
 //commented
 //static Timer t;
 
-//static EDBProxy * cl = NULL;
 static SharedProxyState * shared_ps = NULL;
+
+//this ensures that only one client can call connect or next
 static pthread_mutex_t big_lock;
 
 static bool EXECUTE_QUERIES = true;
 
 static std::string TRAIN_QUERY ="";
 
-static bool LOG_PLAIN_QUERIES = false;
+
 static std::string PLAIN_BASELOG = "";
 
 
-static int counter = 0;
 
 static std::map<std::string, WrapperState*> clients;
 
@@ -103,23 +71,20 @@ static void
 returnResultSet(lua_State *L, const ResType &res);
 
 static Item_null *
-make_null(const std::string &name = "")
-{
+make_null(const std::string &name = ""){
     char *const n = current_thd->strdup(name.c_str());
     return new Item_null(n);
 }
 
 static std::string
-xlua_tolstring(lua_State *const l, int index)
-{
+xlua_tolstring(lua_State *const l, int index){
     size_t len;
     char const *const s = lua_tolstring(l, index, &len);
     return std::string(s, len);
 }
 
 static void
-xlua_pushlstring(lua_State *const l, const std::string &s)
-{
+xlua_pushlstring(lua_State *const l, const std::string &s){
     lua_pushlstring(l, s.data(), s.length());
 }
 
@@ -128,11 +93,12 @@ connect(lua_State *const L) {
 //TODO: added, why test here?
     assert(test64bitZZConversions());
 
-    ANON_REGION(__func__, &perf_cg);
+//    ANON_REGION(__func__, &perf_cg);
+    //Only one client can connect at a time
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
 
-    //来自lua脚本的参数.
+    //fetch lua paramaters.
     const std::string client = xlua_tolstring(L, 1);
     const std::string server = xlua_tolstring(L, 2);
     const uint port = luaL_checkint(L, 3);
@@ -143,82 +109,24 @@ connect(lua_State *const L) {
     ConnectionInfo const ci = ConnectionInfo(server, user, psswd, port);
 
     assert(clients.end() == clients.find(client));
-    //一个用户进入的时候, 新建一个wrapper, 走的时候删除.
+    //one wrapperstate per client. This is deleted when the client leaves
     clients[client] = new WrapperState();
 
-    // Is it the first connection?
+    /*shared_ps is created as the first client comes in, and it is preserved.
+    * each proxystate takes a const reference of the sharedproxy state, which
+    * contains the schemainfo
+    */
     if (!shared_ps) {
-        std::cerr << "starting proxy\n";
-        LOG(wrapper) << "connect " << client << "; "
-                     << "server = " << server << ":" << port << "; "
-                     << "user = " << user << "; "
-                     << "password = " << psswd;
-
-        const std::string &false_str = "FALSE";
-        const std::string &mkey      = "113341234";  // XXX do not change as
-                                                     // it's used for tpcc exps
-		//const std::string &mkey = "887766908";
+        const std::string &mkey      = "113341234";
         shared_ps =
             new SharedProxyState(ci, embed_dir, mkey,
                                  determineSecurityRating());
-        //may need to do training
-        const char *ev = getenv("TRAIN_QUERY");
-        if (ev) {
-            std::cerr << "Deprecated query training!" << std::endl;
-        }
-
-        ev = getenv("EXECUTE_QUERIES");
-        if (ev && equalsIgnoreCase(false_str, ev)) {
-            LOG(wrapper) << "do not execute queries";
-            EXECUTE_QUERIES = false;
-        } else {
-            LOG(wrapper) << "execute queries";
-            EXECUTE_QUERIES = true;
-        }
-
-        ev = getenv("LOAD_ENC_TABLES");
-        if (ev) {
-            std::cerr << "No current functionality for loading tables\n";
-        }
-
-        ev = getenv("LOG_PLAIN_QUERIES");
-        if (ev) {
-            std::string logPlainQueries = std::string(ev);
-            if (logPlainQueries != "") {
-                LOG_PLAIN_QUERIES = true;
-                PLAIN_BASELOG = logPlainQueries;
-                logPlainQueries += StringFromVal(++counter);
-
-                assert_s(system(("rm -f" + logPlainQueries + "; touch " + logPlainQueries).c_str()) >= 0, "failed to rm -f and touch " + logPlainQueries);
-
-                std::ofstream * const PLAIN_LOG =
-                    new std::ofstream(logPlainQueries, std::ios_base::app);
-                LOG(wrapper) << "proxy logs plain queries at " << logPlainQueries;
-                assert_s(PLAIN_LOG != NULL, "could not create file " + logPlainQueries);
-                clients[client]->PLAIN_LOG = PLAIN_LOG;
-            } else {
-                LOG_PLAIN_QUERIES = false;
-            }
-        }
-    } else {
-        if (LOG_PLAIN_QUERIES) {
-            std::string logPlainQueries =
-                PLAIN_BASELOG+StringFromVal(++counter);
-            assert_s(system((" touch " + logPlainQueries).c_str()) >= 0, "failed to remove or touch plain log");
-            LOG(wrapper) << "proxy logs plain queries at " << logPlainQueries;
-
-            std::ofstream * const PLAIN_LOG =
-                new std::ofstream(logPlainQueries, std::ios_base::app);
-            assert_s(PLAIN_LOG != NULL, "could not create file " + logPlainQueries);
-            clients[client]->PLAIN_LOG = PLAIN_LOG;
-        }
     }
     clients[client]->ps =
         std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
     // We don't want to use the THD from the previous connection
     // if such is even possible...
     clients[client]->ps->safeCreateEmbeddedTHD();
-
     return 0;
 }
 
@@ -227,28 +135,23 @@ disconnect(lua_State *const L) {
     ANON_REGION(__func__, &perf_cg);
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
-
     const std::string client = xlua_tolstring(L, 1);
     if (clients.find(client) == clients.end()) {
         return 0;
     }
-
     LOG(wrapper) << "disconnect " << client;
-
     auto ws = clients[client];
     clients[client] = NULL;
-
     thread_ps = NULL;
     delete ws;
     clients.erase(client);
-
     mysql_thread_end();
     return 0;
 }
 
 static int
 rewrite(lua_State *const L) {
-    ANON_REGION(__func__, &perf_cg);
+//    ANON_REGION(__func__, &perf_cg);
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
          
@@ -266,7 +169,6 @@ rewrite(lua_State *const L) {
     const std::string &query = xlua_tolstring(L, 2);
     const unsigned long long _thread_id =
         strtoull(xlua_tolstring(L, 3).c_str(), NULL, 10);
-    //std::cout<<query<<std::endl;
     //this is not used??
     c_wrapper->last_query = query;
     if (EXECUTE_QUERIES) {
@@ -496,8 +398,7 @@ next(lua_State *const L) {
 }
 
 static void
-returnResultSet(lua_State *const L, const ResType &rd)
-{
+returnResultSet(lua_State *const L, const ResType &rd) {
     TEST_GenericPacketException(true == rd.ok, "something bad happened");
 
     lua_pushinteger(L, rd.affected_rows);
@@ -548,6 +449,7 @@ cryptdb_lib[] = {
     F(rewrite),
     F(next),
     { 0, 0 },
+#undef F
 };
 
 extern "C" int lua_cryptdb_init(lua_State * L);

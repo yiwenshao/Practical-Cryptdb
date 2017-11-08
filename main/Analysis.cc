@@ -428,14 +428,12 @@ ProxyState::getConn() const
 }
 
 const std::unique_ptr<Connect> &
-ProxyState::getEConn() const
-{
+ProxyState::getEConn() const {
     return e_conn;
 }
 
 static void
-embeddedTHDCleanup(THD *thd)
-{
+embeddedTHDCleanup(THD *thd) {
     thd->clear_data_list();
     --thread_count;
     // thd->unlink() is called in by THD destructor
@@ -446,9 +444,9 @@ embeddedTHDCleanup(THD *thd)
     delete thd;
 }
 
+/*???*/
 void
-ProxyState::safeCreateEmbeddedTHD()
-{
+ProxyState::safeCreateEmbeddedTHD() {
     //THD is created by new, so there is no Lex or other things in it.    
     THD *thd = static_cast<THD *>(create_embedded_thd(0));
     assert(thd);
@@ -458,8 +456,7 @@ ProxyState::safeCreateEmbeddedTHD()
     return;
 }
 
-void ProxyState::dumpTHDs()
-{
+void ProxyState::dumpTHDs(){
     for (auto &it : thds) {
         it.release();
     }
@@ -485,8 +482,10 @@ std::string Delta::tableNameFromType(TableType table_type) const {
 
 /*insert into the metadata table (kv) and then apply this to childrens*/
 static 
-bool create_delta_helper(CreateDelta* this_is, const std::unique_ptr<Connect> &e_conn,Delta::TableType table_type, std::string table_name, const DBMeta &meta_me, const DBMeta &parent,
-               const AbstractMetaKey &meta_me_key, const unsigned int parent_id){
+bool create_delta_helper(CreateDelta* this_is, const std::unique_ptr<Connect> &e_conn,
+                         Delta::TableType table_type, std::string table_name, 
+                         const DBMeta &meta_me, const DBMeta &parent,
+                         const AbstractMetaKey &meta_me_key, const unsigned int parent_id){
         /*serialize the metame and meta_me_key, and escape*/
         const std::string &child_serial = meta_me.serialize(parent);
         assert(0 == meta_me.getDatabaseID());
