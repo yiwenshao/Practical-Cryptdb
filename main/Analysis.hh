@@ -235,25 +235,20 @@ bool setBleedingTableToRegularTable(const std::unique_ptr<Connect> &e_conn);
 class KillZone {
 public:
     enum class Where {Before, After};
-
     KillZone() : active(false) {}
     ~KillZone() {}
-
     void activate(uint64_t c, Where where) {
         TEST_KillZoneFailure(false == active);
         this->count  = c;
         this->active = true;
         this->where  = where;
     }
-
     void die(Where where) {
         if (this->active && this->where == where && !this->count--) {
             assert(false);
         }
     }
-
     bool isActive() const {return active;}
-
 private:
     bool active;
     uint64_t count;

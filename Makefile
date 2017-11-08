@@ -46,7 +46,7 @@ install:
 
 .PHONY: clean
 clean:
-	rm -rf $(OBJDIR)
+	rm -rf $(OBJDIR) mtl
 
 .PHONY: doc
 doc:
