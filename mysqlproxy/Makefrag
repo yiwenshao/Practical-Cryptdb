@@ -1,6 +1,6 @@
 OBJDIRS += mysqlproxy
 
-PROXY_SRCS := ConnectWrapper.cc
+PROXY_SRCS := ConnectWrapper.cc lua_related.cc
 PROXY_OBJS := $(patsubst %.cc,$(OBJDIR)/mysqlproxy/%.o,$(PROXY_SRCS))
 
 all:    $(OBJDIR)/libexecute.so

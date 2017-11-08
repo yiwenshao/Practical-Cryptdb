@@ -1288,6 +1288,10 @@ static std::string serilize_OnionAdjustExcept(OnionAdjustExcept &e){
 
 
 // NOTE : This will probably choke on multidatabase queries.
+/*
+*parse the query, rewrite the query using handlers and then return an executor.
+*possibly trigger an onion adjustment.
+*/
 AbstractQueryExecutor *
 Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
 {
@@ -1345,7 +1349,6 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
                 out_data = adjustOnion(a, e.o, e.tm, e.fm, e.tolevel);
             
             std::string resadjust = serilize_OnionAdjustExcept(e);
-            std::cout<<"###################################################**************************************"<<resadjust<<std::endl;
             std::vector<std::unique_ptr<Delta> > &deltas = out_data.first;
             const std::list<std::string> &adjust_queries = out_data.second;
             return new OnionAdjustmentExecutor(std::move(deltas),
@@ -1360,16 +1363,12 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
 
 QueryRewrite
 Rewriter::rewrite(const std::string &q, const SchemaInfo &schema,
-                  const std::string &default_db, const ProxyState &ps)
-{
-    LOG(cdb_v) << "q " << q;
+                  const std::string &default_db, const ProxyState &ps){
+    //LOG(cdb_v) << "q " << q;
     assert(0 == mysql_thread_init());
-
     Analysis analysis(default_db, schema, ps.getMasterKey(),
                       ps.defaultSecurityRating());
 
-    // NOTE: Care what data you try to read from Analysis
-    // at this height.
     AbstractQueryExecutor *const executor =
         Rewriter::dispatchOnLex(analysis, q);
     if (!executor) {
@@ -1385,9 +1384,9 @@ std::string ReturnField::stringify() {
     res << " is_salt: " << is_salt << " filed_called " << field_called;
     res << " fm  " << olk.key << " onion " << olk.o;
     res << " salt_pos " << salt_pos;
-
     return res.str();
 }
+
 std::string ReturnMeta::stringify() {
     std::stringstream res;
     res << "rmeta contains " << rfmeta.size() << " elements: \n";

@@ -257,12 +257,15 @@ private:
 
 class RewritePlan;
 
+/*
+*1.A set of functions for manipulating metadata at high level.
+*/
+
 class Analysis {
     Analysis() = delete;
     Analysis(Analysis &&a) = delete;
     Analysis &operator=(const Analysis &a) = delete;
     Analysis &operator=(Analysis &&a) = delete;
-
 public:
     Analysis(const std::string &default_db, const SchemaInfo &schema,
              const std::unique_ptr<AES_KEY> &master_key,
@@ -276,14 +279,13 @@ public:
           master_key(analysis.getMasterKey()),
           default_sec_rating(analysis.getDefaultSecurityRating()) {}
 
-    unsigned int pos; // a counter indicating how many projection
-                      // fields have been analyzed so far
-    //each field may or may not has a salt field
+    /*a counter indicating how many projection fields have been analyzed so far*/
+    unsigned int pos;
+    /*each field may or may not has a salt field*/
     std::map<const FieldMeta *, const salt_type> salts;
-    //each Item has a rewrite plain, which lists possible way to encrypt this item, that is OLKs!
+    /*each Item has a rewrite plain, which lists possible way to encrypt this item, that is OLKs!*/
     std::map<const Item *, std::unique_ptr<RewritePlan> > rewritePlans;
-    std::map<std::string, std::map<const std::string, const std::string>>
-        table_aliases;
+    std::map<std::string, std::map<const std::string, const std::string>> table_aliases;
     std::map<const Item_field *, std::pair<Item_field *, OLK>> item_cache;
 
     // information for decrypting results

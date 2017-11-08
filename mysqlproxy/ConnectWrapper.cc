@@ -149,6 +149,22 @@ disconnect(lua_State *const L) {
     return 0;
 }
 
+
+/*
+*Input: client name, query, thread_id
+*client name is used for fetching the proxystate, plan query for rewritting, and thread_id for
+*fetching the default db
+
+*Functionality: rewrite the query and get the executor.
+There are different types of query:
+*SELECT ...:
+*INSERT INTO ...:
+*DELETE ...:
+*UPDATE ...:
+*SET ...:
+*
+*Output: status code. Store QueryRewrite in the wrapperstate
+*/
 static int
 rewrite(lua_State *const L) {
 //    ANON_REGION(__func__, &perf_cg);
@@ -169,7 +185,7 @@ rewrite(lua_State *const L) {
     const std::string &query = xlua_tolstring(L, 2);
     const unsigned long long _thread_id =
         strtoull(xlua_tolstring(L, 3).c_str(), NULL, 10);
-    //this is not used??
+
     c_wrapper->last_query = query;
     if (EXECUTE_QUERIES) {
         try {
@@ -177,7 +193,7 @@ rewrite(lua_State *const L) {
                                               &c_wrapper->default_db),
                       "proxy failed to retrieve default database!");
             // save a reference so a second thread won't eat objects
-            // that DeltaOuput wants later
+            // that DeltaOuput wants later(a shared_ptr for the schemaInfo)
             const std::shared_ptr<const SchemaInfo> &schema =
                 ps->getSchemaInfo();
             c_wrapper->schema_info_refs.push_back(schema);
@@ -185,8 +201,10 @@ rewrite(lua_State *const L) {
             //parse, rewrite, delta, adjust, returnMeta, 
             std::unique_ptr<QueryRewrite> qr =
                 std::unique_ptr<QueryRewrite>(new QueryRewrite(
-                    Rewriter::rewrite(query, *schema.get(),
-                                      c_wrapper->default_db, *ps)));
+                    Rewriter::rewrite(query, 
+                                     *schema.get(),
+                                     c_wrapper->default_db, *ps)));
+
             assert(qr);
             c_wrapper->setQueryRewrite(std::move(qr));
         } catch (const AbstractException &e) {
@@ -285,8 +303,6 @@ getResTypeFromLuaTable(lua_State *const L, int fields_index,
         lua_pop(L, 1);
 
     }
-    //printrawReturnValue(myRawFromLua);
-
     return ResType(status, lua_tointeger(L, affected_rows_index),
                    lua_tointeger(L, insert_id_index), std::move(names),
                    std::move(types), std::move(rows));
@@ -307,21 +323,26 @@ nilBuffer(lua_State *const L, size_t count)
  * */
 static void 
 parseReturnMeta(const ReturnMeta & rtm){
+
 }
 
 
+/*
+*Input: client
+*/
+
 static int
 next(lua_State *const L) {
+    /*only one client can call next at a time*/
     scoped_lock l(&big_lock);
     assert(0 == mysql_thread_init());
-    //查找client
     const std::string client = xlua_tolstring(L, 1);
+
     if (clients.find(client) == clients.end()) {
         xlua_pushlstring(L, "error");
         xlua_pushlstring(L, "unknown client");
-         lua_pushinteger(L,  100);
+        lua_pushinteger(L,  100);
         xlua_pushlstring(L, "12345");
-
         nilBuffer(L, 1);
         return 5;
     }
@@ -332,13 +353,17 @@ next(lua_State *const L) {
 
     ProxyState *const ps = thread_ps = c_wrapper->ps.get();
     assert(ps);
+
+    /*???*/
     ps->safeCreateEmbeddedTHD();
 
     const ResType &res = getResTypeFromLuaTable(L, 2, 3, 4, 5, 6);
 
 
     const std::unique_ptr<QueryRewrite> &qr = c_wrapper->getQueryRewrite();
+
     parseReturnMeta(qr->rmeta);
+
     try {
         NextParams nparams(*ps, c_wrapper->default_db, c_wrapper->last_query);
 
@@ -352,7 +377,7 @@ next(lua_State *const L) {
             // > a given killzone will only apply to the next query translation
             c_wrapper->setKillZone(qr->kill_zone);
         }
-        switch (result_type) {
+        switch (result_type){
         case AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN: {
             // more to do before we have the client's results
             xlua_pushlstring(L, "again");
@@ -389,13 +414,13 @@ next(lua_State *const L) {
         // lua_pop(L, lua_gettop(L));
         xlua_pushlstring(L, "error");
         xlua_pushlstring(L, e.getMessage());
-         lua_pushinteger(L, e.getErrorCode());
+        lua_pushinteger(L, e.getErrorCode());
         xlua_pushlstring(L, e.getSQLState());
-
         nilBuffer(L, 1);
         return 5;
     }
 }
+
 
 static void
 returnResultSet(lua_State *const L, const ResType &rd) {
@@ -441,6 +466,9 @@ returnResultSet(lua_State *const L, const ResType &rd) {
     return;
 }
 
+
+
+/*Init the lua library*/
 static const struct luaL_reg
 cryptdb_lib[] = {
 #define F(n) { #n, n }

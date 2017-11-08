@@ -892,8 +892,7 @@ std::string Analysis::getAnonIndexName(const TableMeta &tm,
 }
 
 bool Analysis::isAlias(const std::string &db,
-                       const std::string &table) const
-{
+                       const std::string &table) const{
     auto db_alias_pair = table_aliases.find(db);
     if (table_aliases.end() == db_alias_pair) {
         return false;
