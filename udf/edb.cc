@@ -399,12 +399,11 @@ cryptdb_searchSWP_init(UDF_INIT *const initid, UDF_ARGS *const args,
     if (args->arg_count != 3 ||
         args->arg_type[0] != STRING_RESULT ||
         args->arg_type[1] != STRING_RESULT ||
-        args->arg_type[2] != STRING_RESULT)
-    {
-        strcpy(message, "Usage: cryptdb_searchSWP(string ciphertext, string ciph, string wordKey)");
+        args->arg_type[2] != STRING_RESULT){
+        strcpy(message, "Usage: cryptdb_searchSWP(string ciphertext,\
+                                        string ciph, string wordKey)");
         return 1;
     }
-
     Token *const t = new Token();
 
     uint64_t ciphLen;
@@ -442,11 +441,16 @@ cryptdb_searchSWP(UDF_INIT *const initid, UDF_ARGS *const args,
 }
 
 
+/**********************************************************************
+*************************Begin UDF for SUM******************************
+***********************************************************************
+*/
+
 struct agg_state {
-    ZZ sum;
-    ZZ n2;
+    ZZ sum;/*the results of sum*/
+    ZZ n2; /*n2 is the public key and for each group, n2 must be set*/
     bool n2_set;
-    void *rbuf;
+    void *rbuf;/*convert sum to void* and return*/
 };
 
 my_bool
@@ -455,8 +459,7 @@ cryptdb_agg_init(UDF_INIT *const initid, UDF_ARGS *const args,
 {
     if (args->arg_count != 2 ||
         args->arg_type[0] != STRING_RESULT ||
-        args->arg_type[1] != STRING_RESULT)
-    {
+        args->arg_type[1] != STRING_RESULT){
         strcpy(message, "Usage: cryptdb_agg(string ciphertext, string pubkey)");
         return 1;
     }
@@ -469,64 +472,64 @@ cryptdb_agg_init(UDF_INIT *const initid, UDF_ARGS *const args,
 }
 
 void
-cryptdb_agg_deinit(UDF_INIT *const initid)
-{
+cryptdb_agg_deinit(UDF_INIT *const initid){
     agg_state *const as = reinterpret_cast<agg_state *>(initid->ptr);
     free(as->rbuf);
     delete as;
 }
 
-// When we want to add by zero for HOM values we can multiply our value
-// by 1.
+/* When we want to add by zero for HOM values we can multiply our value
+ by 1.*/
 void
-cryptdb_agg_clear(UDF_INIT *const initid, char *const is_null, char *const error)
-{
+cryptdb_agg_clear(UDF_INIT *const initid, char *const is_null, char *const error){
     agg_state *const as = reinterpret_cast<agg_state *>(initid->ptr);
     as->sum = to_ZZ(1);
     as->n2_set = 0;
 }
 
-//args will be element to add, constant N2
+/*args will be element to add, constant N2*/
 my_bool
 cryptdb_agg_add(UDF_INIT *const initid, UDF_ARGS *const args,
-                char *const is_null, char *const error)
-{
-    //cerr << "in agg_add \n";
+                char *const is_null, char *const error){
     agg_state *const as = reinterpret_cast<agg_state *>(initid->ptr);
+    /*for each group, read and set n2*/
     if (!as->n2_set) {
-        //cerr << "n2 length is " << args->lengths[1] << "\n";
-        //cerr << "n2 first byte is " << (int)args->args[1][0] << "\n";
         ZZFromBytes(as->n2,
                     reinterpret_cast<const uint8_t *>(args->args[1]),
                     args->lengths[1]);
-        //cerr << "n2 is " << as->n2 << "\n";
         as->n2_set = 1;
     }
 
+    /*add current item e, which is converted from args->args[0]*/
     ZZ e;
     if (NULL == args->args[0]) {
         e = to_ZZ(1);
     } else {
         ZZFromBytes(e, reinterpret_cast<const uint8_t *>(args->args[0]),
                     args->lengths[0]);
-    }
-
-    //cerr << "element to add " << e << "\n";
+    } 
+    std::cerr << "element to add " << e << "\n";
     MulMod(as->sum, as->sum, e, as->n2);
-    //cerr << "sum so far " << as->sum << "\n";
+    std::cerr << "sum so far " << as->sum << "\n";
     return true;
 }
 
 char *
 cryptdb_agg(UDF_INIT *const initid, UDF_ARGS *const args, char *const result,
-            unsigned long *const length, char *const is_null, char *const error)
-{
+            unsigned long *const length, char *const is_null, char *const error){
     agg_state *const as = reinterpret_cast<agg_state *>(initid->ptr);
     BytesFromZZ(static_cast<uint8_t *>(as->rbuf), as->sum,
                 Paillier_len_bytes);
     *length = Paillier_len_bytes;
     return static_cast<char *>(as->rbuf);
 }
+
+
+/*
+*****************************************************************************
+*/
+
+
 
 // for update with increment
 // > UNUSED

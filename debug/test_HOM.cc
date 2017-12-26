@@ -6,6 +6,7 @@
 #include <crypto/paillier.hh>
 #include <crypto/arc4.hh>
 #include <NTL/ZZ.h>
+#include <assert.h>
 using namespace NTL;
 using std::string;
 using std::cout;
@@ -26,12 +27,13 @@ static uint64_t cur_usec() {
 }
 
 
-/*static void test_paillier_priv(){
+static void test_paillier_priv(){
     Paillier_priv * sk;
     string seed_key="1234567678";
     const std::unique_ptr<streamrng<arc4>> prng(new streamrng<arc4>(seed_key));
     urandom u;
     sk = new Paillier_priv(Paillier_priv::keygen(prng.get(), 1024));
+
     for(int i=0;i<1024;i++){
         ZZ pt0 = u.rand_zz_mod(to_ZZ(1) << 20);
         ZZ pt1 = u.rand_zz_mod(to_ZZ(1) << 20);
@@ -45,7 +47,7 @@ static uint64_t cur_usec() {
         cout<<"PASS"<<endl;
     }
 
-}*/
+}
 
 static void test_paillier_time() {
     Paillier_priv * sk;
@@ -53,9 +55,9 @@ static void test_paillier_time() {
     const std::unique_ptr<streamrng<arc4>> prng(new streamrng<arc4>(seed_key));
     urandom u;
     sk = new Paillier_priv(Paillier_priv::keygen(prng.get(), 1024));
+
     ZZ pt0 = u.rand_zz_mod(to_ZZ(1) << 20);
 
-    cout<<"numOfTests: "<<numOfTest<<endl;
     ZZ enc0;
     uint64_t start = cur_usec();
     for(int i=0;i<numOfTest;i++){
@@ -72,9 +74,11 @@ static void test_paillier_time() {
     end = cur_usec();
     cout<<"decryption: "<<(end-start)*1.0/numOfTest<<endl;
 }
+
 int
 main() {
     test_paillier_time();
+    test_paillier_priv();
     return 0;
 }
 
