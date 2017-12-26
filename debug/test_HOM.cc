@@ -1,25 +1,12 @@
 #include <iostream>
-#include <cctype>
-#include <locale>
-#include <unistd.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <parser/sql_utils.hh>
-#include "util/onions.hh"
-#include <crypto/prng.hh>
-#include <crypto/BasicCrypto.hh>
-#include <crypto/paillier.hh>
-#include <crypto/SWPSearch.hh>
-#include <crypto/BasicCrypto.hh>
-#include <crypto/arc4.hh>
-#include <util/zz.hh>
-#include <NTL/ZZ.h>
-#include <NTL/RR.h>
+#include <sys/time.h>
+#include <memory>
 #include <iomanip>
-
-
+#include <crypto/prng.hh>
+#include <crypto/paillier.hh>
+#include <crypto/arc4.hh>
+#include <NTL/ZZ.h>
 using namespace NTL;
-
 using std::string;
 using std::cout;
 using std::cin;
@@ -31,7 +18,6 @@ using std::hex;
 using std::dec;
 
 static const int numOfTest = 100;
-
 
 static uint64_t cur_usec() {
     struct timeval tv;
