@@ -379,7 +379,7 @@ next(lua_State *const L) {
         }
         switch (result_type){
         case AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN: {
-            // more to do before we have the client's results
+            /*more to do before we have the client's results. i.e the first round of select * */
             xlua_pushlstring(L, "again");
             const auto &output =
                 std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
@@ -391,8 +391,8 @@ next(lua_State *const L) {
             return 5;
         }
         case AbstractQueryExecutor::ResultType::QUERY_USE_RESULTS: {
-            // the results of executing this query should be send directly
-            // back to the client
+            /* the results of executing this query should be send directly
+               back to the client. i.e show databases.*/
             xlua_pushlstring(L, "query-results");
             const auto &new_query =
                 std::get<1>(new_results)->extract<std::string>();
@@ -401,10 +401,10 @@ next(lua_State *const L) {
             return 5;
         }
         case AbstractQueryExecutor::ResultType::RESULTS: {
-            // ready to return results to the client
+            /* ready to return results to the client. i.e the second round of select * */
             xlua_pushlstring(L, "results");
             const auto &res = new_results.second->extract<ResType>();
-            returnResultSet(L, res);        // pushes 4 items on stack
+            returnResultSet(L, res);
             return 5;
         }
         default:
