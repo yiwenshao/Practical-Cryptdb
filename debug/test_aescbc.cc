@@ -1,39 +1,13 @@
 #include <string>
 #include <map>
 #include <iostream>
-
-
-
-
-
-
-
 #include <functional>
 #include <cctype>
 #include <locale>
 #include <unistd.h>
 #include <sys/types.h>
 #include <dirent.h>
-
-
-
-
-
-
-
-
-#include <main/macro_util.hh>
 #include <main/CryptoHandlers.hh>
-
-
-
-#include <parser/lex_util.hh>
-
-#include <readline/readline.h>
-#include <readline/history.h>
-
-#include <crypto/ecjoin.hh>
-#include <crypto/search.hh>
 #include <crypto/padding.hh>
 #include <util/errstream.hh>
 #include <util/cryptdb_log.hh>
@@ -41,39 +15,20 @@
 #include <util/yield.hpp>
 #include "util/onions.hh"
 
-#include <util/cryptdb_log.hh>
-#include <crypto/pbkdf2.hh>
-#include <crypto/ECJoin.hh>
-#include <crypto/skip32.hh>
-
 #include <vector>
 #include <iomanip>
-
-
 #include <crypto/prng.hh>
 #include <crypto/BasicCrypto.hh>
-#include <crypto/paillier.hh>
-#include <crypto/ope.hh>
 #include <crypto/blowfish.hh>
-#include <parser/sql_utils.hh>
 #include <crypto/SWPSearch.hh>
-#include <crypto/ope.hh>
 #include <crypto/BasicCrypto.hh>
-#include <crypto/SWPSearch.hh>
 #include <crypto/arc4.hh>
-#include <crypto/hgd.hh>
-#include <crypto/mont.hh>
 #include <crypto/cbc.hh>
 #include <crypto/cmc.hh>
-#include <crypto/gfe.hh>
 #include <util/util.hh>
-#include <util/cryptdb_log.hh>
 #include <util/zz.hh>
 #include <cmath>
 #include <NTL/ZZ.h>
-#include <NTL/RR.h>
-#include <sstream>
-#include <map>
 
 using namespace NTL;
 
