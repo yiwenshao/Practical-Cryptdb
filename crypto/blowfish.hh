@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <stdint.h>
+#include <string>/*why is this omitted?*/
 #include <openssl/blowfish.h>
 
 class blowfish {

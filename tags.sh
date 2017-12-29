@@ -1,1 +1,1 @@
-find . | grep '\.c$\|\.cc$$\|\.h$\|\.hh$'| xargs ctags
+find . | grep '\.c$\|\.cc$\|\.h$\|\.hh$'| xargs ctags

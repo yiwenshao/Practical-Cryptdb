@@ -1,34 +1,18 @@
 #include <string>
 #include <map>
 #include <iostream>
-#include <functional>
-#include <cctype>
-#include <locale>
-#include <unistd.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <main/CryptoHandlers.hh>
-#include <crypto/padding.hh>
-#include <util/errstream.hh>
-#include <util/cryptdb_log.hh>
-#include <util/enum_text.hh>
-#include <util/yield.hpp>
-#include "util/onions.hh"
-
-#include <vector>
+#include <memory>
 #include <iomanip>
+
+#include <crypto/padding.hh>
 #include <crypto/prng.hh>
 #include <crypto/BasicCrypto.hh>
 #include <crypto/blowfish.hh>
-#include <crypto/SWPSearch.hh>
-#include <crypto/BasicCrypto.hh>
 #include <crypto/arc4.hh>
 #include <crypto/cbc.hh>
-#include <crypto/cmc.hh>
 #include <util/util.hh>
-#include <util/zz.hh>
-#include <cmath>
 #include <NTL/ZZ.h>
+
 
 using namespace NTL;
 
@@ -74,9 +58,6 @@ static string generateStringOfLen(int len){
     return string(len,'a');
 }
 
-
-
-
 static void test_RNDstr(string ptext,int numOfTest){
     string key="123456789";
     string rawkey = prng_expand(key, 16);
@@ -84,7 +65,6 @@ static void test_RNDstr(string ptext,int numOfTest){
     const std::unique_ptr<const AES_KEY> deckey(get_AES_dec_key(rawkey));
     uint64_t IV = 1234567;
     uint64_t start = cur_usec();
-//    cout<<"ptext len = "<<ptext.size()<<" : "<<"key len = "<<rawkey.size()<<endl;
     string enc,dec;
     for(int i=1;i<=numOfTest;i++){
         enc = encrypt_AES_CBC(ptext,enckey.get(),BytesFromInt(IV, SALT_LEN_BYTES),true);
