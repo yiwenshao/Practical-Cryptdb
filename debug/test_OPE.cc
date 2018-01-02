@@ -51,15 +51,17 @@ void test_OPEint(int numOfTest){
 
 /*
 only encrypt, no decrypt.
-
+*/
+static
 void test_OPEstr(){
-    string key = "12345kdljsldajfdls;afjdkals;fjdsal;fdjsal;fdjsalf;djsakfld;sjafdklsa;jfdlksa;jfdslakfjdsal;fjdslkafj6789";
-    string rawkey = prng_expand(key, 16);
+    std::string key = "12345k";
+    std::string rawkey = prng_expand(key, 16);
     const size_t plain_size = 4;
     const size_t ciph_size = 8;       
     OPE ope(rawkey,8*plain_size,8*ciph_size);
-    string ptext="helloworld";    
-    string ps = toUpperCase(ptext);
+
+    std::string ptext="helloworld";    
+    std::string ps = toUpperCase(ptext);
     if (ps.size() < plain_size)
         ps = ps + std::string(plain_size - ps.size(), 0);
     
@@ -68,50 +70,15 @@ void test_OPEstr(){
     for (uint i = 0; i < plain_size; i++) {
         pv = pv * 256 + static_cast<int>(ps[i]);
     }
-    const ZZ enc = ope.encrypt(to_ZZ(pv));   
-    cout<<"enc: "<<enc<<endl;
+    /*strcomp by prefix*/
+    const ZZ enc = ope.encrypt(to_ZZ(pv));
+    std::cout<<"enc: "<<enc<<std::endl;
 }
-
-*/
-
-/*
-    not yet supported.
-
-static void
-testOPE(){
-    unsigned int noSizes = 6;
-    unsigned int plaintextSizes[] = {16, 32, 64,  128, 256, 512, 1024};
-    unsigned int ciphertextSizes[] = {32, 64, 128, 256, 288, 768, 1536};
-    unsigned int noValues = 100;
-    string key = "secret aes key!!";
-    for (unsigned int i = 0; i < noSizes; i++) {
-        unsigned int ptextsize = plaintextSizes[i];
-        unsigned int ctextsize =  ciphertextSizes[i];
-        OPE * ope = new OPE(string(key, AES_KEY_BYTES), ptextsize, ctextsize);
-        //Test it on "noValues" random values
-        for (unsigned int j = 0; j < noValues; j++) {
-            string data = randomBytes(ptextsize/bitsPerByte);
-            //string enc = ope->encrypt(data);
-            //string dec = ope->decrypt(enc);
-            //assert_s(valFromStr(dec) == valFromStr(data), "decryption does not match original data "  + StringFromVal(ptextsize) + " " + StringFromVal(ctextsize));
-        }
-    }
-}
-
-
-
-*/
-
-
-
 
 int
 main(int argc,char** argv){
-   if(argc!=2){
-        std::cout<<"please input numof tests"<<std::endl;
-        return 0;
-   }
-   int numOfTest = std::stoi(argv[1]);      
+   int numOfTest = 1;
    test_OPEint(numOfTest);
+   test_OPEstr();
    return 0;
 }
