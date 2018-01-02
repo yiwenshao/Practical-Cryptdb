@@ -1,3 +1,5 @@
+/*hgd is needed by OPE*/
+#pragma once
 #include <NTL/ZZ.h>
 #include <crypto/prng.hh>
 

@@ -8,6 +8,7 @@
 #include <NTL/ZZ.h>
 #include <crypto/bn.hh>
 
+/*generate random somthing*/
 class PRNG {
  public:
     template<class T>
