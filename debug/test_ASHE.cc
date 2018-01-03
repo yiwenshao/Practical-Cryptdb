@@ -5,7 +5,7 @@
 
 int main(){
     std::vector<unsigned long long > plain{1u,2u,3u,4u,5u,6u,7u,8u,9u,10u};
-    std::vector<long> enc;
+    std::vector<std::pair<long,uint64_t>> enc;
     std::vector<ASHE*> ass;
     for(auto item:plain){
         uint64_t IV = randomValue();
@@ -15,7 +15,7 @@ int main(){
     }
     std::cout<<"encs:plains"<<std::endl;
     for(auto i=0u;i<enc.size();++i){
-        std::cout<<"enc:"<<enc[i]<<"dec:"<<ass[i]->decrypt(enc[i])<<std::endl;
+        std::cout<<"enc:"<<enc[i].first<<"dec:"<<ass[i]->decrypt(enc[i].first)<<std::endl;
     }
     return 0;
 }

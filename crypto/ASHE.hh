@@ -3,13 +3,13 @@
 #include <string>
 #include "crypto/blowfish.hh"
 class ASHE{
-    static const unsigned long long ASHE_MAX;
+    static const unsigned long ASHE_MAX;
     std::string key;
     blowfish bf;
     uint64_t IV;
 public:
     ASHE(std::string s,int i);
-    long encrypt(unsigned long long plaintext);
+    std::pair<long,uint64_t> encrypt(unsigned long plaintext);
     int getIV();
-    unsigned long long decrypt(long ciphertext);
+    unsigned long decrypt(long ciphertext);
 };
