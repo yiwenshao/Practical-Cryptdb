@@ -16,11 +16,19 @@ function show_table_counts(){
     for((i=1;i<$len;i++))
     do
         res=`mysql_command "SELECT COUNT(*) AS total_count FROM $1.${arr[$i]}"`
-        echo ${arr[$i]},$res
+        echo ${arr[$i]},$res >> res
     done
 }
 
-show_table_counts $1
+name="tpcc1000"
+
+if [ $# = 1 ];then
+    name=$1
+fi
+
+show_table_counts $name
+cat res
+rm res
 
 #res=`mysql_command 'show databases'`
 #echo $res

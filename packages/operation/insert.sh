@@ -1,5 +1,6 @@
 files=`find  ~/Insert/ -type f`
 arrayfiles=($files)
+
 #IFS=' ' read -r -a arrayfiles <<< "$files"
 
 for data in ${arrayfiles[@]}
