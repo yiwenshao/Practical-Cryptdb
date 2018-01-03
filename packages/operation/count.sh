@@ -2,7 +2,7 @@
 function mysql_command(){
     cmd=\'$1\'
     #single quoted ${cmd} is not recognised
-    final="mysql -uroot -pletmein -h127.0.0.1 -e ${cmd}"
+    final="mysql -uroot  -h127.0.0.1 -e ${cmd}"
     #eval can not be ommited here, can not just use $final only for this command
     res=`eval $final`
     echo $res
@@ -10,8 +10,9 @@ function mysql_command(){
 
 function show_table_counts(){
     db=$1
-    raw=`mysql -uroot -pletmein -h127.0.0.1 -e "use $db;show tables;"| awk '{print $1}'`
+    raw=`mysql -uroot  -h127.0.0.1 -e "use $db;show tables;"| awk '{print $1}'`
     arr=($raw)
+    echo $arr
     len=${#arr[@]}
     for((i=1;i<$len;i++))
     do
