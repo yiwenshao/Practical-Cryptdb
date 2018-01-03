@@ -8,21 +8,21 @@ CXX=g++
 .PHONY: all
 
 
-executables:=main createSelect backFieldsToFiles analysis
+executables:=main createInsert backFieldsToFiles analysis
 
 all: $(executables)
 
-createSelect: obj/createSelect.o $(OBJFILES)
-	$(CXX) -o createSelect $^ $(LDFLAGS)
+createInsert: obj/createInsert.o $(OBJFILES)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 main: obj/main.o $(OBJFILES)
-	$(CXX) -o main $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 backFieldsToFiles: obj/backFieldsToFiles.o $(OBJFILES)
-	$(CXX) -o backFieldsToFiles $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 analysis: obj/analysis.o $(OBJFILES)
-	$(CXX) -o analysis $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
 .PHONY:clean
 

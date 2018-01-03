@@ -1,2 +1,0 @@
-SELECT id,QUOTE(name) FROM `tdb`.`stu`
-stu

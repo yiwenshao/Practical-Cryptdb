@@ -87,15 +87,28 @@ vector<string> getTables(string db){
 
 int main(int argc,char**argv){
     if(argc!=4){
-        cout<<"numOfpipe, db"<<endl;
+        cout<<"numOfpipe, db, isQuote"<<endl;
         return 0;
     }
     string num = string(argv[1]);
     numOfPipe = stoi(num);
     vector<string> tables = getTables(string(argv[2]));
+    bool isQuote;
+    if(string(argv[3]) == "true"){
+        isQuote = true;
+    }else if(string(argv[3]) == "false"){
+        isQuote = false;
+    }else{
+        printf("error\n");
+        return 0;
+    }
     for(auto item:tables){
-        string query = createSelect(string(argv[2]),item);
+        string query = createSelect(string(argv[2]),item,isQuote);
         backupselect(query,item);
     }
     return 0;
 }
+
+
+
+
