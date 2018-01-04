@@ -12,4 +12,6 @@ public:
     std::pair<long,uint64_t> encrypt(unsigned long plaintext);
     int getIV();
     unsigned long decrypt(long ciphertext);
+    static std::pair<long,std::vector<uint64_t>> sum(std::vector<std::pair<long,uint64_t>> input);
+    static unsigned long decrypt_sum(std::pair<long,std::vector<uint64_t>> input);
 };

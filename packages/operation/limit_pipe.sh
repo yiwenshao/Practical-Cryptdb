@@ -1,12 +1,12 @@
 #backup data with limited pipecount
 current_dir=`pwd`
 
-db=tpcc1000
+db=tdb2
 pipe=100
-tables=`mysql -uroot -h127.0.0.1 -P3306 $db -e "show tables" | awk '{print $1}'`
+tables=`mysql -h127.0.0.1 -P3306 $db -e "show tables" | awk '{print $1}'`
 table_array=($tables)
 len=${#table_array[@]}
-back_dir=pipe_$pipe
+back_dir=pipelinefile_$pipe
 rm -rf $back_dir
 mkdir $back_dir
 cd ../tls/mysql_wrapper/

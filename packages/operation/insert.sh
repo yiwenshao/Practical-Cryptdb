@@ -1,12 +1,21 @@
-files=`find  ~/Insert/ -type f`
-arrayfiles=($files)
+dir="~/Insert/"
+cur_dir=`pwd`
+cdb_test_dir="../../"
+target_db="tdb2"
 
-#IFS=' ' read -r -a arrayfiles <<< "$files"
+cd ${cdb_test_dir}
+
+if [ $#=1 ];then
+    dir=${cur_dir}/$1
+fi
+
+files=`find  ${dir} -type f`
+arrayfiles=($files)
 
 for data in ${arrayfiles[@]}
 do
-    ss="cdb_test tpcc1000 < $data"
-    eval $ss
+    ss="./obj/main/cdb_test ${target_db} < $data"
+##    eval $ss
     echo $ss
 done
 
