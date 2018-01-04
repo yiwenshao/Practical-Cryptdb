@@ -8,7 +8,7 @@ CXX=g++
 .PHONY: all
 
 
-executables:=main createInsert backFieldsToFiles analysis
+executables:=main backFieldsToFiles
 
 all: $(executables)
 

@@ -6,7 +6,7 @@
 using namespace std;
 extern Connect *con;
 
-string createSelect(string database,string table){
+string createSelect(string database,string table,bool isQuote=true){
     auto dbresult = con->execute(string("SELECT * FROM `")+database+"`.`"+string(table)+"` LIMIT 1;");
     DBResult * result = dbresult.get();
     vector<vector<string>> rows = result->getRows();
@@ -18,7 +18,9 @@ string createSelect(string database,string table){
             head += fields[i]+",";
         }
         else{
-            head+=string("QUOTE(")+fields[i]+"),";
+            if(isQuote)
+                head+=string("QUOTE(")+fields[i]+"),";
+            else head+=string("HEX(")+fields[i]+"),";
         }
     }
     head[head.size()-1]=' ';
@@ -38,16 +40,6 @@ void backupselect(string query,string table){
     vector<enum_field_types> types = result->getTypes();
     vector<string> fieldNames = result->getFields();
     string head = string("INSERT INTO ")+"`"+table+"`"+string(" VALUES (");
-
-    system("rm -rf allColumns");
-    system("mkdir allColumns");
-    vector<FILE *> files;
-    for(auto i=0u;i<types.size();i++){
-         FILE * cur = fopen((string("allColumns/")+fieldNames[i]).c_str(),"w");
-         if(cur==NULL) exit(1);
-         files.push_back(cur);
-    }
-
     for(auto i=0;i<rows.size();i++){
         string cur=head;          
         for(int j=0;j<rows[i].size();j++){
@@ -75,16 +67,27 @@ void backupselect(string query,string table){
         cur+=";";
         cout<<cur<<endl;
     }
-
-    for(auto i=0u;i<files.size();i++ ){
-         for(auto item:rows){
-            fwrite(item[i].c_str(),1,item[i].size(),files[i]);
-            fprintf(files[i],"\n");
-        }       
-    }
-    for(auto i=0u;i<files.size();i++)
-        fclose(files[i]);
 }
+
+
+vector<string> getTables(string db){
+    string query = string("SHOW TABLES IN ")+db;
+    auto dbresult = con->execute(query);
+    DBResult * result = dbresult.get();
+    vector<vector<string>> rows = result->getRows();
+    vector<enum_field_types> types = result->getTypes();
+    vector<string> fieldNames = result->getFields();
+    vector<string> res;
+    for(auto item:rows){
+        assert(item.size()==1);
+        res.push_back(item[0]);
+    }
+    return res;
+}
+
+
+
+
 
 int main(int argc,char**argv){
     if(argc!=4){
