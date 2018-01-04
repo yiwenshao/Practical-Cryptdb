@@ -73,57 +73,56 @@ static std::map<std::string, WrapperState*> clients;
 Connect  *globalConn;
 
 //Return values got by using directly the MySQL c Client
-struct rawReturnValue {
-    std::vector<std::vector<std::string>> rowValues;
+struct rawMySQLReturnValue {
+    std::vector<std::vector<std::string>> rowValues;/*data tuples*/
     std::vector<std::string> fieldNames;
     std::vector<enum_field_types> fieldTypes;
     std::vector<int> lengths;
-    std::vector<int> maxlengths;
+    std::vector<int> maxlengths;/*what's the difference between length and maxlength?*/
     std::vector<int> choosen_onions;
  
-    void show(){
-        cout<<"rowvalues:"<<endl;
-        for(auto item_vec:rowValues){
-            for(auto item:item_vec){
-                cout<<item.size()<<"\t";
-            }
-            cout<<endl;
-        }
+    void show();
+};
 
-        cout<<"types:"<<endl;
-        for(auto item:fieldTypes){
-            cout<<IS_NUM(item)<<"\t";
-        }
 
-        cout<<endl;
-        cout<<"fieldNames:"<<endl;
-        for(auto item:fieldNames){
-            cout<<item<<"\t";
-        }
-        cout<<endl;
-
-        cout<<"lengths:"<<endl;
-        for(auto item:lengths){
-            cout<<item<<"\t";
-        }
-        cout<<endl;
-
-        cout<<"maxlengths:"<<endl;
-        for(auto item:maxlengths){
-           cout<<item<<"\t";
+void rawMySQLReturnValue::show(){
+    cout<<"rowvalues:"<<endl;
+    for(auto item_vec:rowValues){
+        for(auto item:item_vec){
+            cout<<item.size()<<"\t";
         }
         cout<<endl;
     }
-};
+    cout<<"types:"<<endl;
+    for(auto item:fieldTypes){
+        cout<<IS_NUM(item)<<"\t";
+    }
+    cout<<endl;
+    cout<<"fieldNames:"<<endl;
+    for(auto item:fieldNames){
+        cout<<item<<"\t";
+    }
+    cout<<endl;
+    cout<<"lengths:"<<endl;
+    for(auto item:lengths){
+        cout<<item<<"\t";
+    }
+    cout<<endl;
+    cout<<"maxlengths:"<<endl;
+    for(auto item:maxlengths){
+       cout<<item<<"\t";
+    }
+    cout<<endl;
+}
 
 
 //must be static, or we get "no previous declaration"
 //execute the query and getthe rawReturnVale, this struct can be copied.
 static 
-rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
+rawMySQLReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
     std::unique_ptr<DBResult> dbres;
     curConn->execute(query, &dbres);
-    rawReturnValue myRaw;
+    rawMySQLReturnValue myRaw;
     
     if(dbres==nullptr||dbres->n==NULL){
         std::cout<<"no results"<<std::endl;
@@ -163,14 +162,14 @@ rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
     return myRaw;
 }
 
-//helper function for transforming the rawReturnValue
+//helper function for transforming the rawMySQLReturnValue
 
 static Item_null *
 make_null(const std::string &name = ""){
     char *const n = current_thd->strdup(name.c_str());
     return new Item_null(n);
 }
-//helper function for transforming the rawReturnValue
+//helper function for transforming the rawMySQLReturnValue
 static std::vector<Item *>
 itemNullVector(unsigned int count)
 {
@@ -181,9 +180,9 @@ itemNullVector(unsigned int count)
     return out;
 }
 
-//transform rawReturnValue to ResType
+//transform rawMySQLReturnValue to ResType
 static 
-ResType MygetResTypeFromLuaTable(bool isNULL,rawReturnValue *inRow = NULL,int in_last_insert_id = 0){
+ResType MygetResTypeFromLuaTable(bool isNULL,rawMySQLReturnValue *inRow = NULL,int in_last_insert_id = 0){
     std::vector<std::string> names;
     std::vector<enum_field_types> types;
     std::vector<std::vector<Item *> > rows;
@@ -271,6 +270,7 @@ struct transField{
     }
 };
 
+/*for each field, convert the format to transField*/
 static std::vector<transField> getTransField(std::vector<FieldMeta *> pfms){
     std::vector<transField> res;
     //for every field
@@ -512,7 +512,7 @@ static bool make_path(string directory){
 }
 
 
-static void write_meta(rawReturnValue& resraw,string db,string table){
+static void write_meta(rawMySQLReturnValue& resraw,string db,string table){
     //write metadata
     FILE * localmeta = NULL;
     string prefix = string("data/")+db+"/"+table;
@@ -653,7 +653,7 @@ static meta_file load_meta(string db="tdb", string table="student", string filen
 }
 
 
-static void write_row_data(rawReturnValue& resraw,string db, string table){
+static void write_row_data(rawMySQLReturnValue& resraw,string db, string table){
     vector<FILE*> data_files;
     string prefix = string("data/")+db+"/"+table+"/";
     for(auto item:resraw.fieldNames){
@@ -677,7 +677,7 @@ static void write_row_data(rawReturnValue& resraw,string db, string table){
 
 
 static
-void write_raw_data_to_files(rawReturnValue& resraw,string db,string table){
+void write_raw_data_to_files(rawMySQLReturnValue& resraw,string db,string table){
     //write metafiles
     write_meta(resraw,db,table);
     //write datafiles
@@ -737,7 +737,9 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
     auto res = getTransField(fms);
-    meta_file res_meta = load_meta();
+
+    meta_file res_meta = load_meta(db,table);
+
     for(unsigned int i=0;i<res_meta.choosen_onions.size();i++){
 	res[i].choosenOnions.push_back(res_meta.choosen_onions[i]);
     }
@@ -745,7 +747,8 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     //why do we need this??
     std::string backq = "show databases";
     executeAndGetResultRemote(globalConn,backq);
-    rawReturnValue resraw2;
+    rawMySQLReturnValue resraw2;
+
     vector<vector<string>> res_field = load_table_fields(res_meta);
     resraw2.rowValues = res_field;
     resraw2.fieldNames = res_meta.field_names;
@@ -756,7 +759,7 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
     auto finalresults = decryptResults(rawtorestype,*rm);
     parseResType(finalresults);
-    //return resraw2;
+
     return finalresults;
 }
 
@@ -785,23 +788,30 @@ static void init(){
 
 
 static void store(std::string db, std::string table){
-            std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-            //get all the fields in the tables.
-            std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-            auto res = getTransField(fms);
-            for(auto &item:res){
-                item.choosenOnions.push_back(0);
-            }
-            std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-            std::string backq = getTestQuery(*schema,res,db,table);
-            rawReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-            for(auto &item:res){
-                resraw.choosen_onions.push_back(item.choosenOnions[0]);
-            }
-            write_raw_data_to_files(resraw,db,table);
+    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
+    //get all the fields in the tables
+    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+    //transform the field so that selected onions can be used
+    std::vector<transField> res = getTransField(fms);
+
+    for(auto &item:res){
+        item.choosenOnions.push_back(0);
+    }
+
+    //generate the backup query and then fetch the tuples
+    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+    std::string backq = getTestQuery(*schema,res,db,table);
+    rawMySQLReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
+
+    for(auto &item:res){
+        resraw.choosen_onions.push_back(item.choosenOnions[0]);
+    }
+
+    //write the tuples into files
+    write_raw_data_to_files(resraw,db,table);
 }
 
-static void add(rawReturnValue & str,ResType & item ){
+static void add(rawMySQLReturnValue & str,ResType & item ){
     for(auto row : item.rows){
         std::vector<string> temp;
         for(auto item : row){
@@ -813,7 +823,7 @@ static void add(rawReturnValue & str,ResType & item ){
 }
 
 
-static void construct_insert(rawReturnValue & str,std::string table,std::vector<string> &res){    
+static void construct_insert(rawMySQLReturnValue & str,std::string table,std::vector<string> &res){    
     std::string head = string("INSERT INTO `")+table+"` VALUES ";
     int num_of_pipe = 3;
     int cnt = 0;
@@ -847,19 +857,22 @@ static void construct_insert(rawReturnValue & str,std::string table,std::vector<
 int
 main(int argc, char* argv[]) {
     if(argc!=2){
+        printf("load or store");
         return 0;
     }
     init();
     std::string option(argv[1]);
-    std::string db="tdb",table="student";
+    std::string db="tdb2",table="stu";
+
     if(option=="store"){
         store(db,table);
     }else if(option == "load"){
         auto res =  load_files(db,table);
-        rawReturnValue str;
+        rawMySQLReturnValue str;
         add(str,res);
         std::vector<string> res_query;
         construct_insert(str,table,res_query);
+
         for(auto item:res_query){
             cout<<item<<endl;
         }
