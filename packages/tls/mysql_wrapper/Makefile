@@ -2,18 +2,16 @@ SRCFILES=$(wildcard mysqllib/*.cc)
 OBJFILES=$(patsubst mysqllib/%.cc,obj/%.o,$(SRCFILES))
 CXXFLAGS=-I/usr/include/mysql -fabi-version=2 -fno-omit-frame-pointer -std=c++11
 LDFLAGS=-L/usr/lib/x86_64-linux-gnu -lmysqlclient -lpthread -lz -lm -lrt -ldl
+
 CXX=g++
 
 
 .PHONY: all
 
 
-executables:=main backFieldsToFiles
+executables:=main backFieldsToFiles client escape
 
 all: $(executables)
-
-createInsert: obj/createInsert.o $(OBJFILES)
-	$(CXX) -o $@ $^ $(LDFLAGS)
 
 main: obj/main.o $(OBJFILES)
 	$(CXX) -o $@ $^ $(LDFLAGS)
@@ -21,7 +19,10 @@ main: obj/main.o $(OBJFILES)
 backFieldsToFiles: obj/backFieldsToFiles.o $(OBJFILES)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
-analysis: obj/analysis.o $(OBJFILES)
+client:obj/client.o $(OBJFILES)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+escape:obj/escape.o $(OBJFILES)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 .PHONY:clean

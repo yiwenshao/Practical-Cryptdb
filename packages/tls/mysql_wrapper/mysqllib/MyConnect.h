@@ -49,8 +49,8 @@ class DBResult {
  public:
     DBResult():affected_rows(-1),insert_id(-1){}
     DBResult(vector<vector<string>> inRows,vector<string >inFields,
-                    vector<enum_field_types> inTypes):affected_rows(-1),insert_id(-1),
-            rows(inRows),fields(inFields),types(inTypes){
+                    vector<enum_field_types> inTypes,vector<vector<int>> inLengths):affected_rows(-1),insert_id(-1),
+            rows(inRows),fields(inFields),types(inTypes),lengths(inLengths){
             for(auto item:types){
                 typesString.push_back(gtm[item]);
             }
@@ -67,6 +67,7 @@ class DBResult {
     const uint64_t affected_rows;
     const uint64_t insert_id;
     const vector<vector<string>> rows;
+    const vector<vector<int>> lengths;
     const vector<string> fields;
     const vector<enum_field_types> types;
     vector<string> typesString;

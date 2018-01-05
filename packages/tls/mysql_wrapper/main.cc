@@ -86,9 +86,6 @@ vector<string> getTables(string db){
 }
 
 
-
-
-
 int main(int argc,char**argv){
     if(argc!=4){
         cout<<"numOfpipe, db, table"<<endl;

@@ -92,23 +92,28 @@ Connect::execute(const std::string &query){
     vector<vector<string>> rows;
     vector<string> fields;
     vector<enum_field_types> types;
+    vector<vector<int>> lengths;
 
     if(num_fields==0){
-        return std::make_shared<DBResult>(rows,fields,types);
+        return std::make_shared<DBResult>(rows,fields,types,lengths);
     }
 
     MYSQL_ROW row;
     while ((row = mysql_fetch_row(result))) {
         unsigned long * fieldLen = mysql_fetch_lengths(result);
         vector<string> curRow;
+        vector<int> curLength;
         for(int i = 0; i < num_fields; i++) {
             if(row[i]==NULL){
                 curRow.push_back(string("NULL"));
+                curLength.push_back(0);
             }else{
                 curRow.push_back(string(row[i],fieldLen[i]));
+                curLength.push_back(fieldLen[i]);
             }
         }
         rows.push_back(curRow);
+        lengths.push_back(curLength);
     }
 
     MYSQL_FIELD *field;
@@ -122,7 +127,7 @@ Connect::execute(const std::string &query){
         }
     }
 
-    return std::make_shared<DBResult>(rows,fields,types);
+    return std::make_shared<DBResult>(rows,fields,types,lengths);
 }
 
 Connect::~Connect() {
@@ -137,6 +142,13 @@ DBResult::printRows(){
         }
         cout<<endl;
     }
+    for(auto oneRow:lengths){
+        for(auto len:oneRow){
+            cout<<len<<"\t\t";
+        }
+        cout<<endl;
+    }
+
 }
 
 void DBResult::printRowsF2(){
