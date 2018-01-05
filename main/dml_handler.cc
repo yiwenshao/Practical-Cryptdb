@@ -160,7 +160,7 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
         //      Values
         // -----------------
         if (lex->many_values.head()) {
-            //开始处理many values
+            //start processing many values
             auto it = List_iterator<List_item>(lex->many_values);
             List<List_item> newList;
             for (;;) {
@@ -178,7 +178,7 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
                     // > INSERT INTO <table> () VALUES ();
                     // > INSERT INTO <table> VALUES ();
                 } else {
-                    //li指向了lex->many_values的迭代内容 
+                    //li pointer to items of lex->many_values 
                     auto it0 = List_iterator<Item>(*li);
                     auto fmVecIt = fmVec.begin();
                    
@@ -188,8 +188,8 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
                         if (!i) {
                             break;
                         }
-                        //获得values中的内容,并且通过fieldMeta好帮助完成rewrite工作
-                        //每个field都要进行洋葱的加密.
+                        //fetch values, and use fieldMeta to facilitate rewrite
+                        //every filed should be encrypted with onions of encryption
                         rewriteInsertHelper(*i, **fmVecIt, a, newList0);
                         ++fmVecIt;
                     }
@@ -202,8 +202,7 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
             new_lex->many_values = newList;
         }
 
-
-        //对于普通的insert, 这部分的内容不会用到的.
+        //for queries with ON DUPLICATE KEY UPDATE
         // -----------------------
         // ON DUPLICATE KEY UPDATE
         // -----------------------

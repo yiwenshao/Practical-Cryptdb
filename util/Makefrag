@@ -9,11 +9,11 @@ $(OBJDIR)/libedbutil.so: $(patsubst %.cc,$(OBJDIR)/util/%.o,$(UTILSRC))
 $(OBJDIR)/libedbutil.a: $(patsubst %.cc,$(OBJDIR)/util/%.o,$(UTILSRC))
 	$(AR) r $@ $^
 
-#install: install_util
+install: install_util
 
-#.PHONY: install_util
-#install_util: $(OBJDIR)/libedbutil.so
-#	install -m 644 $(OBJDIR)/libedbutil.so /usr/lib
+.PHONY: install_util
+install_util: $(OBJDIR)/libedbutil.so
+	install -m 644 $(OBJDIR)/libedbutil.so /usr/lib
 
 $(OBJDIR)/util/version.cc: always
 	@mkdir -p $(@D)

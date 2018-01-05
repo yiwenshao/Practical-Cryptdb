@@ -308,7 +308,8 @@ static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
     //load all metadata and then store it in schema
     loadChildren(schema.get());
 
-    Analysis analysis(std::string("student"),*schema,std::unique_ptr<AES_KEY>(getKey(std::string("113341234"))),
+    Analysis analysis(std::string("student"),*schema,
+                      std::unique_ptr<AES_KEY>(getKey(std::string("113341234"))),
                         SECURITY_RATING::SENSITIVE);
     return schema;
 }
@@ -652,7 +653,6 @@ static meta_file load_meta(string db="tdb", string table="student", string filen
     return res;
 }
 
-
 static void write_row_data(rawMySQLReturnValue& resraw,string db, string table){
     vector<FILE*> data_files;
     string prefix = string("data/")+db+"/"+table+"/";
@@ -667,7 +667,7 @@ static void write_row_data(rawMySQLReturnValue& resraw,string db, string table){
            fwrite(item[i].c_str(),1,item[i].size(),data_files[i]);
            if(IS_NUM(resraw.fieldTypes[i])){
                fwrite(token.c_str(),1,token.size(),data_files[i]);
-           }               
+           }
         }
     }
     for(auto item:data_files){
@@ -689,7 +689,7 @@ static void load_num(string filename,vector<string> &res){
     std::ifstream infile(filename);
     string line;
     while(std::getline(infile,line)){
-        res.push_back(line);        
+        res.push_back(line);
     }
     infile.close();
 }
@@ -835,8 +835,10 @@ static void construct_insert(rawMySQLReturnValue & str,std::string table,std::ve
             if(IS_NUM(str.fieldTypes[j])) {
                 cout<<str.fieldTypes[j]<<endl;
                 cur+=str.rowValues[i][j]+=",";
+                cout<<"isnum"<<endl;
             }else{
                 cur+=string("\"")+=str.rowValues[i][j]+="\",";
+                cout<<"notnum"<<endl;
             }
         }
         cur.back()=')';
@@ -862,12 +864,12 @@ main(int argc, char* argv[]) {
     }
     init();
     std::string option(argv[1]);
-    std::string db="tdb2",table="stu";
+    std::string db="tdb",table="student";
 
     if(option=="store"){
         store(db,table);
     }else if(option == "load"){
-        auto res =  load_files(db,table);
+        ResType res =  load_files(db,table);
         rawMySQLReturnValue str;
         add(str,res);
         std::vector<string> res_query;

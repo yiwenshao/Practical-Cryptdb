@@ -32,10 +32,10 @@ $(OBJDIR)/libcryptdb.so: $(CRYPTDB_OBJS) \
 
 
 
-#install: install_main
+install: install_main
 
-#.PHONY: install_main
-#install_main: $(OBJDIR)/libcryptdb.so
-#	install -m 644 $(OBJDIR)/libcryptdb.so /usr/lib
+.PHONY: install_main
+install_main: $(OBJDIR)/libcryptdb.so
+	install -m 644 $(OBJDIR)/libcryptdb.so /usr/lib
 
 # vim: set noexpandtab:

@@ -99,12 +99,13 @@ public:
               const std::string &salt_name, onionlayout onion_layout,
               SECURITY_RATING sec_rating, unsigned long uniq_count,
               uint64_t counter, bool has_default,
-              const std::string &default_value)
+              const std::string &default_value,
+              enum  enum_field_types in_sql_type)
         : MappedDBMeta(id), fname(fname), salt_name(salt_name),
           onion_layout(onion_layout), has_salt(has_salt),
           sec_rating(sec_rating), uniq_count(uniq_count),
           counter(counter), has_default(has_default),
-          default_value(default_value) {
+          default_value(default_value),sql_type(in_sql_type) {
     }
 
     ~FieldMeta() {;}
@@ -144,7 +145,11 @@ private:
     const bool has_default;
     const std::string default_value;
 
+    //added
+    enum  enum_field_types sql_type;
+
     SECLEVEL getOnionLevel(onion o) const;
+    enum_field_types getSqlType(){return sql_type;}
 
     static onionlayout determineOnionLayout(const AES_KEY *const m_key,
                                             const Create_field &f,

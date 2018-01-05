@@ -226,7 +226,7 @@ std::unique_ptr<FieldMeta>
 FieldMeta::deserialize(unsigned int id, const std::string &serial) {
     assert(id != 0);
     const auto vec = unserialize_string(serial);
-    assert(9 == vec.size());
+    assert(10 == vec.size());//We add one item,so there are ten items now
 
     const std::string fname = vec[0];
     const bool has_salt = string_to_bool(vec[1]);
@@ -238,11 +238,14 @@ FieldMeta::deserialize(unsigned int id, const std::string &serial) {
     const unsigned int counter = atoi(vec[6].c_str());
     const bool has_default = string_to_bool(vec[7]);
     const std::string default_value = vec[8];
+    
+    enum  enum_field_types sql_type = ((enum  enum_field_types)atoi(vec[9].c_str()));//new field added
 
+    
     return std::unique_ptr<FieldMeta>
         (new FieldMeta(id, fname, has_salt, salt_name, onion_layout,
                        sec_rating, uniq_count, counter, has_default,
-                       default_value));
+                       default_value,sql_type));
 }
 
 // first element is the levels that the onionmeta should implement
@@ -333,7 +336,7 @@ FieldMeta::FieldMeta(const Create_field &field,
       sec_rating(sec_rating), uniq_count(uniq_count), counter(0),
       has_default(determineHasDefault(field)),
       default_value(determineDefaultValue(has_default, field)) {
-
+    sql_type = field.sql_type;//added by shaoyiwen
     TEST_TextMessageError(init_onions_layout(m_key, this, field, unique),
                           "Failed to build onions for new FieldMeta!");
 }
@@ -343,6 +346,7 @@ std::string FieldMeta::serialize(const DBObject &parent) const
     const std::string &serialized_salt_name =
         true == this->has_salt ? serialize_string(getSaltName())
                                : serialize_string("");
+    std::string sql_type_string = std::to_string((int)sql_type);
     const std::string serial =
         serialize_string(fname) +
         serialize_string(bool_to_string(has_salt)) +
@@ -352,7 +356,8 @@ std::string FieldMeta::serialize(const DBObject &parent) const
         serialize_string(std::to_string(uniq_count)) +
         serialize_string(std::to_string(counter)) +
         serialize_string(bool_to_string(has_default)) +
-        serialize_string(default_value);
+        serialize_string(default_value) +
+        serialize_string(sql_type_string);//added by shaoyiwen
    return serial;
 }
 
