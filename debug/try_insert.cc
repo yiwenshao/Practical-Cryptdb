@@ -10,9 +10,25 @@
 #include <main/dml_handler.hh>
 #include <main/ddl_handler.hh>
 #include <main/CryptoHandlers.hh>
+#include <main/rewrite_main.hh>
+
+extern CItemTypesDir itemTypes;
+
+template <typename ContainerType>
+void myRewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
+                         ContainerType *const append_list)
+{
+    std::vector<Item *> l;
+    //这里先做lookup, 找到类以后调用内部的结果, 试试
+    //对于普通的student操作, 最后调用的是ANON的typical_rewrite_insert_type来进行重写.
+    itemTypes.do_rewrite_insert(i, fm, a, &l);
+    for (auto it : l) {
+        append_list->push_back(it);
+    }
+}
 
 static std::string embeddedDir="/t/cryt/shadow";
-/*
+
 static std::string getInsertResults(Analysis a,LEX* lex){
         LEX *const new_lex = copyWithTHD(lex);
         const std::string &table =
@@ -55,7 +71,7 @@ static std::string getInsertResults(Analysis a,LEX* lex){
                     a.getFieldMeta(db_name, ifd->table_name,
                                    ifd->field_name);
                 fmVec.push_back(&fm);
-                rewriteInsertHelper(*i, fm, a, &newList);
+                myRewriteInsertHelper(*i, fm, a, &newList);
             }
 
             // Collect the implicit defaults.
@@ -70,12 +86,12 @@ static std::string getInsertResults(Analysis a,LEX* lex){
                 const Item_field *const item_field =
                     make_item_field(*seed_item_field, table,
                                     implicit_it->getFieldName());
-                rewriteInsertHelper(*item_field, *implicit_it, a,
+                myRewriteInsertHelper(*item_field, *implicit_it, a,
                                     &newList);
 
                 // Get default values.
                 const std::string def_value = implicit_it->defaultValue();
-                rewriteInsertHelper(*make_item_string(def_value),
+                myRewriteInsertHelper(*make_item_string(def_value),
                                     *implicit_it, a, &implicit_defaults);
             }
 
@@ -121,7 +137,7 @@ static std::string getInsertResults(Analysis a,LEX* lex){
                         }
                         //fetch values, and use fieldMeta to facilitate rewrite
                         //every filed should be encrypted with onions of encryption
-                        rewriteInsertHelper(*i, **fmVecIt, a, newList0);
+                        myRewriteInsertHelper(*i, **fmVecIt, a, newList0);
                         ++fmVecIt;
                     }
                     for (auto def_it : implicit_defaults) {
@@ -144,8 +160,8 @@ static std::string getInsertResults(Analysis a,LEX* lex){
             new_lex->update_list = res_fields;
             new_lex->value_list = res_values;
         }
-        return lexToQuery(*lex);
-}*/
+        return lexToQuery(*new_lex);
+}
 
 
 static void testInsertHandler(std::string query){
@@ -165,13 +181,14 @@ static void testInsertHandler(std::string query){
     //just like what we do in Rewrite::rewrite,dispatchOnLex
     Analysis analysis(std::string("tdb"),*schema,TK,
                         SECURITY_RATING::SENSITIVE);
-    DMLHandler *h = new InsertHandler();
+    //DMLHandler *h = new InsertHandler();
     std::unique_ptr<query_parse> p;
     p = std::unique_ptr<query_parse>(
                 new query_parse("tdb", query));
     LEX *const lex = p->lex();
-    auto executor = h->transformLex(analysis,lex);
-    std::cout<<((DMLQueryExecutor*)executor)->getQuery()<<std::endl;
+    std::cout<<getInsertResults(analysis,lex)<<std::endl;
+    //auto executor = h->transformLex(analysis,lex);
+    //std::cout<<((DMLQueryExecutor*)executor)->getQuery()<<std::endl;
 }
 
 int
