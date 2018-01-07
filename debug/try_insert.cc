@@ -13,21 +13,16 @@
 #include <main/rewrite_main.hh>
 
 extern CItemTypesDir itemTypes;
-
+static std::string embeddedDir="/t/cryt/shadow";
 template <typename ContainerType>
 void myRewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
-                         ContainerType *const append_list)
-{
+                         ContainerType *const append_list){
     std::vector<Item *> l;
-    //这里先做lookup, 找到类以后调用内部的结果, 试试
-    //对于普通的student操作, 最后调用的是ANON的typical_rewrite_insert_type来进行重写.
     itemTypes.do_rewrite_insert(i, fm, a, &l);
     for (auto it : l) {
         append_list->push_back(it);
     }
 }
-
-static std::string embeddedDir="/t/cryt/shadow";
 
 static std::string getInsertResults(Analysis a,LEX* lex){
         LEX *const new_lex = copyWithTHD(lex);
@@ -35,7 +30,6 @@ static std::string getInsertResults(Analysis a,LEX* lex){
             lex->select_lex.table_list.first->table_name;
         const std::string &db_name =
             lex->select_lex.table_list.first->db;
-        TEST_DatabaseDiscrepancy(db_name, a.getDatabaseName());
         //from databasemeta to tablemeta.
         const TableMeta &tm = a.getTableMeta(db_name, table);
 
@@ -43,69 +37,13 @@ static std::string getInsertResults(Analysis a,LEX* lex){
         new_lex->select_lex.table_list.first =
             rewrite_table_list(lex->select_lex.table_list.first, a);
 
-        // -------------------------
-        // Fields (and default data)
-        // -------------------------
-        // If the fields list doesn't exist, or is empty; the 'else' of
-        // this code block will put every field into fmVec.
-        // > INSERT INTO t VALUES (1, 2, 3);
-        // > INSERT INTO t () VALUES ();
-        // FIXME: Make vector of references.
         std::vector<FieldMeta *> fmVec;
         std::vector<Item *> implicit_defaults;
-
-        if (lex->field_list.head()) {
-            auto it = List_iterator<Item>(lex->field_list);
-            List<Item> newList;
-            for (;;) {
-                const Item *const i = it++;
-                if (!i) {
-                    break;
-                }
-                //这下也就知道了field item是什么了
-                TEST_TextMessageError(i->type() == Item::FIELD_ITEM,
-                                      "Expected field item!");
-                const Item_field *const ifd =
-                    static_cast<const Item_field *>(i);
-                FieldMeta &fm =
-                    a.getFieldMeta(db_name, ifd->table_name,
-                                   ifd->field_name);
-                fmVec.push_back(&fm);
-                myRewriteInsertHelper(*i, fm, a, &newList);
-            }
-
-            // Collect the implicit defaults.
-            // > Such must be done because fields that can not have NULL
-            // will be implicitly converted by mysql sans encryption.
-            std::vector<FieldMeta *> field_implicit_defaults =
-                vectorDifference(tm.defaultedFieldMetas(), fmVec);
-            const Item_field *const seed_item_field =
-                static_cast<Item_field *>(new_lex->field_list.head());
-            for (auto implicit_it : field_implicit_defaults) {
-                // Get default fields.
-                const Item_field *const item_field =
-                    make_item_field(*seed_item_field, table,
-                                    implicit_it->getFieldName());
-                myRewriteInsertHelper(*item_field, *implicit_it, a,
-                                    &newList);
-
-                // Get default values.
-                const std::string def_value = implicit_it->defaultValue();
-                myRewriteInsertHelper(*make_item_string(def_value),
-                                    *implicit_it, a, &implicit_defaults);
-            }
-
-            new_lex->field_list = newList;
-         } else {
-            // No field list, use the table order.
-            // > Because there is no field list, fields with default
-            //   values must be explicity INSERTed so we don't have to
-            //   take any action with respect to defaults.
-            assert(fmVec.empty());
-            std::vector<FieldMeta *> fmetas = tm.orderedFieldMetas();
-            fmVec.assign(fmetas.begin(), fmetas.end());
-        }
-
+        
+        // No field list, use the table order.
+        assert(fmVec.empty());
+        std::vector<FieldMeta *> fmetas = tm.orderedFieldMetas();
+        fmVec.assign(fmetas.begin(), fmetas.end());
 
         if (lex->many_values.head()) {
             //start processing many values
@@ -122,9 +60,6 @@ static std::string getInsertResults(Analysis a,LEX* lex){
                                          && NULL == lex->field_list.head(),
                                           "size mismatch between fields"
                                           " and values!");
-                    // Query such as this.
-                    // > INSERT INTO <table> () VALUES ();
-                    // > INSERT INTO <table> VALUES ();
                 } else {
                     auto it0 = List_iterator<Item>(*li);
                     auto fmVecIt = fmVec.begin();
@@ -148,7 +83,8 @@ static std::string getInsertResults(Analysis a,LEX* lex){
             }
             new_lex->many_values = newList;
         }
-        {
+
+/*        {
             auto fd_it = List_iterator<Item>(lex->update_list);
             auto val_it = List_iterator<Item>(lex->value_list);
             List<Item> res_fields, res_values;
@@ -160,6 +96,7 @@ static std::string getInsertResults(Analysis a,LEX* lex){
             new_lex->update_list = res_fields;
             new_lex->value_list = res_values;
         }
+*/
         return lexToQuery(*new_lex);
 }
 
