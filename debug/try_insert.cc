@@ -83,20 +83,6 @@ static std::string getInsertResults(Analysis a,LEX* lex){
             }
             new_lex->many_values = newList;
         }
-
-/*        {
-            auto fd_it = List_iterator<Item>(lex->update_list);
-            auto val_it = List_iterator<Item>(lex->value_list);
-            List<Item> res_fields, res_values;
-            TEST_TextMessageError(
-                rewrite_field_value_pairs(fd_it, val_it, a, &res_fields,
-                                          &res_values),
-                "rewrite_field_value_pairs failed in ON DUPLICATE KEY"
-                " UPDATE");
-            new_lex->update_list = res_fields;
-            new_lex->value_list = res_values;
-        }
-*/
         return lexToQuery(*new_lex);
 }
 
@@ -118,14 +104,11 @@ static void testInsertHandler(std::string query){
     //just like what we do in Rewrite::rewrite,dispatchOnLex
     Analysis analysis(std::string("tdb"),*schema,TK,
                         SECURITY_RATING::SENSITIVE);
-    //DMLHandler *h = new InsertHandler();
     std::unique_ptr<query_parse> p;
     p = std::unique_ptr<query_parse>(
                 new query_parse("tdb", query));
     LEX *const lex = p->lex();
     std::cout<<getInsertResults(analysis,lex)<<std::endl;
-    //auto executor = h->transformLex(analysis,lex);
-    //std::cout<<((DMLQueryExecutor*)executor)->getQuery()<<std::endl;
 }
 
 int
