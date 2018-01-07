@@ -5,14 +5,15 @@ using std::vector;
 
 vector<string> queries{
    "show databases;",
-   "create database if not exists tdb2;",
-   "use tdb2;",
+   "create database if not exists verify;",
+   "use verify;",
    "create table if not exists student(id integer, name varchar(50));",
    "insert into student values(1,'shao'),(2,'xiaocai'),(3,'nans'),(4,'hehe'),(5,'oo');",
    "select * from student;",
    "select id from student;",
    "select name from student;",
-   "select sum(id) from student;"
+   "select sum(id) from student;",
+   "drop database if exists verify"
 };
 
 int
