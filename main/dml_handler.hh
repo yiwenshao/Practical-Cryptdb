@@ -144,3 +144,12 @@ class InsertHandler : public DMLHandler {
 
 SQLDispatcher *buildDMLDispatcher();
 
+bool
+rewrite_field_value_pairs(List_iterator<Item> fd_it,
+                          List_iterator<Item> val_it, Analysis &a,
+                          List<Item> *const res_fields,
+                          List<Item> *const res_values);
+
+
+
+

@@ -28,11 +28,7 @@ gatherAndAddAnalysisRewritePlanForFieldValuePair(const Item_field &field,
 static st_select_lex *
 rewrite_filters_lex(const st_select_lex &select_lex, Analysis &a);
 
-static bool
-rewrite_field_value_pairs(List_iterator<Item> fd_it,
-                          List_iterator<Item> val_it, Analysis &a,
-                          List<Item> *const res_fields,
-                          List<Item> *const res_values);
+
 
 enum class
 SIMPLE_UPDATE_TYPE {UNSUPPORTED, ON_DUPLICATE_VALUE,
@@ -577,7 +573,7 @@ rewrite_filters_lex(const st_select_lex &select_lex, Analysis & a)
     return new_select_lex;
 }
 
-static bool
+bool
 rewrite_field_value_pairs(List_iterator<Item> fd_it,
                           List_iterator<Item> val_it, Analysis &a,
                           List<Item> *const res_fields,
