@@ -87,6 +87,7 @@ class Connect {
     uint64_t get_affected_rows();
     void get_version();
     void finish_with_error(MYSQL *con,bool close = true);
+    MYSQL *get_conn(){return conn;}
     ~Connect();
  private:
     MYSQL *conn;

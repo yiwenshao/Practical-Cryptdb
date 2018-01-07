@@ -68,6 +68,8 @@ class Connect {
 
     uint64_t get_affected_rows();
 
+    MYSQL *get_conn(){return conn;}
+
     ~Connect();
 
  private:

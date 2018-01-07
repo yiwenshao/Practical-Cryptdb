@@ -1,3 +1,7 @@
+/*1. store data as column files, and restore data as plaintext insert query
+* 2. plaintext insert query should be able to recover directly
+* 3. should be able to used exsisting data to reduce the computation overhead(to be implemented)
+*/
 #include <cstdlib>
 #include <cstdio>
 #include <string>
@@ -65,6 +69,9 @@ using std::to_string;
 
 static std::string embeddedDir="/t/cryt/shadow";
 
+char * globalEsp=NULL;
+
+int num_of_pipe = 4;
 
 //global map, for each client, we have one WrapperState which contains ProxyState.
 static std::map<std::string, WrapperState*> clients;
@@ -117,7 +124,7 @@ void rawMySQLReturnValue::show(){
 
 
 //must be static, or we get "no previous declaration"
-//execute the query and getthe rawReturnVale, this struct can be copied.
+//execute the query and get the rawReturnVale, this struct can be copied.
 static 
 rawMySQLReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
     std::unique_ptr<DBResult> dbres;
@@ -162,6 +169,7 @@ rawMySQLReturnValue executeAndGetResultRemote(Connect * curConn,std::string quer
     return myRaw;
 }
 
+
 //helper function for transforming the rawMySQLReturnValue
 
 static Item_null *
@@ -205,8 +213,8 @@ ResType MygetResTypeFromLuaTable(bool isNULL,rawMySQLReturnValue *inRow = NULL,i
             }
             rows.push_back(curTempRow);
         }
-        uint64_t afrow = globalConn->get_affected_rows();
-	std::cout<<GREEN_BEGIN<<"Affected rows: "<<afrow<<COLOR_END<<std::endl;
+//        uint64_t afrow = globalConn->get_affected_rows();
+//	std::cout<<GREEN_BEGIN<<"Affected rows: "<<afrow<<COLOR_END<<std::endl;
         return ResType(true, 0 ,
                                in_last_insert_id, std::move(names),
                                    std::move(types), std::move(rows));
@@ -214,22 +222,22 @@ ResType MygetResTypeFromLuaTable(bool isNULL,rawMySQLReturnValue *inRow = NULL,i
 }
 
 //printResType for testing purposes
-static 
-void parseResType(const ResType &rd) {
-    std::cout<<RED_BEGIN<<"rd.affected_rows: "<<rd.affected_rows<<COLOR_END<<std::endl;
-    std::cout<<RED_BEGIN<<"rd.insert_id: "<<rd.insert_id<<COLOR_END<<std::endl;
-    
-    for(auto name:rd.names){
-        std::cout<<name<<"\t";
-    }
-    std::cout<<std::endl;    
-    for(auto row:rd.rows){
-        for(auto item:row){
-            std::cout<<ItemToString(*item)<<"\t";
-        }
-            std::cout<<std::endl;
-    }
-}
+//static 
+//void parseResType(const ResType &rd) {
+////    std::cout<<RED_BEGIN<<"rd.affected_rows: "<<rd.affected_rows<<COLOR_END<<std::endl;
+////    std::cout<<RED_BEGIN<<"rd.insert_id: "<<rd.insert_id<<COLOR_END<<std::endl;
+//    
+//    for(auto name:rd.names){
+//        std::cout<<name<<"\t";
+//    }
+//    std::cout<<std::endl;    
+//    for(auto row:rd.rows){
+//        for(auto item:row){
+//            std::cout<<ItemToString(*item)<<"\t";
+//        }
+//            std::cout<<std::endl;
+//    }
+//}
 
 //first step of back
 static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db = "tdb",
@@ -440,10 +448,17 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
         }
         col_index++;
     }
+
+    std::vector<enum_field_types> types;
+
+    for(auto item:dec_rows[0]){
+        types.push_back(item->field_type());
+    }
+
     //resType is used befor and after descrypting.
     return ResType(dbres.ok, dbres.affected_rows, dbres.insert_id,
                    std::move(dec_names),
-                   std::vector<enum_field_types>(dbres.types),
+                   std::vector<enum_field_types>(types),//different from previous version
                    std::move(dec_rows));
 }
 
@@ -738,6 +753,14 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
     auto res = getTransField(fms);
 
+    std::vector<enum_field_types> types;//Added
+    for(auto item:fms){
+        types.push_back(item->getSqlType());
+    }//Add new field form FieldMeta
+    if(types.size()==1){
+        //to be
+    }
+
     meta_file res_meta = load_meta(db,table);
 
     for(unsigned int i=0;i<res_meta.choosen_onions.size();i++){
@@ -758,7 +781,7 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     }
     ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
     auto finalresults = decryptResults(rawtorestype,*rm);
-    parseResType(finalresults);
+//    parseResType(finalresults);
 
     return finalresults;
 }
@@ -825,7 +848,7 @@ static void add(rawMySQLReturnValue & str,ResType & item ){
 
 static void construct_insert(rawMySQLReturnValue & str,std::string table,std::vector<string> &res){    
     std::string head = string("INSERT INTO `")+table+"` VALUES ";
-    int num_of_pipe = 3;
+
     int cnt = 0;
     string cur=head;
     for(unsigned int i=0u; i<str.rowValues.size();i++){
@@ -833,12 +856,15 @@ static void construct_insert(rawMySQLReturnValue & str,std::string table,std::ve
         cur+="(";        
         for(unsigned int j=0u;j<str.rowValues[i].size();j++){
             if(IS_NUM(str.fieldTypes[j])) {
-                cout<<str.fieldTypes[j]<<endl;
+//                cout<<str.fieldTypes[j]<<endl;
                 cur+=str.rowValues[i][j]+=",";
-                cout<<"isnum"<<endl;
+//                cout<<"isnum"<<endl;
             }else{
-                cur+=string("\"")+=str.rowValues[i][j]+="\",";
-                cout<<"notnum"<<endl;
+                //cur+=string("\"")+=str.rowValues[i][j]+="\",";
+                int len = str.rowValues[i][j].size();
+                mysql_real_escape_string(globalConn->get_conn(),globalEsp,
+                    str.rowValues[i][j].c_str(),len);
+                cur+=string("\"")+=string(globalEsp)+="\",";
             }
         }
         cur.back()=')';
@@ -866,6 +892,12 @@ main(int argc, char* argv[]) {
     std::string option(argv[1]);
     std::string db="tdb",table="student";
 
+    globalEsp = (char*)malloc(sizeof(char)*5000);
+    if(globalEsp==NULL){
+        printf("unable to allocate esp\n");
+        return 0;
+    }
+
     if(option=="store"){
         store(db,table);
     }else if(option == "load"){
@@ -879,5 +911,6 @@ main(int argc, char* argv[]) {
             cout<<item<<endl;
         }
     }
+    free(globalEsp);
     return 0;
 }

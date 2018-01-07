@@ -134,6 +134,8 @@ public:
     bool getHasSalt() const {return has_salt;}
     const std::string getFieldName() const {return fname;}
 
+    enum_field_types getSqlType(){return sql_type;}//ADDED BY SHAOYIWEN
+
 private:
     const std::string fname;
     const std::string salt_name;
@@ -149,7 +151,7 @@ private:
     enum  enum_field_types sql_type;
 
     SECLEVEL getOnionLevel(onion o) const;
-    enum_field_types getSqlType(){return sql_type;}
+
 
     static onionlayout determineOnionLayout(const AES_KEY *const m_key,
                                             const Create_field &f,

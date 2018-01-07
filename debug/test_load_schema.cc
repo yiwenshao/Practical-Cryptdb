@@ -94,25 +94,23 @@ static std::unique_ptr<SchemaInfo> myLoadSchemaInfo(){
     return schema;
 }
 
+static void init_embedded_db(){
+    std::string client="192.168.1.1:1234";
+    ConnectionInfo ci("localhost", "root", "letmein",3306);
+    const std::string master_key = "113341234";
+    SharedProxyState *shared_ps = new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
+    (void)shared_ps;
+}
+
 int
 main() {
     char *buffer;
     if((buffer = getcwd(NULL, 0)) == NULL){
         perror("getcwd error");
-    }
-    embeddedDir = std::string(buffer)+"/shadow";
-    std::string client="192.168.1.1:1234";
-    //one Wrapper per user.
-    clients[client] = new WrapperState();    
-    //Connect phase
-    ConnectionInfo ci("localhost", "root", "letmein",3306);
-    const std::string master_key = "113341234";
-    SharedProxyState *shared_ps = new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
-    assert(0 == mysql_thread_init());
-    //we init embedded database here.
-    clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
-    clients[client]->ps->safeCreateEmbeddedTHD();
-    //Connect end!!
+    }    
+    embeddedDir = std::string(buffer)+"/shadow";//init embedded db
+    init_embedded_db();
+
     std::unique_ptr<SchemaInfo> sm = myLoadSchemaInfo();
     processSchemaInfo(*sm);
     return 0;
