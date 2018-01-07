@@ -507,7 +507,7 @@ main(int argc,char ** argv) {
         }
         countWrapper++;
         batchTogether(client,curQuery,_thread_id);
-        //std::cout<<GREEN_BEGIN<<"\nplease input a new query:#######"<<COLOR_END<<std::endl;
+
         std::getline(std::cin,curQuery);
         if(countWrapper==3){
             cout<<"bingo"<<endl;
