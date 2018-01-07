@@ -68,3 +68,10 @@ printItemToString(const Item &i){
     return o.str();
 }
 
+Item* StringToItem(std::string s){
+    return new (current_thd->mem_root) Item_string(make_thd_string(s),
+    s.length(),
+    &my_charset_bin);
+}
+
+

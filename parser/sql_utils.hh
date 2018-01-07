@@ -45,4 +45,4 @@ char * make_thd_string(const std::string &s, size_t *lenp = 0);
 
 std::string ItemToString(const Item &i);
 std::string printItemToString(const Item &i);
-
+Item* StringToItem(std::string);//added

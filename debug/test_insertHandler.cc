@@ -12,26 +12,8 @@
 #include <main/CryptoHandlers.hh>
 
 static std::string embeddedDir="/t/cryt/shadow";
-/*
-//Show what Analysis can do 
-static void test_Analysis(Analysis & analysis){
-    //oDET,
-    //oOPE,
-    //oAGG,
-    std::cout<<GREEN_BEGIN<<"USE Analysis: "<<COLOR_END<<std::endl;
-    OnionMeta *om = analysis.getOnionMeta2("tdb","student","id",oDET);
-    if(om!=NULL)
-        std::cout<<"use analysis.getOnionMetae oDET: "<<om->getAnonOnionName()<<std::endl; 
-    om = analysis.getOnionMeta2("tdb","student","id",oOPE);
-    if(om!=NULL)
-        std::cout<<"use analysis.getOnionMetae oOPE: "<<om->getAnonOnionName()<<std::endl; 
 
-    om = analysis.getOnionMeta2("tdb","student","id",oAGG);
-    if(om!=NULL)
-        std::cout<<"use analysis.getOnionMetae oAGG: "<<om->getAnonOnionName()<<std::endl;
-}*/
-
-static void myTestCreateTableHandler(std::string query){
+static void testInsertHandler(std::string query){
     std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
     std::unique_ptr<SchemaInfo> schema(new SchemaInfo());
     std::function<DBMeta *(DBMeta *const)> loadChildren =
@@ -48,9 +30,6 @@ static void myTestCreateTableHandler(std::string query){
     //just like what we do in Rewrite::rewrite,dispatchOnLex
     Analysis analysis(std::string("tdb"),*schema,TK,
                         SECURITY_RATING::SENSITIVE);
-    //assert(analysis.getMasterKey().get()!=NULL);
-    //assert(getKey(std::string("113341234"))!=NULL);
-    //test_Analysis(analysis);
 
     DMLHandler *h = new InsertHandler();
 
@@ -59,8 +38,7 @@ static void myTestCreateTableHandler(std::string query){
                 new query_parse("tdb", query));
     LEX *const lex = p->lex();
     auto executor = h->transformLex(analysis,lex);
-    std::cout<<  ((DMLQueryExecutor*)executor)->getQuery()<<std::endl;
-
+    std::cout<<((DMLQueryExecutor*)executor)->getQuery()<<std::endl;
 }
 
 int
@@ -78,7 +56,7 @@ main() {
     std::vector<std::string> querys{query1};
     for(auto item:querys){
         std::cout<<item<<std::endl;
-        myTestCreateTableHandler(item);
+        testInsertHandler(item);
         std::cout<<std::endl;
     }
     return 0;
