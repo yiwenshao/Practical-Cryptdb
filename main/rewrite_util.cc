@@ -674,11 +674,14 @@ encrypt_item_all_onions(const Item &i, const FieldMeta &fm,
     for (auto it : fm.orderedOnionMetas()) {
        
         const onion o = it.first->getValue();
+
         OnionMeta * const om = it.second;
-        //一个fieldmeta表示一个field, 内部的不同洋葱表现在onionMeta,每个onionMeta的不同层次表现
-        //在enclyer. 而保持的时候, 是onometekey,onoinmeta这种pair来让我们知道这个onionMeta是哪种
-        //枚举的洋葱类型.
-        l->push_back(encrypt_item_layers(i, o, *om, a, IV));
+            //一个fieldmeta表示一个field, 内部的不同洋葱表现在onionMeta,每个onionMeta的不同层次表现
+            //在enclyer. 而保持的时候, 是onometekey,onoinmeta这种pair来让我们知道这个onionMeta是哪种
+            //枚举的洋葱类型.
+        if(om!=NULL)//om could be NULL for backup workload
+            l->push_back(encrypt_item_layers(i, o, *om, a, IV));
+        else l->push_back(NULL);
     }
 }
 
