@@ -31,6 +31,7 @@ enum class SECLEVEL {
     DET,
     SEARCH,
     HOM,
+    ASHE,//added
     RND,
 };
 
@@ -59,6 +60,13 @@ static onionlayout BEST_EFFORT_NUM_ONION_LAYOUT = {
                                     SECLEVEL::RND})}
 };
 
+static onionlayout NUM_ONION_LAYOUT_TEST{
+    {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
+                                  SECLEVEL::RND})},
+    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN,SECLEVEL::OPE, SECLEVEL::RND})},
+    {oAGG, std::vector<SECLEVEL>({SECLEVEL::ASHE})}
+};
+
 static onionlayout STR_ONION_LAYOUT = {
     {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
                                   SECLEVEL::RND})},
@@ -67,6 +75,14 @@ static onionlayout STR_ONION_LAYOUT = {
     // {oSWP, std::vector<SECLEVEL>({SECLEVEL::PLAINVAL, SECLEVEL::DET,
                                   // SECLEVEL::RND})}
 };
+
+static onionlayout STR_ONION_LAYOUT_TEST{
+    {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
+                                  SECLEVEL::RND})},
+    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN,SECLEVEL::OPE, SECLEVEL::RND})},
+    {oSWP, std::vector<SECLEVEL>({SECLEVEL::SEARCH})}
+};
+
 
 static onionlayout BEST_EFFORT_STR_ONION_LAYOUT = {
     {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
