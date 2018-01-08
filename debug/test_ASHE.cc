@@ -2,25 +2,25 @@
 #include <iostream>
 #include "crypto/ASHE.hh"
 #include "util/util.cc"
-
 int main(){
-    std::vector<unsigned long long > plain{1u,2u,3u//,4u,5u,6u,7u,8u,9u,10u
-                                          };
+    const int num_of_tests = 100;
+    unsigned int seed = 1u;
+    std::vector<unsigned int> plain;
     std::vector<ASHE> ass;
-    for(auto item:plain){
+    for(int i=0;i<num_of_tests;i++){
+        plain.push_back(seed);
         uint64_t IV = randomValue();
         if(IV==0) IV=1;
         ass.push_back(ASHE(IV));
-        ass.back().encrypt(item);
-    }
-    
-    for(auto &item:ass){
-        std::cout<<item.get_ciphertext()<<"::"<<item.decrypt(item.get_ciphertext())<<std::endl;
+        ass.back().encrypt(seed);
+        unsigned int res = ass.back().decrypt(ass.back().get_ciphertext());
+        if(res==seed) std::cout<<"pass"<<std::endl;
+        else std::cout<<"not pass!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
+        seed++;
     }
 
     std::pair<long,std::vector<uint64_t>> enc_sum = ASHE::sum(ass);
-
-    uint64_t res = ASHE::decrypt_sum(enc_sum);
+    long res = ASHE::decrypt_sum(enc_sum);
     std::cout<<enc_sum.first<<"::"<<res<<std::endl;
     return 0;
 }
