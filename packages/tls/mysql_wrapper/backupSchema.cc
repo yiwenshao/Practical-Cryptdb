@@ -12,7 +12,7 @@ void backupSchema(string query){
     DBResult * result = dbresult.get();
     vector<vector<string>> rows = result->getRows();
     cout<<"/* "<<rows[0][0]<<" */"<<endl;
-    cout<<rows[0][1]<<endl;
+    cout<<rows[0][1]<<";\n"<<endl;
 
 //    for(auto row:rows){
 //        for(int i=0;i<row.size();i++){
