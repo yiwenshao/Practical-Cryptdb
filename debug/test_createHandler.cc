@@ -61,13 +61,13 @@ main() {
     SharedProxyState *shared_ps = 
         new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
     assert(shared_ps!=NULL);
+
     std::string query1 = "CREATE TABLE child (id decimal)";
     std::string query2 = "CREATE TABLE child (id tinyint)";
     std::string query3 = "CREATE TABLE child (id mediumint)";
     std::string query4 = "CREATE TABLE child (id smallint)";
     std::string query5 = "CREATE TABLE child (id int)";
     std::string query6 = "CREATE TABLE child (id bigint)";
-
     std::string query7 = "CREATE TABLE child (name varchar(100))";
     std::string query8 = "CREATE TABLE child (name varchar(1000))";
     std::string query9 = "CREATE TABLE child (name varchar(10000))";
@@ -78,5 +78,6 @@ main() {
         testCreateTableHandler(item);
         std::cout<<std::endl;
     }
+
     return 0;
 }
