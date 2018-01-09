@@ -319,10 +319,10 @@ init_onions_layout(const AES_KEY *const m_key, FieldMeta *const fm,
         LOG(cdb_v) << "adding onion layer " << onion_name
                    << " for " << fm->getFieldName();
     }
-
     return true;
 }
 
+/*fieldmeta that is newed*/
 FieldMeta::FieldMeta(const Create_field &field,
                      const AES_KEY * const m_key,
                      SECURITY_RATING sec_rating,
@@ -408,10 +408,10 @@ OnionMeta *FieldMeta::getOnionMeta(onion o) const
     return getChild(OnionMetaKey(o));
 }
 
+/*determine the onion layout when creating the fieldmeta*/
 onionlayout FieldMeta::determineOnionLayout(const AES_KEY *const m_key,
                                             const Create_field &f,
-                                            SECURITY_RATING sec_rating)
-{
+                                            SECURITY_RATING sec_rating){
     if (sec_rating == SECURITY_RATING::PLAIN) {
         // assert(!m_key);
         return PLAIN_ONION_LAYOUT;
@@ -419,16 +419,15 @@ onionlayout FieldMeta::determineOnionLayout(const AES_KEY *const m_key,
     TEST_TextMessageError(m_key,
                           "Should be using SECURITY_RATING::PLAIN!");
     if (false == encryptionSupported(f)) {
-        //TEST_TextMessageError(SECURITY_RATING::SENSITIVE != sec_rating,
-        //                      "A SENSITIVE security rating requires the"
-        //                      " field to be supported with cryptography!");
-        return PLAIN_ONION_LAYOUT;
+        return PLAIN_ONION_LAYOUT;//do not report error here
     }
 
     // Don't encrypt AUTO_INCREMENT.
     if (Field::NEXT_NUMBER == f.unireg_check) {
         return PLAIN_ONION_LAYOUT;
     }
+
+    /*we only support sensitive rating here*/
     if (SECURITY_RATING::SENSITIVE == sec_rating) {
         if (true == isMySQLTypeNumeric(f)) {
             return NUM_ONION_LAYOUT;

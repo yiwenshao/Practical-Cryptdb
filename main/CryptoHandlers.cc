@@ -60,6 +60,40 @@ using namespace NTL;
 
  */
 
+//helper functions//
+
+static ZZ
+ItemIntToZZ(const Item &ptext)
+{
+    const ulonglong val = RiboldMYSQL::val_uint(ptext);
+    return ZZFromUint64(val);
+}
+
+static Item *
+ZZToItemInt(const ZZ &val)
+{
+    const ulonglong v = uint64FromZZ(val);
+    return new (current_thd->mem_root) Item_int(v);
+}
+
+static Item *
+ZZToItemStr(const ZZ &val)
+{
+    const std::string &str = StringFromZZ(val);
+    Item * const newit =
+        new (current_thd->mem_root) Item_string(make_thd_string(str),
+                                                str.length(),
+                                                &my_charset_bin);
+    newit->name = NULL; //no alias
+
+    return newit;
+}
+
+static ZZ
+ItemStrToZZ(const Item &i)
+{
+    return ZZFromString(ItemToString(i));
+}
 
 //============= FACTORIES ==========================//
 
@@ -121,6 +155,15 @@ public:
 
 
 class HOMFactory : public LayerFactory {
+public:
+    static std::unique_ptr<EncLayer>
+        create(const Create_field &cf, const std::string &key);
+    static std::unique_ptr<EncLayer>
+        deserialize(unsigned int id, const SerialLayer &serial);
+};
+
+
+class ASHEFactory : public LayerFactory {
 public:
     static std::unique_ptr<EncLayer>
         create(const Create_field &cf, const std::string &key);
@@ -1377,7 +1420,7 @@ OPE_str::decrypt(const Item &ctext, uint64_t IV) const
 }
 
 
-/**************** HOM ***************************/
+/**************** HOMFactory ***************************/
 
 std::unique_ptr<EncLayer>
 HOMFactory::create(const Create_field &cf, const std::string &key)
@@ -1398,40 +1441,38 @@ HOMFactory::deserialize(unsigned int id, const SerialLayer &serial) {
     return std::unique_ptr<EncLayer>(new HOM(id, serial.layer_info));
 }
 
-static ZZ
-ItemIntToZZ(const Item &ptext)
+
+/**************************************************************************
+****************************ASHEFactory************************************
+***************************************************************************
+*/
+
+
+std::unique_ptr<EncLayer>
+ASHEFactory::create(const Create_field &cf, const std::string &key)
 {
-    const ulonglong val = RiboldMYSQL::val_uint(ptext);
-    return ZZFromUint64(val);
+    if (cf.sql_type == MYSQL_TYPE_DECIMAL
+        || cf.sql_type == MYSQL_TYPE_NEWDECIMAL) {
+        FAIL_TextMessageError("decimal support is broken");
+    }
+
+    return std::unique_ptr<EncLayer>(new ASHE(cf, key));
 }
 
-static Item *
-ZZToItemInt(const ZZ &val)
-{
-    const ulonglong v = uint64FromZZ(val);
-    return new (current_thd->mem_root) Item_int(v);
-}
-
-static Item *
-ZZToItemStr(const ZZ &val)
-{
-    const std::string &str = StringFromZZ(val);
-    Item * const newit =
-        new (current_thd->mem_root) Item_string(make_thd_string(str),
-                                                str.length(),
-                                                &my_charset_bin);
-    newit->name = NULL; //no alias
-
-    return newit;
-}
-
-static ZZ
-ItemStrToZZ(const Item &i)
-{
-    return ZZFromString(ItemToString(i));
+std::unique_ptr<EncLayer>
+ASHEFactory::deserialize(unsigned int id, const SerialLayer &serial) {
+    if (serial.name == "ASHE_dec") {
+        FAIL_TextMessageError("decimal support broken");
+    }
+    return std::unique_ptr<EncLayer>(new ASHE(id, serial.layer_info));
 }
 
 
+
+/****************************************************************************
+*******************************HOM*******************************************
+*****************************************************************************
+*/
 HOM::HOM(const Create_field &f, const std::string &seed_key)
     : seed_key(seed_key), sk(NULL), waiting(true)
 {}
@@ -1542,6 +1583,9 @@ HOM::sumUDF(Item *const i1, Item *const i2) const
 HOM::~HOM() {
     delete sk;
 }
+
+
+
 
 /******* SEARCH **************************/
 
@@ -1764,4 +1808,121 @@ const std::vector<udf_func*> udf_list = {
     &u_search,
     &u_cryptdb_version
 };
+
+
+/************************************************ASHE********************************************/
+
+ASHE::ASHE(const Create_field &f, const std::string &seed_key)
+    : seed_key(seed_key), sk(NULL), waiting(true)
+{}
+
+ASHE::ASHE(unsigned int id, const std::string &serial)
+    : EncLayer(id), seed_key(serial), sk(NULL), waiting(true)
+{}
+
+Create_field *
+ASHE::newCreateField(const Create_field &cf,
+                    const std::string &anonname) const{
+    return arrayCreateFieldHelper(cf, 2*nbits/BITS_PER_BYTE,
+                                  MYSQL_TYPE_VARCHAR, anonname,
+                                  &my_charset_bin);
+}
+
+//if first, use seed key to generate 
+
+void
+ASHE::unwait() const {
+    const std::unique_ptr<streamrng<arc4>>
+        prng(new streamrng<arc4>(seed_key));
+    sk = new Paillier_priv(Paillier_priv::keygen(prng.get(), nbits));
+    waiting = false;
+}
+
+Item *
+ASHE::encrypt(const Item &ptext, uint64_t IV) const{
+    if (true == waiting) {
+        this->unwait();
+    }
+
+    const ZZ enc = sk->encrypt(ItemIntToZZ(ptext));
+    return ZZToItemStr(enc);
+}
+
+Item *
+ASHE::decrypt(const Item &ctext, uint64_t IV) const
+{
+    if (true == waiting) {
+        this->unwait();
+    }
+
+    const ZZ enc = ItemStrToZZ(ctext);
+    const ZZ dec = sk->decrypt(enc);
+    LOG(encl) << "ASHE ciph " << enc << "---->" << dec;
+    TEST_Text(NumBytes(dec) <= 8,
+              "Summation produced an integer larger than 64 bits");
+    return ZZToItemInt(dec);
+}
+
+//static udf_func u_sum_a = {
+//    LEXSTRING("cryptdb_agg"),
+//    STRING_RESULT,
+//    UDFTYPE_AGGREGATE,
+//    NULL,
+//    NULL,
+//    NULL,
+//    NULL,
+//    NULL,
+//    NULL,
+//    NULL,
+//    0L,
+//};
+//
+//static udf_func u_sum_f = {
+//    LEXSTRING("cryptdb_func_add_set"),
+//    STRING_RESULT,
+//    UDFTYPE_FUNCTION,
+//    NULL,
+//    NULL,
+//    NULL,
+//    NULL,
+//    NULL,
+//    NULL,
+//    NULL,
+//    0L,
+//};
+//
+Item *
+ASHE::sumUDA(Item *const expr) const
+{
+    if (true == waiting) {
+        this->unwait();
+    }
+
+    List<Item> l;
+    l.push_back(expr);
+    l.push_back(ZZToItemStr(sk->hompubkey()));
+    return new (current_thd->mem_root) Item_func_udf_str(&u_sum_a, l);
+}
+
+Item *
+ASHE::sumUDF(Item *const i1, Item *const i2) const
+{
+    if (true == waiting) {
+        this->unwait();
+    }
+
+    List<Item> l;
+    l.push_back(i1);
+    l.push_back(i2);
+    l.push_back(ZZToItemStr(sk->hompubkey()));
+
+    return new (current_thd->mem_root) Item_func_udf_str(&u_sum_f, l);
+}
+
+ASHE::~ASHE() {
+    delete sk;
+}
+
+
+
 

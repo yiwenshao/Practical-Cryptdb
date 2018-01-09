@@ -66,65 +66,65 @@ void myRewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
 }
 
 static std::string getInsertResults(Analysis a,LEX* lex){
-        LEX *const new_lex = copyWithTHD(lex);
-        const std::string &table =
-            lex->select_lex.table_list.first->table_name;
-        const std::string &db_name =
-            lex->select_lex.table_list.first->db;
-        //from databasemeta to tablemeta.
-        const TableMeta &tm = a.getTableMeta(db_name, table);
+    LEX *const new_lex = copyWithTHD(lex);
+    const std::string &table =
+        lex->select_lex.table_list.first->table_name;
+    const std::string &db_name =
+        lex->select_lex.table_list.first->db;
+    //from databasemeta to tablemeta.
+    const TableMeta &tm = a.getTableMeta(db_name, table);
 
-        //rewrite table name
-        new_lex->select_lex.table_list.first =
-            rewrite_table_list(lex->select_lex.table_list.first, a);
+    //rewrite table name
+    new_lex->select_lex.table_list.first =
+        rewrite_table_list(lex->select_lex.table_list.first, a);
 
-        std::vector<FieldMeta *> fmVec;
-        std::vector<Item *> implicit_defaults;
-        
-        // No field list, use the table order.
-        assert(fmVec.empty());
-        std::vector<FieldMeta *> fmetas = tm.orderedFieldMetas();
-        fmVec.assign(fmetas.begin(), fmetas.end());
+    std::vector<FieldMeta *> fmVec;
+    std::vector<Item *> implicit_defaults;
+    
+    // No field list, use the table order.
+    assert(fmVec.empty());
+    std::vector<FieldMeta *> fmetas = tm.orderedFieldMetas();
+    fmVec.assign(fmetas.begin(), fmetas.end());
 
-        if (lex->many_values.head()) {
-            //start processing many values
-            auto it = List_iterator<List_item>(lex->many_values);
-            List<List_item> newList;
-            for (;;) {
-                List_item *const li = it++;
-                if (!li) {
-                    break;
-                }
-                List<Item> *const newList0 = new List<Item>();
-                if (li->elements != fmVec.size()) {
-                    TEST_TextMessageError(0 == li->elements
-                                         && NULL == lex->field_list.head(),
-                                          "size mismatch between fields"
-                                          " and values!");
-                } else {
-                    auto it0 = List_iterator<Item>(*li);
-                    auto fmVecIt = fmVec.begin();
-
-                    for (;;) {
-                        const Item *const i = it0++;
-                        assert(!!i == (fmVec.end() != fmVecIt));
-                        if (!i) {
-                            break;
-                        }
-                        //fetch values, and use fieldMeta to facilitate rewrite
-                        //every filed should be encrypted with onions of encryption
-                        myRewriteInsertHelper(*i, **fmVecIt, a, newList0);
-                        ++fmVecIt;
-                    }
-                    for (auto def_it : implicit_defaults) {
-                        newList0->push_back(def_it);
-                    }
-                }
-                newList.push_back(newList0);
+    if (lex->many_values.head()) {
+        //start processing many values
+        auto it = List_iterator<List_item>(lex->many_values);
+        List<List_item> newList;
+        for (;;) {
+            List_item *const li = it++;
+            if (!li) {
+                break;
             }
-            new_lex->many_values = newList;
+            List<Item> *const newList0 = new List<Item>();
+            if (li->elements != fmVec.size()) {
+                TEST_TextMessageError(0 == li->elements
+                                     && NULL == lex->field_list.head(),
+                                      "size mismatch between fields"
+                                      " and values!");
+            } else {
+                auto it0 = List_iterator<Item>(*li);
+                auto fmVecIt = fmVec.begin();
+
+                for (;;) {
+                    const Item *const i = it0++;
+                    assert(!!i == (fmVec.end() != fmVecIt));
+                    if (!i) {
+                        break;
+                    }
+                    //fetch values, and use fieldMeta to facilitate rewrite
+                    //every filed should be encrypted with onions of encryption
+                    myRewriteInsertHelper(*i, **fmVecIt, a, newList0);
+                    ++fmVecIt;
+                }
+                for (auto def_it : implicit_defaults) {
+                    newList0->push_back(def_it);
+                }
+            }
+            newList.push_back(newList0);
         }
-        return lexToQuery(*new_lex);
+        new_lex->many_values = newList;
+    }
+    return lexToQuery(*new_lex);
 }
 
 
