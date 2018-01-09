@@ -9,7 +9,7 @@ CXX=g++
 .PHONY: all
 
 
-executables:=main backFieldsToFiles client escape
+executables:=main backFieldsToFiles client escape backupSchema
 
 all: $(executables)
 
@@ -23,6 +23,9 @@ client:obj/client.o $(OBJFILES)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 escape:obj/escape.o $(OBJFILES)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+backupSchema:obj/backupSchema.o $(OBJFILES)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 .PHONY:clean

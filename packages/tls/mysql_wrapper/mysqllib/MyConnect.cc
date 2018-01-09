@@ -83,7 +83,7 @@ Connect::execute(const std::string &query){
     MYSQL_RES *result = mysql_store_result(conn);
 
     if (result == NULL) {
-        std::cout<<"no results for this query"<<std::endl;
+        //std::cout<<"no results for this query"<<std::endl;
         return std::shared_ptr<DBResult>(NULL);
     }
 

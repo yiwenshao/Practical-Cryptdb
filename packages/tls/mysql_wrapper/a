@@ -1,0 +1,11 @@
+/* table_BARVVQXXXG */
+CREATE TABLE `table_BARVVQXXXG` (
+  `HNSEGFOWDWoEq` bigint(20) unsigned DEFAULT NULL,
+  `PEWGZUYZRWoOrder` varbinary(32) DEFAULT NULL,
+  `FETULHJOAZoADD` varbinary(256) DEFAULT NULL,
+  `cdb_saltLVMFMPASNF` bigint(8) unsigned DEFAULT NULL,
+  `XFAWMBQMAJoEq` varbinary(48) DEFAULT NULL,
+  `IIPECDLNRLoOrder` varbinary(32) DEFAULT NULL,
+  `MKSYYFSQHJoSWP` blob,
+  `cdb_saltTHMLLSSBQV` bigint(8) unsigned DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
