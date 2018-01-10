@@ -3,6 +3,8 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include "util/onions.hh"
+#include <assert.h>
 using namespace std;
 
 class onion_conf{
@@ -16,6 +18,8 @@ class onion_conf{
     void read_onionlayout_num(std::string temp);
     void read_onionlayout_str(std::string temp);
 public:
+    std::map<std::string,std::vector<std::string>>& get_onion_levels_num(){return onions_for_num;}
+    std::map<std::string,std::vector<std::string>>& get_onion_levels_str(){return onions_for_str;}
     onion_conf(char* filename);
     ~onion_conf();
 };
@@ -40,21 +44,28 @@ std::vector<std::string> onion_conf::parseline(std::string temp){
 
 void onion_conf::read_onionlayout_num(std::string temp){
     std::vector<std::string> res = parseline(temp);
-    cout<<"for num"<<endl;
-    for(auto item:res){
-        cout<<item<<":";
+    unsigned int i=1;
+    assert(res.size()>1);
+    res[0].pop_back();
+    std::string onion_name = res[0];
+    onions_for_str[onion_name] = std::vector<std::string>();
+    for(;i<res.size();i++){
+        onions_for_str[onion_name].push_back(res[i]);
     }
-    cout<<endl;
 }
 
 
 void onion_conf::read_onionlayout_str(std::string temp){
     std::vector<std::string> res = parseline(temp);
-    cout<<"for str"<<endl;
-    for(auto item:res){
-        cout<<item<<":";
-    }
-    cout<<endl;
+    unsigned int i=1;
+    assert(res.size()>1);
+    res[0].pop_back();
+    std::string onion_name = res[0];
+    onions_for_num[onion_name] = std::vector<std::string>();
+    for(;i<res.size();i++){
+        onions_for_num[onion_name].push_back(res[i]);
+    }    
+
 }
 
 onion_conf::onion_conf(char* f=(char*)"onionlayout.conf"){
@@ -98,5 +109,8 @@ onion_conf::~onion_conf(){
 
 int main(){
     onion_conf of;
+    auto res1 = of.get_onion_levels_num();
+    auto res2 = of.get_onion_levels_str();
+
     return 0;
 }
