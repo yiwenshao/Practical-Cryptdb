@@ -18,6 +18,8 @@ typedef enum onion {
     oINVALID,
 } onion;
 
+extern std::map<std::string,onion> string_to_onion;
+
 //Sec levels ordered such that
 // if a is less secure than b.
 // a appears before b
@@ -35,6 +37,9 @@ enum class SECLEVEL {
     ASHE,//added
     RND,
 };
+
+extern std::map<std::string,SECLEVEL> string_to_seclevel;
+
 
 //Onion layouts - initial structure of onions
 typedef std::map<onion, std::vector<SECLEVEL> > onionlayout;
