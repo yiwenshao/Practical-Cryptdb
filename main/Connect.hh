@@ -29,6 +29,7 @@ class DBResult {
 
     //returns data from this db result
     ResType unpack();
+    void showResults();
 
     static DBResult *store(MYSQL *const mysql);
 

@@ -300,3 +300,47 @@ DBResult::unpack()
     return ResType(this->success, this->affected_rows, this->insert_id,
                    std::move(names), std::move(types), std::move(rows));
 }
+
+void 
+DBResult::showResults(){
+    if (nullptr == n) {
+        return ;
+    }
+    const size_t row_count = static_cast<size_t>(mysql_num_rows(n));
+    const int col_count    = mysql_num_fields(n);
+    std::vector<std::string> names;
+    std::vector<enum_field_types> types;
+    for (int j = 0;; j++) {
+        MYSQL_FIELD *const field = mysql_fetch_field(n);
+        if (!field) {
+            assert(col_count == j);
+            break;
+        }
+        names.push_back(field->name);
+        types.push_back(field->type);
+    }
+
+    std::vector<std::vector<std::string> > rows;
+    for (size_t index = 0;; index++) {
+        const MYSQL_ROW row = mysql_fetch_row(n);
+        if (!row) {
+            assert(row_count == index);
+            break;
+        }
+        unsigned long *const lengths = mysql_fetch_lengths(n);
+        std::vector<std::string> resrow;
+        for (int j = 0; j < col_count; j++) {
+            std::string item(row[j],lengths[j]);
+            resrow.push_back(item);
+        }
+        rows.push_back(resrow);
+    }
+    for(auto item:rows){
+        for(auto i:item){
+            std::cout<<i<<"\t";
+        }
+        std::cout<<std::endl;
+    }
+}
+
+
