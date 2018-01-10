@@ -16,10 +16,51 @@ To make this work properly, you should at least make sure that the database tdb 
 
 static std::string embeddedDir="/t/cryt/shadow";
 
-static void myRewriteAndUpdate(Analysis &a, LEX *lex, std::string db,std::string table){
+static 
+AbstractQueryExecutor *
+myRewriteAndUpdate(Analysis &a, LEX *lex, std::string db,std::string table){
+    assert(a.deltas.size() == 0);
+    TEST_DatabaseDiscrepancy(db, a.getDatabaseName());
+    LEX *const new_lex = copyWithTHD(lex);
+    if (false == a.tableMetaExists(db, table)){
+        std::unique_ptr<TableMeta> tm(new TableMeta(true, true));
+        TEST_Text(1 == new_lex->select_lex.table_list.elements,
+                  "we do not support multiple tables in a CREATE"
+                  " TABLE queries");
+        // Take the table name straight from 'tm' as
+        // Analysis::getAnonTableName relies on SchemaInfo.
+        TABLE_LIST *const tbl =
+            rewrite_table_list(new_lex->select_lex.table_list.first,
+                               tm->getAnonTableName());
+        //new table_list only contain one element
+        new_lex->select_lex.table_list =
+            *oneElemListWithTHD<TABLE_LIST>(tbl);
 
-
-
+        // collect the keys (and their types) as they may affect the onion
+        // layout we use
+        const auto &key_data = collectKeyData(*lex);
+        auto it =
+            List_iterator<Create_field>(lex->alter_info.create_list);
+        new_lex->alter_info.create_list =
+            accumList<Create_field>(it,
+                [&a, &tm, &key_data] (List<Create_field> out_list,
+                                      Create_field *const cf) {
+                    return createAndRewriteField(a, cf, tm.get(),
+                                                 true, key_data, out_list);
+            });
+        // -----------------------------
+        //         Rewrite INDEX
+        // -----------------------------
+        highLevelRewriteKey(*tm.get(), *lex, new_lex, a);        
+        a.deltas.push_back(std::unique_ptr<Delta>(
+                            new CreateDelta(std::move(tm),
+                                            a.getDatabaseMeta(db),
+                                            IdentityMetaKey(table))));
+    }else{
+        std::cout<<"error"<<std::endl;
+        return NULL;
+    }
+    return new DDLQueryExecutor(*new_lex, std::move(a.deltas));
 }
 
 
@@ -39,7 +80,8 @@ static void testCreateTableHandler(std::string query){
     //load all metadata and then store it in schema
     loadChildren(schema.get());
    
-    const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
+    const std::unique_ptr<AES_KEY> &TK = 
+                         std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
 
     //just like what we do in Rewrite::rewrite,dispatchOnLex
     Analysis analysis(std::string("tdb"),*schema,TK,
@@ -48,14 +90,14 @@ static void testCreateTableHandler(std::string query){
     assert(analysis.getMasterKey().get()!=NULL);
     assert(getKey(std::string("113341234"))!=NULL);
     //test_Analysis(analysis);
-    DDLHandler *h = new CreateTableHandler();
+//    DDLHandler *h = new CreateTableHandler();
     std::unique_ptr<query_parse> p;
     p = std::unique_ptr<query_parse>(
                 new query_parse("tdb", query));
     LEX *const lex = p->lex();
 
-    myRewriteAndUpdate(analysis,lex,"tdb","student");
-    auto executor = h->transformLex(analysis,lex);
+    auto executor = myRewriteAndUpdate(analysis,lex,"tdb","child");
+//    auto executor = h->transformLex(analysis,lex);
     std::cout<<  ((DDLQueryExecutor*)executor)->new_query<<std::endl;
 }
 
