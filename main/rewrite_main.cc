@@ -742,12 +742,12 @@ buildTypeTextTranslator(){
     const std::vector<std::string> onion_layout_strings{
         "PLAIN_ONION_LAYOUT", "NUM_ONION_LAYOUT",
         "BEST_EFFORT_NUM_ONION_LAYOUT", "STR_ONION_LAYOUT",
-        "BEST_EFFORT_STR_ONION_LAYOUT"        
+        "BEST_EFFORT_STR_ONION_LAYOUT","CURRENT_NUM_LAYOUT","CURRENT_STR_LAYOUT"
     };
     const std::vector<onionlayout> onion_layouts{
         PLAIN_ONION_LAYOUT, NUM_ONION_LAYOUT,
         BEST_EFFORT_NUM_ONION_LAYOUT, STR_ONION_LAYOUT,
-        BEST_EFFORT_STR_ONION_LAYOUT
+        BEST_EFFORT_STR_ONION_LAYOUT,CURRENT_NUM_LAYOUT,CURRENT_STR_LAYOUT
     };
     RETURN_FALSE_IF_FALSE(onion_layout_strings.size() ==
                             onion_layouts.size());
