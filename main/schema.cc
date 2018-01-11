@@ -431,11 +431,15 @@ onionlayout FieldMeta::determineOnionLayout(const AES_KEY *const m_key,
     /*we only support sensitive rating here*/
     if (SECURITY_RATING::SENSITIVE == sec_rating) {
         if (true == isMySQLTypeNumeric(f)) {
-              return CURRENT_NUM_LAYOUT;
-//            return NUM_ONION_LAYOUT;
+              //return CURRENT_NUM_LAYOUT;
+            //is_onionlayout_equal(CURRENT_NUM_LAYOUT,NUM_ONION_LAYOUT);
+            //is_onionlayout_equal(NUM_ONION_LAYOUT, CURRENT_NUM_LAYOUT);
+            return CURRENT_NUM_LAYOUT;
         } else {
-              return CURRENT_STR_LAYOUT;
-//            return STR_ONION_LAYOUT;
+//              return CURRENT_STR_LAYOUT;
+            //is_onionlayout_equal(CURRENT_STR_LAYOUT,STR_ONION_LAYOUT);
+            //is_onionlayout_equal(STR_ONION_LAYOUT,CURRENT_STR_LAYOUT);
+            return CURRENT_STR_LAYOUT;
         }
     } else if (SECURITY_RATING::BEST_EFFORT == sec_rating) {
         if (true == isMySQLTypeNumeric(f)) {

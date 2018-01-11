@@ -146,4 +146,12 @@ onionlayout CURRENT_NUM_LAYOUT = global_onion_conf.get_onionlayout_for_num();
 onionlayout CURRENT_STR_LAYOUT = global_onion_conf.get_onionlayout_for_str();
 
 
+void is_onionlayout_equal(onionlayout &ol1,onionlayout &ol2){
+    for(auto item:ol1){
+        auto key = item.first;
+        assert(ol2.find(key)!=ol2.end());
+        assert(ol2[key]==ol1[key]);
+    }
+}
+
 
