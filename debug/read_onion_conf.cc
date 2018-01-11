@@ -3,7 +3,6 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include "util/onions.hh"
 #include <assert.h>
 using namespace std;
 
@@ -50,7 +49,7 @@ void onion_conf::read_onionlayout_num(std::string temp){
     std::string onion_name = res[0];
     onions_for_str[onion_name] = std::vector<std::string>();
     for(;i<res.size();i++){
-        onions_for_str[onion_name].push_back(res[i]);
+        onions_for_num[onion_name].push_back(res[i]);
     }
 }
 
