@@ -2,11 +2,14 @@
 
 #include <string>
 #include <map>
+#include <vector>
+#include <stdio.h>
 #include <list>
 #include <iostream>
 #include <vector>
+#include <assert.h>
 
-
+extern const char *const dir;
 typedef enum onion {
     oDET,
     oOPE,
@@ -155,3 +158,34 @@ static onionlayout BEST_EFFORT_STR_ONION_LAYOUT = {
 //typedef std::map<onion, SECLEVEL>  OnionLevelMap;
 
 enum class SECURITY_RATING {PLAIN, BEST_EFFORT, SENSITIVE};
+
+
+/*
+******************************onion_conf**********************************
+*/
+
+class onion_conf{
+    std::string dir;
+    FILE *file;
+    char *buf;
+    std::map<std::string,std::vector<std::string>> onions_for_num;
+    std::map<std::string,std::vector<std::string>> onions_for_str;
+    onionlayout onionlayout_for_num;
+    onionlayout onionlayout_for_str;
+
+    std::vector<std::string> parseline(std::string temp);
+    void read_onionlayout_num(std::string temp);
+    void read_onionlayout_str(std::string temp);
+    void from_string_to_onionlayout();
+public:
+    std::map<std::string,std::vector<std::string>>& get_onion_levels_num(){return onions_for_num;}
+    std::map<std::string,std::vector<std::string>>& get_onion_levels_str(){return onions_for_str;}
+    onionlayout get_onionlayout_for_num(){return onionlayout_for_num;}
+    onionlayout get_onionlayout_for_str(){return onionlayout_for_str;}
+    
+    onion_conf(const char* filename);
+    ~onion_conf();
+};
+
+
+
