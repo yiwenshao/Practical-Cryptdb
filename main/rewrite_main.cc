@@ -642,22 +642,22 @@ static bool
 buildTypeTextTranslator(){
     // Onions.
     const std::vector<std::string> onion_strings {
-        "oINVALID", "oPLAIN", "oEq", "oOrder", "oADD", "oSWP"
+        "oINVALID", "oPLAIN", "oEq", "oOrder", "oADD", "oSWP","oASHE"
     };
     const std::vector<onion> onions {
-        oINVALID, oPLAIN, oDET, oOPE, oAGG, oSWP
+        oINVALID, oPLAIN, oDET, oOPE, oAGG, oSWP,oASHE
     };
     RETURN_FALSE_IF_FALSE(onion_strings.size() == onions.size());
     translatorHelper<onion>(onion_strings, onions);
     // SecLevels.
     const std::vector<std::string> seclevel_strings{
         "RND", "DET", "DETJOIN","OPEFOREIGN" ,"OPE", "HOM", "SEARCH", "PLAINVAL",
-        "INVALID"
+        "INVALID","ASHE"
     };
     const std::vector<SECLEVEL> seclevels{
         SECLEVEL::RND, SECLEVEL::DET, SECLEVEL::DETJOIN, SECLEVEL::OPEFOREIGN,SECLEVEL::OPE,
         SECLEVEL::HOM, SECLEVEL::SEARCH, SECLEVEL::PLAINVAL,
-        SECLEVEL::INVALID
+        SECLEVEL::INVALID, SECLEVEL::ASHE
     };
     RETURN_FALSE_IF_FALSE(seclevel_strings.size() == seclevels.size());
     translatorHelper(seclevel_strings, seclevels);

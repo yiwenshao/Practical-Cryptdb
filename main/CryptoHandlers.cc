@@ -211,6 +211,7 @@ EncLayerFactory::encLayer(onion o, SECLEVEL sl, const Create_field &cf,
         case SECLEVEL::OPE:{return OPEFactory::create(cf, key);}
         case SECLEVEL::OPEFOREIGN:{return OPEFOREIGNFactory::create(cf,key);}
         case SECLEVEL::HOM: {return HOMFactory::create(cf, key);}
+        case SECLEVEL::ASHE: {return std::unique_ptr<EncLayer>(new ASHE(cf,key));}
         case SECLEVEL::SEARCH: {
             return std::unique_ptr<EncLayer>(new Search(cf, key));
         }
@@ -247,6 +248,7 @@ EncLayerFactory::deserializeLayer(unsigned int id,
 
         case SECLEVEL::HOM:
             return std::unique_ptr<EncLayer>(new HOM(id, serial));
+        case SECLEVEL::ASHE: return std::unique_ptr<EncLayer>(new ASHE(id, serial));
 
         case SECLEVEL::SEARCH:
             return std::unique_ptr<EncLayer>(new Search(id, serial));

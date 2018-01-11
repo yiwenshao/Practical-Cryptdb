@@ -10,16 +10,17 @@ onionlayout PLAIN_ONION_LAYOUT = {
 
 /***************************ofthen used*******************************************************/
 onionlayout NUM_ONION_LAYOUT = {
-    {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
-                                  SECLEVEL::RND})},
-    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN,SECLEVEL::OPE, SECLEVEL::RND})},
-    {oAGG, std::vector<SECLEVEL>({SECLEVEL::HOM})}
+//    {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
+//                                  SECLEVEL::RND})},
+//    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN,SECLEVEL::OPE, SECLEVEL::RND})},
+//    {oAGG, std::vector<SECLEVEL>({SECLEVEL::HOM})}
+      {oASHE,std::vector<SECLEVEL>({SECLEVEL::ASHE})}
 };
 
 onionlayout STR_ONION_LAYOUT = {
-    {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
-                                  SECLEVEL::RND})},
-    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN, SECLEVEL::OPE, SECLEVEL::RND})},
+//    {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
+//                                  SECLEVEL::RND})},
+//    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN, SECLEVEL::OPE, SECLEVEL::RND})},
     {oSWP, std::vector<SECLEVEL>({SECLEVEL::SEARCH})}
     // {oSWP, std::vector<SECLEVEL>({SECLEVEL::PLAINVAL, SECLEVEL::DET,
                                   // SECLEVEL::RND})}
