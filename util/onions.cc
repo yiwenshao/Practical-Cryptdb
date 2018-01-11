@@ -8,19 +8,29 @@ onionlayout PLAIN_ONION_LAYOUT = {
     {oPLAIN, std::vector<SECLEVEL>({SECLEVEL::PLAINVAL})}
 };
 
-
-/*******************************************************************************************
-***************************** Onion layout for numeric data ********************************
-********************************************************************************************
-*/
-
-//static 
+/***************************ofthen used*******************************************************/
 onionlayout NUM_ONION_LAYOUT = {
     {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
                                   SECLEVEL::RND})},
     {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN,SECLEVEL::OPE, SECLEVEL::RND})},
     {oAGG, std::vector<SECLEVEL>({SECLEVEL::HOM})}
 };
+
+onionlayout STR_ONION_LAYOUT = {
+    {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
+                                  SECLEVEL::RND})},
+    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN, SECLEVEL::OPE, SECLEVEL::RND})},
+    {oSWP, std::vector<SECLEVEL>({SECLEVEL::SEARCH})}
+    // {oSWP, std::vector<SECLEVEL>({SECLEVEL::PLAINVAL, SECLEVEL::DET,
+                                  // SECLEVEL::RND})}
+};
+
+/*******************************************************************************************
+***************************** Onion layout for numeric data ********************************
+********************************************************************************************
+*/
+
+
 
 //static 
 onionlayout NUM_ONION_LAYOUT_NOFOREIGN = {
@@ -83,15 +93,6 @@ onionlayout NUM_ONION_LAYOUT_TEST{
 *********************************************************************************************
 */
 
-//static 
-onionlayout STR_ONION_LAYOUT = {
-    {oDET, std::vector<SECLEVEL>({SECLEVEL::DETJOIN, SECLEVEL::DET,
-                                  SECLEVEL::RND})},
-    {oOPE, std::vector<SECLEVEL>({SECLEVEL::OPEFOREIGN, SECLEVEL::OPE, SECLEVEL::RND})},
-    {oSWP, std::vector<SECLEVEL>({SECLEVEL::SEARCH})}
-    // {oSWP, std::vector<SECLEVEL>({SECLEVEL::PLAINVAL, SECLEVEL::DET,
-                                  // SECLEVEL::RND})}
-};
 
 //static 
 onionlayout STR_ONION_LAYOUT_WITHSEARCH{
