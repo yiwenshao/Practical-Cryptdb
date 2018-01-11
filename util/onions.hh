@@ -9,7 +9,6 @@
 #include <vector>
 #include <assert.h>
 
-extern const char *const dir;
 typedef enum onion {
     oDET,
     oOPE,
@@ -188,4 +187,5 @@ public:
 };
 
 
-
+extern onionlayout CURRENT_NUM_LAYOUT;
+extern onionlayout CURRENT_STR_LAYOUT;

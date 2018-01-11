@@ -141,7 +141,9 @@ onion_conf::~onion_conf(){
 }
 
 
-
+onion_conf global_onion_conf(dir);
+onionlayout CURRENT_NUM_LAYOUT = global_onion_conf.get_onionlayout_for_num();
+onionlayout CURRENT_STR_LAYOUT = global_onion_conf.get_onionlayout_for_str();
 
 
 

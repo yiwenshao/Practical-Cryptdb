@@ -431,9 +431,11 @@ onionlayout FieldMeta::determineOnionLayout(const AES_KEY *const m_key,
     /*we only support sensitive rating here*/
     if (SECURITY_RATING::SENSITIVE == sec_rating) {
         if (true == isMySQLTypeNumeric(f)) {
-            return NUM_ONION_LAYOUT;
+              return CURRENT_NUM_LAYOUT;
+//            return NUM_ONION_LAYOUT;
         } else {
-            return STR_ONION_LAYOUT;
+              return CURRENT_STR_LAYOUT;
+//            return STR_ONION_LAYOUT;
         }
     } else if (SECURITY_RATING::BEST_EFFORT == sec_rating) {
         if (true == isMySQLTypeNumeric(f)) {

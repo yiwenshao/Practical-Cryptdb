@@ -1,8 +1,26 @@
 #include "util/onions.hh"
+#include <assert.h>
+
+static
+void is_onionlayout_equal(onionlayout &ol1,onionlayout &ol2){
+    for(auto item:ol1){
+        auto key = item.first;
+        assert(ol2.find(key)!=ol2.end());
+        assert(ol2[key]==ol1[key]);
+    }
+}
+
+
 int main(){
-    const char *di = dir;
+    const char *di = "conf/CURRENT.conf";
     onion_conf of(di);
     auto res = of.get_onionlayout_for_num();
-    auto res2 = of.get_onion_levels_str();
+    auto res2 = of.get_onionlayout_for_str();
+    is_onionlayout_equal(res,NUM_ONION_LAYOUT);
+    is_onionlayout_equal(NUM_ONION_LAYOUT,res);
+
+    is_onionlayout_equal(res2,STR_ONION_LAYOUT);
+    is_onionlayout_equal(STR_ONION_LAYOUT,res2);
     return 0;
 }
+
