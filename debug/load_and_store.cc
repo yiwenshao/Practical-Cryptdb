@@ -9,32 +9,20 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-//#include <stdexcept>
 #include <vector>
-//#include <set>
-//#include <list>
-//#include <algorithm>
-//#include <functional>
-//#include <cctype>
-//#include <locale>
-//#include <unistd.h>
-//#include <sys/types.h>
-//#include <dirent.h>
-
 #include <main/Connect.hh>
 #include <main/rewrite_main.hh>
 #include <main/rewrite_util.hh>
-#include <main/sql_handler.hh>
-#include <main/dml_handler.hh>
-#include <main/ddl_handler.hh>
+//#include <main/sql_handler.hh>
+//#include <main/dml_handler.hh>
+//#include <main/ddl_handler.hh>
 #include <main/metadata_tables.hh>
-#include <main/macro_util.hh>
+//#include <main/macro_util.hh>
 #include <main/CryptoHandlers.hh>
-
-#include <util/errstream.hh>
-#include <util/cryptdb_log.hh>
-#include <util/enum_text.hh>
-#include <util/yield.hpp>
+//#include <util/errstream.hh>
+//#include <util/cryptdb_log.hh>
+//#include <util/enum_text.hh>
+//#include <util/yield.hpp>
 
 using std::cout;
 using std::cin;
@@ -615,9 +603,6 @@ struct meta_file{
     }
 };
 
-
-
-#include <sstream>
 static meta_file load_meta(string db="tdb", string table="student", string filename="metadata.data"){
     //FILE * meta = NULL;
     //localmeta = fopen(filename.c_str(),"r");
