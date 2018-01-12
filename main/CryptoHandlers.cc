@@ -163,13 +163,13 @@ public:
 };
 
 
-class ASHEFactory : public LayerFactory {
-public:
-    static std::unique_ptr<EncLayer>
-        create(const Create_field &cf, const std::string &key);
-    static std::unique_ptr<EncLayer>
-        deserialize(unsigned int id, const SerialLayer &serial);
-};
+//class ASHEFactory : public LayerFactory {
+//public:
+//    static std::unique_ptr<EncLayer>
+//        create(const Create_field &cf, const std::string &key);
+//    static std::unique_ptr<EncLayer>
+//        deserialize(unsigned int id, const SerialLayer &serial);
+//};
 
 
 /*=====================  SERIALIZE Helpers =============================*/
@@ -1450,25 +1450,25 @@ HOMFactory::deserialize(unsigned int id, const SerialLayer &serial) {
 */
 
 
-std::unique_ptr<EncLayer>
-ASHEFactory::create(const Create_field &cf, const std::string &key)
-{
-    if (cf.sql_type == MYSQL_TYPE_DECIMAL
-        || cf.sql_type == MYSQL_TYPE_NEWDECIMAL) {
-        FAIL_TextMessageError("decimal support is broken");
-    }
-
-    return std::unique_ptr<EncLayer>(new ASHE(cf, key));
-}
-
-std::unique_ptr<EncLayer>
-ASHEFactory::deserialize(unsigned int id, const SerialLayer &serial) {
-    if (serial.name == "ASHE_dec") {
-        FAIL_TextMessageError("decimal support broken");
-    }
-    return std::unique_ptr<EncLayer>(new ASHE(id, serial.layer_info));
-}
-
+//std::unique_ptr<EncLayer>
+//ASHEFactory::create(const Create_field &cf, const std::string &key)
+//{
+//    if (cf.sql_type == MYSQL_TYPE_DECIMAL
+//        || cf.sql_type == MYSQL_TYPE_NEWDECIMAL) {
+//        FAIL_TextMessageError("decimal support is broken");
+//    }
+//
+//    return std::unique_ptr<EncLayer>(new ASHE(cf, key));
+//}
+//
+//std::unique_ptr<EncLayer>
+//ASHEFactory::deserialize(unsigned int id, const SerialLayer &serial) {
+//    if (serial.name == "ASHE_dec") {
+//        FAIL_TextMessageError("decimal support broken");
+//    }
+//    return std::unique_ptr<EncLayer>(new ASHE(id, serial.layer_info));
+//}
+//
 
 
 /****************************************************************************
@@ -1815,114 +1815,31 @@ const std::vector<udf_func*> udf_list = {
 /************************************************ASHE********************************************/
 
 ASHE::ASHE(const Create_field &f, const std::string &seed_key)
-    : seed_key(seed_key), sk(NULL), waiting(true)
+    : seed_key(seed_key)
 {}
 
-ASHE::ASHE(unsigned int id, const std::string &serial)
-    : EncLayer(id), seed_key(serial), sk(NULL), waiting(true)
-{}
+ASHE::ASHE(unsigned int id, const std::string &serial){}
 
 Create_field *
 ASHE::newCreateField(const Create_field &cf,
                     const std::string &anonname) const{
-    return arrayCreateFieldHelper(cf, 2*nbits/BITS_PER_BYTE,
-                                  MYSQL_TYPE_VARCHAR, anonname,
-                                  &my_charset_bin);
+    return NULL;
 }
 
-//if first, use seed key to generate 
-
-void
-ASHE::unwait() const {
-    const std::unique_ptr<streamrng<arc4>>
-        prng(new streamrng<arc4>(seed_key));
-    sk = new Paillier_priv(Paillier_priv::keygen(prng.get(), nbits));
-    waiting = false;
-}
-
+//if first, use seed key to generate
 Item *
 ASHE::encrypt(const Item &ptext, uint64_t IV) const{
-    if (true == waiting) {
-        this->unwait();
-    }
-
-    const ZZ enc = sk->encrypt(ItemIntToZZ(ptext));
-    return ZZToItemStr(enc);
+    return NULL;
 }
 
 Item *
 ASHE::decrypt(const Item &ctext, uint64_t IV) const
 {
-    if (true == waiting) {
-        this->unwait();
-    }
-
-    const ZZ enc = ItemStrToZZ(ctext);
-    const ZZ dec = sk->decrypt(enc);
-    LOG(encl) << "ASHE ciph " << enc << "---->" << dec;
-    TEST_Text(NumBytes(dec) <= 8,
-              "Summation produced an integer larger than 64 bits");
-    return ZZToItemInt(dec);
-}
-
-//static udf_func u_sum_a = {
-//    LEXSTRING("cryptdb_agg"),
-//    STRING_RESULT,
-//    UDFTYPE_AGGREGATE,
-//    NULL,
-//    NULL,
-//    NULL,
-//    NULL,
-//    NULL,
-//    NULL,
-//    NULL,
-//    0L,
-//};
-//
-//static udf_func u_sum_f = {
-//    LEXSTRING("cryptdb_func_add_set"),
-//    STRING_RESULT,
-//    UDFTYPE_FUNCTION,
-//    NULL,
-//    NULL,
-//    NULL,
-//    NULL,
-//    NULL,
-//    NULL,
-//    NULL,
-//    0L,
-//};
-//
-Item *
-ASHE::sumUDA(Item *const expr) const
-{
-    if (true == waiting) {
-        this->unwait();
-    }
-
-    List<Item> l;
-    l.push_back(expr);
-    l.push_back(ZZToItemStr(sk->hompubkey()));
-    return new (current_thd->mem_root) Item_func_udf_str(&u_sum_a, l);
-}
-
-Item *
-ASHE::sumUDF(Item *const i1, Item *const i2) const
-{
-    if (true == waiting) {
-        this->unwait();
-    }
-
-    List<Item> l;
-    l.push_back(i1);
-    l.push_back(i2);
-    l.push_back(ZZToItemStr(sk->hompubkey()));
-
-    return new (current_thd->mem_root) Item_func_udf_str(&u_sum_f, l);
+    return NULL;
 }
 
 ASHE::~ASHE() {
-    delete sk;
+
 }
 
 

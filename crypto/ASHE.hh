@@ -24,3 +24,6 @@ public:
     static std::pair<long,std::vector<uint64_t>> sum(std::vector<RAW_ASHE>);
     static uint64_t decrypt_sum(std::pair<long,std::vector<uint64_t>>);
 };
+
+
+

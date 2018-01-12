@@ -131,25 +131,13 @@ public:
     Create_field * newCreateField(const Create_field &cf,
                                   const std::string &anonname = "")
         const;
-
     //TODO needs multi encrypt and decrypt
     Item *encrypt(const Item &p, uint64_t IV) const;
     Item * decrypt(const Item &c, uint64_t IV) const;
-
-    //expr is the expression (e.g. a field) over which to sum
-    Item *sumUDA(Item *const expr) const;
-    Item *sumUDF(Item *const i1, Item *const i2) const;
-
 protected:
     std::string const seed_key;
-    static const uint nbits = 1024;
-    mutable Paillier_priv * sk;
-
-private:
-    void unwait() const;
-
-    mutable bool waiting;
 };
+
 
 class Search : public EncLayer {
 public:
