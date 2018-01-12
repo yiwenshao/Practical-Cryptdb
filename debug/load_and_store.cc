@@ -9,17 +9,17 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
+//#include <stdexcept>
 #include <vector>
-#include <set>
-#include <list>
-#include <algorithm>
-#include <functional>
-#include <cctype>
-#include <locale>
-#include <unistd.h>
-#include <sys/types.h>
-#include <dirent.h>
+//#include <set>
+//#include <list>
+//#include <algorithm>
+//#include <functional>
+//#include <cctype>
+//#include <locale>
+//#include <unistd.h>
+//#include <sys/types.h>
+//#include <dirent.h>
 
 #include <main/Connect.hh>
 #include <main/rewrite_main.hh>
@@ -31,21 +31,10 @@
 #include <main/macro_util.hh>
 #include <main/CryptoHandlers.hh>
 
-//#include <parser/embedmysql.hh>
-//#include <parser/stringify.hh>
-//#include <parser/lex_util.hh>
-
-//#include <readline/readline.h>
-//#include <readline/history.h>
-
-//#include <crypto/ecjoin.hh>
-
 #include <util/errstream.hh>
 #include <util/cryptdb_log.hh>
 #include <util/enum_text.hh>
 #include <util/yield.hpp>
-
-#include <fstream>
 
 using std::cout;
 using std::cin;
