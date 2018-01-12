@@ -155,74 +155,6 @@ rawMySQLReturnValue executeAndGetResultRemote(Connect * curConn,std::string quer
 }
 
 
-//helper function for transforming the rawMySQLReturnValue
-
-static Item_null *
-make_null(const std::string &name = ""){
-    char *const n = current_thd->strdup(name.c_str());
-    return new Item_null(n);
-}
-//helper function for transforming the rawMySQLReturnValue
-static std::vector<Item *>
-itemNullVector(unsigned int count)
-{
-    std::vector<Item *> out;
-    for (unsigned int i = 0; i < count; ++i) {
-        out.push_back(make_null());
-    }
-    return out;
-}
-
-//transform rawMySQLReturnValue to ResType
-static 
-ResType MygetResTypeFromLuaTable(bool isNULL,rawMySQLReturnValue *inRow = NULL,int in_last_insert_id = 0){
-    std::vector<std::string> names;
-    std::vector<enum_field_types> types;
-    std::vector<std::vector<Item *> > rows;
-
-    //return NULL restype 
-    if(isNULL){
-        return ResType(true,0,0,std::move(names),
-                      std::move(types),std::move(rows));
-    } else {
-        for(auto inNames:inRow->fieldNames){
-            names.push_back(inNames);
-        }
-        for(auto inTypes:inRow->fieldTypes){
-            types.push_back(static_cast<enum_field_types>(inTypes));
-        }
-        for(auto inRows:inRow->rowValues) {
-            std::vector<Item *> curTempRow = itemNullVector(types.size());
-            for(int i=0;i< (int)(inRows.size());i++){
-                curTempRow[i] = (MySQLFieldTypeToItem(types[i],inRows[i]) );
-            }
-            rows.push_back(curTempRow);
-        }
-//        uint64_t afrow = globalConn->get_affected_rows();
-//	std::cout<<GREEN_BEGIN<<"Affected rows: "<<afrow<<COLOR_END<<std::endl;
-        return ResType(true, 0 ,
-                               in_last_insert_id, std::move(names),
-                                   std::move(types), std::move(rows));
-    }
-}
-
-//printResType for testing purposes
-//static 
-//void parseResType(const ResType &rd) {
-////    std::cout<<RED_BEGIN<<"rd.affected_rows: "<<rd.affected_rows<<COLOR_END<<std::endl;
-////    std::cout<<RED_BEGIN<<"rd.insert_id: "<<rd.insert_id<<COLOR_END<<std::endl;
-//    
-//    for(auto name:rd.names){
-//        std::cout<<name<<"\t";
-//    }
-//    std::cout<<std::endl;    
-//    for(auto row:rd.rows){
-//        for(auto item:row){
-//            std::cout<<ItemToString(*item)<<"\t";
-//        }
-//            std::cout<<std::endl;
-//    }
-//}
 
 //first step of back
 static std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,std::string db = "tdb",
@@ -340,112 +272,6 @@ addSaltToReturn(ReturnMeta *const rm, int pos) {
     rm->rfmeta.insert(pair);
 }
 
-
-static Item *
-decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
-                    uint64_t IV) {
-    assert(!RiboldMYSQL::is_null(i));
-
-    const Item *dec = &i;
-    Item *out_i = NULL;
-    //we have fieldMeta, but only use part of it. we select the onion via the o in olk we constructed.
-    const OnionMeta *const om = fm->getOnionMeta(o);
-    assert(om);
-    //its easy to use onionmeta, just get layers, and use dectypt() to decrypt the results.
-    const auto &enc_layers = om->getLayers();
-    for (auto it = enc_layers.rbegin(); it != enc_layers.rend(); ++it) {
-        out_i = (*it)->decrypt(*dec, IV);
-        assert(out_i);
-        dec = out_i;
-        LOG(cdb_v) << "dec okay";
-    }
-
-    assert(out_i && out_i != &i);
-    return out_i;
-}
-
-/*
-structure of return field. 
-map<int,returnField>, int is the index of names
-returnField, represent a field, if the field is not salt, then fieldCalled is the plaintex name
-*/
-static
-ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
-    //num of rows
-    const unsigned int rows = dbres.rows.size();
-    //num of names, to be decrypted
-    const unsigned int cols = dbres.names.size();
-    std::vector<std::string> dec_names;
-
-    for (auto it = dbres.names.begin();it != dbres.names.end(); it++){
-        const unsigned int index = it - dbres.names.begin();
-        //fetch rfmeta based on index
-        const ReturnField &rf = rmeta.rfmeta.at(index);
-        if (!rf.getIsSalt()) {
-            //need to return this field
-            //filed name here is plaintext
-            dec_names.push_back(rf.fieldCalled());
-        }
-    }
-
-
-    const unsigned int real_cols = dec_names.size();
-
-    std::vector<std::vector<Item *> > dec_rows(rows);
-
-    //real cols depends on plain text names.
-    for (unsigned int i = 0; i < rows; i++) {
-        dec_rows[i] = std::vector<Item *>(real_cols);
-    }
-
-    //
-    unsigned int col_index = 0;
-    for (unsigned int c = 0; c < cols; c++) {
-        const ReturnField &rf = rmeta.rfmeta.at(c);
-        if (rf.getIsSalt()) {
-            continue;
-        }
-
-        //the key is in fieldMeta
-        FieldMeta *const fm = rf.getOLK().key;
-
-        for (unsigned int r = 0; r < rows; r++) {
-	    //
-            if (!fm || dbres.rows[r][c]->is_null()) {
-                dec_rows[r][col_index] = dbres.rows[r][c];
-            } else {
-
-                uint64_t salt = 0;
-                const int salt_pos = rf.getSaltPosition();
-                //read salt from remote datab for descrypting.
-                if (salt_pos >= 0) {
-                    Item_int *const salt_item =
-                        static_cast<Item_int *>(dbres.rows[r][salt_pos]);
-                    assert_s(!salt_item->null_value, "salt item is null");
-                    salt = salt_item->value;
-                }
-
-                 //specify fieldMeta, onion, and salt should be able to decrpyt
-                //peel onion
-                dec_rows[r][col_index] =
-                    decrypt_item_layers(*dbres.rows[r][c],fm,rf.getOLK().o,salt);
-            }
-        }
-        col_index++;
-    }
-
-    std::vector<enum_field_types> types;
-
-    for(auto item:dec_rows[0]){
-        types.push_back(item->field_type());
-    }
-
-    //resType is used befor and after descrypting.
-    return ResType(dbres.ok, dbres.affected_rows, dbres.insert_id,
-                   std::move(dec_names),
-                   std::vector<enum_field_types>(types),//different from previous version
-                   std::move(dec_rows));
-}
 
 //get returnMeta
 //for each filed, we have a fieldmeta. we can chosse one onion under that field to construct a return meta.
@@ -589,67 +415,6 @@ struct meta_file{
     }
 };
 
-static meta_file load_meta(string db="tdb", string table="student", string filename="metadata.data"){
-    //FILE * meta = NULL;
-    //localmeta = fopen(filename.c_str(),"r");
-    filename = string("data/")+db+"/"+table+"/"+filename;
-    std::ifstream infile(filename);
-    string line;
-    meta_file res;
-    while(std::getline(infile,line)){
-        int index = line.find(":");
-        string head = line.substr(0,index);
-        if(head=="database"){
-            res.db = line.substr(index+1);
-        }else if(head=="table"){
-            res.table = line.substr(index+1);
-        }else if(head=="num_of_fields"){
-            res.num_of_fields = std::stoi(line.substr(index+1));
-        }else if(head=="field_types"){
-            string types = line.substr(index+1);
-            int start=0,next=0;
-            while((next=types.find(' ',start))!=-1){
-                string item = types.substr(start,next-start);
-                res.field_types.push_back(item);
-                start = next+1;
-            }
-            string item = types.substr(start);
-            res.field_types.push_back(item);
-        }else if(head=="field_lengths"){
-            string lengths = line.substr(index+1);
-            int start=0,next=0;
-            while((next=lengths.find(' ',start))!=-1){
-                string item = lengths.substr(start,next-start);
-                res.field_lengths.push_back(std::stoi(item));
-                start = next+1;
-            }
-            string item = lengths.substr(start);
-            res.field_lengths.push_back(std::stoi(item));
-        }else if(head=="field_names"){
-            string names = line.substr(index+1);
-            int start=0,next=0;
-            while((next=names.find(' ',start))!=-1){
-                string item = names.substr(start,next-start);
-                res.field_names.push_back(item);
-                start = next+1;
-            }
-            string item = names.substr(start);
-            res.field_names.push_back(item);
-        }else if(head=="choosen_onions"){
-            string c_onions = line.substr(index+1);
-            int start=0,next=0;
-            while((next=c_onions.find(' ',start))!=-1){
-                string item = c_onions.substr(start,next-start);
-                res.choosen_onions.push_back(std::stoi(item));
-                start = next+1;
-            }
-            string item = c_onions.substr(start);
-            res.choosen_onions.push_back(std::stoi(item));
-        }
-    }
-    return res;
-}
-
 static void write_row_data(rawMySQLReturnValue& resraw,string db, string table){
     vector<FILE*> data_files;
     string prefix = string("data/")+db+"/"+table+"/";
@@ -679,94 +444,6 @@ void write_raw_data_to_files(rawMySQLReturnValue& resraw,string db,string table)
     write_meta(resraw,db,table);
     //write datafiles
     write_row_data(resraw,db,table);
-}
-
-
-static void load_num(string filename,vector<string> &res){
-    std::ifstream infile(filename);
-    string line;
-    while(std::getline(infile,line)){
-        res.push_back(line);
-    }
-    infile.close();
-}
-
-static void load_string(string filename, vector<string> &res,unsigned long length){
-    char *buf = new char[length];
-    int fd = open(filename.c_str(),O_RDONLY);
-    while(read(fd,buf,length)!=0){
-        res.push_back(string(buf,length));
-    }
-    close(fd);
-}
-
-static vector<vector<string>> load_table_fields(meta_file & input) {
-    string db = input.db;
-    string table = input.table;
-    vector<vector<string>> res;
-    string prefix = string("data/")+db+"/"+table+"/";
-
-    vector<string> datafiles;
-    for(auto item:input.field_names){
-        datafiles.push_back(prefix+item);
-    }
-
-    for(unsigned int i=0u;i<input.field_names.size();i++){
-       vector<string> column;
-       if(IS_NUM(std::stoi(input.field_types[i]))){
-           load_num(datafiles[i],column);
-       }else{
-           load_string(datafiles[i],column,input.field_lengths[i]);
-       }
-       for(unsigned int j=0u; j<column.size(); j++){
-           if(j>=res.size()){
-               res.push_back(vector<string>());
-           }
-           res[j].push_back(column[j]);
-       }
-    }
-    return res;
-}
-
-
-static ResType load_files(std::string db="tdb", std::string table="student"){
-    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
-    //get all the fields in the tables.
-    std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
-    auto res = getTransField(fms);
-
-    std::vector<enum_field_types> types;//Added
-    for(auto item:fms){
-        types.push_back(item->getSqlType());
-    }//Add new field form FieldMeta
-    if(types.size()==1){
-        //to be
-    }
-
-    meta_file res_meta = load_meta(db,table);
-
-    for(unsigned int i=0;i<res_meta.choosen_onions.size();i++){
-	res[i].choosenOnions.push_back(res_meta.choosen_onions[i]);
-    }
-    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-
-    //why do we need this??
-    std::string backq = "show databases";
-    executeAndGetResultRemote(globalConn,backq);
-    rawMySQLReturnValue resraw2;
-    //load fields in the stored file
-    vector<vector<string>> res_field = load_table_fields(res_meta);
-    resraw2.rowValues = res_field;
-    resraw2.fieldNames = res_meta.field_names;
-    resraw2.choosen_onions = res_meta.choosen_onions;
-    for(unsigned int i=0;i<res_meta.field_types.size();++i) {
-	resraw2.fieldTypes.push_back(static_cast<enum_field_types>(std::stoi(res_meta.field_types[i])));
-    }
-    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
-    auto finalresults = decryptResults(rawtorestype,*rm);
-//    parseResType(finalresults);
-
-    return finalresults;
 }
 
 static void init(){
@@ -815,54 +492,6 @@ static void store(std::string db, std::string table){
     write_raw_data_to_files(resraw,db,table);
 }
 
-static void add(rawMySQLReturnValue & str,ResType & item ){
-    for(auto row : item.rows){
-        std::vector<string> temp;
-        for(auto item : row){
-            temp.push_back(ItemToString(*item));
-        }
-        str.rowValues.push_back(temp);
-    }
-    str.fieldTypes = item.types;
-}
-
-
-static void construct_insert(rawMySQLReturnValue & str,std::string table,std::vector<string> &res){    
-    std::string head = string("INSERT INTO `")+table+"` VALUES ";
-
-    int cnt = 0;
-    string cur=head;
-    for(unsigned int i=0u; i<str.rowValues.size();i++){
-        ++cnt;
-        cur+="(";        
-        for(unsigned int j=0u;j<str.rowValues[i].size();j++){
-            if(IS_NUM(str.fieldTypes[j])) {
-//                cout<<str.fieldTypes[j]<<endl;
-                cur+=str.rowValues[i][j]+=",";
-//                cout<<"isnum"<<endl;
-            }else{
-                //cur+=string("\"")+=str.rowValues[i][j]+="\",";
-                int len = str.rowValues[i][j].size();
-                mysql_real_escape_string(globalConn->get_conn(),globalEsp,
-                    str.rowValues[i][j].c_str(),len);
-                cur+=string("\"")+=string(globalEsp)+="\",";
-            }
-        }
-        cur.back()=')';
-        cur+=",";
-        if(cnt == num_of_pipe){
-            cnt = 0;
-            cur.back()=';';
-            res.push_back(cur);
-            cur=head;
-        }
-    }
-    if(cnt!=0){
-        cur.back()=';';
-        res.push_back(cur);
-    }
-}
-
 int
 main(int argc, char* argv[]) {
     if(argc!=2){
@@ -882,15 +511,15 @@ main(int argc, char* argv[]) {
     if(option=="store"){
         store(db,table);
     }else if(option == "load"){
-        ResType res =  load_files(db,table);
-        rawMySQLReturnValue str;
-        add(str,res);
-        std::vector<string> res_query;
-        construct_insert(str,table,res_query);
+//        ResType res =  load_files(db,table);
+//        rawMySQLReturnValue str;
+//        add(str,res);
+//        std::vector<string> res_query;
+//        construct_insert(str,table,res_query);
 
-        for(auto item:res_query){
-            cout<<item<<endl;
-        }
+//        for(auto item:res_query){
+//            cout<<item<<endl;
+//        }
     }
     free(globalEsp);
     return 0;
