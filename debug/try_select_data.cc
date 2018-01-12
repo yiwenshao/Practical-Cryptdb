@@ -254,6 +254,71 @@ my_addSaltToReturn(ReturnMeta *const rm, int pos)
 }
 
 
+static
+Item *
+    my_do_rewrite_type(const Item_field &i, const OLK &constr,
+                    const RewritePlan &rp, Analysis &a)
+        {
+        const std::string &db_name = a.getDatabaseName();
+        const std::string plain_table_name = i.table_name;
+        const FieldMeta &fm =
+            a.getFieldMeta(db_name, plain_table_name, i.field_name);
+        //assert(constr.key == fm);
+
+        //check if we need onion adjustment
+        const OnionMeta &om =
+            a.getOnionMeta(db_name, plain_table_name, i.field_name,
+                           constr.o);
+        const SECLEVEL onion_level = a.getOnionLevel(om);
+        assert(onion_level != SECLEVEL::INVALID);
+
+        if (constr.l < onion_level) {
+            //need adjustment, throw exception
+            const TableMeta &tm =
+                a.getTableMeta(db_name, plain_table_name);
+            throw OnionAdjustExcept(tm, fm, constr.o, constr.l);
+        }
+
+        bool is_alias;
+        const std::string anon_table_name =
+            a.getAnonTableName(db_name, plain_table_name, &is_alias);
+        const std::string anon_field_name = om.getAnonOnionName();
+        
+        Item_field * const res =
+            make_item_field(i, anon_table_name, anon_field_name);
+
+        // HACK: to get aliases to work in DELETE FROM statements
+        if (a.inject_alias && is_alias) {
+            res->db_name = NULL;
+        }
+
+        // This information is only relevant if it comes from a
+        // HAVING clause.
+        // FIXME: Enforce this semantically.
+        a.item_cache[&i] = std::make_pair(res, constr);
+
+//        // This rewrite may be inside of an ON DUPLICATE KEY UPDATE...
+//        // where the query is using the VALUES(...) function.
+//        if (isItem_insert_value(i)) {
+//            const Item_insert_value &insert_i =
+//                static_cast<const Item_insert_value &>(i);
+//            return make_item_insert_value(insert_i, res);
+//        }
+
+        return res;
+}
+
+
+static Item* my_rewrite(const Item &i, const EncSet &req_enc, Analysis &a){
+    const std::unique_ptr<RewritePlan> &rp =
+        constGetAssert(a.rewritePlans, &i);
+    const EncSet solution = rp->es_out.intersect(req_enc);
+    // FIXME: Use version that takes reason, expects 0 children,
+    // and lets us indicate what our EncSet does have.
+    TEST_NoAvailableEncSet(solution, i.type(), req_enc, rp->r.why,
+                           std::vector<std::shared_ptr<RewritePlan> >());
+    return my_do_rewrite_type(static_cast<const Item_field&>(i), solution.chooseOne(), *rp.get(), a);
+}
 
 
 static void
@@ -270,12 +335,11 @@ my_rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
             olk = cached_rewritten_i->second.second;
         } else {
             //对于select中的选择域来说,这里对应的是rewrite_field.cc中的83, do_rewrite_type
-            ir = rewrite(i, rp.es_out, a);
+            ir = my_rewrite(i, rp.es_out, a);
             olk = rp.es_out.chooseOne();
         }
     } else {
-        ir = rewrite(i, rp.es_out, a);
-        olk = rp.es_out.chooseOne();
+        exit(0);
     }
     //和insert不同, select的时候, 只要一个洋葱, 选取一个进行改写就可以了, 不需要扩展.
     assert(ir.assigned() && ir.get());
