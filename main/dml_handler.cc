@@ -49,8 +49,8 @@ void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
                          ContainerType *const append_list)
 {
     std::vector<Item *> l;
-    //这里先做lookup, 找到类以后调用内部的结果, 试试
-    //对于普通的student操作, 最后调用的是ANON的typical_rewrite_insert_type来进行重写.
+    /*first look up the right class and then use the rewritting function of the specific data type
+    for table student, the function typical_rewrite_insert_type in ANON is used finally. */
     itemTypes.do_rewrite_insert(i, fm, a, &l);
     for (auto it : l) {
         append_list->push_back(it);
@@ -406,7 +406,8 @@ class MultiDeleteHandler : public DMLHandler {
 class SelectHandler : public DMLHandler {
     virtual void gather(Analysis &a, LEX *const lex)
         const{
-        //处理了选择域, 以及为having等field 设置了rewriteplain, 也就是encset, 不同的洋葱层次需要这个东西.
+        /*process the select field, that is the xxx in select xxx. also setup rewriteplain for fileds
+          like having. the rewriteplain are encset, which is used in decryption*/
         process_select_lex(lex->select_lex, a);
     }
 
@@ -415,11 +416,12 @@ class SelectHandler : public DMLHandler {
         const{
         LEX *const new_lex = copyWithTHD(lex);
 
+        //table list rewrite
         new_lex->select_lex.top_join_list =
             rewrite_table_list(lex->select_lex.top_join_list, a);
 
-        set_select_lex(new_lex,
-            rewrite_select_lex(new_lex->select_lex, a));
+        SELECT_LEX *const select_lex_res = rewrite_select_lex(new_lex->select_lex, a);
+        set_select_lex(new_lex,select_lex_res);
 
         return new DMLQueryExecutor(*new_lex, a.rmeta);
     }
@@ -459,29 +461,34 @@ process_filters_lex(const st_select_lex &select_lex, Analysis &a)
 void
 process_select_lex(const st_select_lex &select_lex, Analysis &a)
 {
-    //可以看到, 首先处理top_join_list, 是List<TABLE_LIST>类型. 其含义是join list of the top level.
-    //内部分别用process_table_aliases(tll, a); process_table_joins_and_derived(tll, a);两个函数处理.
-    //如果不是jion式的语句, 就不用管了.其内部通过递归处理nested join, 并且处理了*on*语句.
+    /*select_lex.top_join_list is join list of the top level. The type is List<TABLE_LIST>. internally, 
+      it uses two functions process_table_aliases(tll, a) and process_table_joins_and_derived(tll, a)
+      to process the list. nested join is processed via recursion. and *on* queries are processed also. 
+      if no join is used in the query, then this function is not used.
+    */
     process_table_list(select_lex.top_join_list, a);
 
-     //这里处理的是itemlist, 也就是List of columns and expressions: SELECT: Columns and 	
-     //expressions in the SELECT list.是List<Item>类型.
-    //select 也就是选择域
+    /* process the itemlist, that is: List of columns and expressions: SELECT: Columns and
+       expressions in the SELECT list. The type is List<Item>.
+    */
     auto item_it =
         RiboldMYSQL::constList_iterator<Item>(select_lex.item_list);
     int numOfItem = 0;
     for (;;) {
-    //因该是对itemlist做内部转化以后在添加rewriteplain. 这里在普通的insert的时候并没有用到.
-    //这里处理了id 和 name.
+    /*not used in normal insert queries;
+      processes id and name in the table student
+    */
         const Item *const item = item_it++;
         if (!item)
             break;
         numOfItem++;
         gatherAndAddAnalysisRewritePlan(*item, a);
     }
-    //这里处理的是select_lex.where和select_lex.having, 通过Item类型的函数, 也就是下面那个, 为其添加
-    //rewriteplain. 然后再通过process_order, 对select_lex.group_list和select_lex.order_list添加
-    //rewritePlain
+
+    /*process select_lex.where and select_lex.having, all of which are of the type Item.
+      rewriteplain is added for those items. Also, process_order is used internally to process
+      select_lex.group_list and select_lex.order_list
+    */
     process_filters_lex(select_lex, a);
 }
 
