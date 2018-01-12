@@ -44,21 +44,17 @@
 #include <util/enum_text.hh>
 #include <util/yield.hpp>
 
-#include<util/timer.hh>
-#include <sstream>
-#include <unistd.h>
-#include <map>
+//#include<util/timer.hh>
+//#include <sstream>
+//#include <unistd.h>
+//#include <map>
 #include <fstream>
 
-#include<sys/stat.h>
-#include<sys/types.h>
+//#include<sys/stat.h>
+//#include<sys/types.h>
 
-#include <fcntl.h>
-#include <unistd.h>
-#include "big_proxy.hh"
-
-
-
+//#include <fcntl.h>
+//#include <unistd.h>
 
 using std::cout;
 using std::cin;
@@ -66,6 +62,41 @@ using std::endl;
 using std::vector;
 using std::string;
 using std::to_string;
+
+
+
+class WrapperState {
+    WrapperState(const WrapperState &other);
+    WrapperState &operator=(const WrapperState &rhs);
+    KillZone kill_zone;
+public:
+    std::string last_query;
+    std::string default_db;
+
+    WrapperState() {}
+    ~WrapperState() {}
+    const std::unique_ptr<QueryRewrite> &getQueryRewrite() const {
+        assert(this->qr);
+        return this->qr;
+    }
+    void setQueryRewrite(std::unique_ptr<QueryRewrite> &&in_qr) {
+        this->qr = std::move(in_qr);
+    }
+    void selfKill(KillZone::Where where) {
+        kill_zone.die(where);
+    }
+    void setKillZone(const KillZone &kz) {
+        kill_zone = kz;
+    }
+    
+    std::unique_ptr<ProxyState> ps;
+    std::vector<SchemaInfoRef> schema_info_refs;
+
+private:
+    std::unique_ptr<QueryRewrite> qr;
+};
+
+
 
 static std::string embeddedDir="/t/cryt/shadow";
 

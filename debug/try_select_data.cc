@@ -182,6 +182,8 @@ static void sp_next(std::string db, std::string query, QueryRewrite *qr,ResType 
     }
 }
 
+//===================================================gather part==========================================================
+
 static 
 RewritePlan * 
 my_gather(const Item_field &i, Analysis &a){
@@ -197,12 +199,9 @@ my_gather(const Item_field &i, Analysis &a){
 
 static
 void
-my_gatherAndAddAnalysisRewritePlan(const Item &i, Analysis &a)
-{
+my_gatherAndAddAnalysisRewritePlan(const Item &i, Analysis &a){
     a.rewritePlans[&i] = std::unique_ptr<RewritePlan>(my_gather(static_cast<const Item_field&>(i), a));
 }
-
-
 
 static
 void
@@ -234,7 +233,6 @@ my_addToReturn(ReturnMeta *const rm, int pos, const OLK &constr,
     const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
     TEST_TextMessageError(test, "ReturnMeta has badly ordered"
                                 " ReturnFields!");
-
     const int salt_pos = has_salt ? pos + 1 : -1;
     std::pair<int, ReturnField>
         pair(pos, ReturnField(false, name, constr, salt_pos));
@@ -242,12 +240,10 @@ my_addToReturn(ReturnMeta *const rm, int pos, const OLK &constr,
 }
 
 static void
-my_addSaltToReturn(ReturnMeta *const rm, int pos)
-{
+my_addSaltToReturn(ReturnMeta *const rm, int pos){
     const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
     TEST_TextMessageError(test, "ReturnMeta has badly ordered"
                                 " ReturnFields!");
-
     std::pair<int, ReturnField>
         pair(pos, ReturnField(true, "", OLK::invalidOLK(), -1));
     rm->rfmeta.insert(pair);
@@ -257,66 +253,52 @@ my_addSaltToReturn(ReturnMeta *const rm, int pos)
 static
 Item *
     my_do_rewrite_type(const Item_field &i, const OLK &constr,
-                    const RewritePlan &rp, Analysis &a)
-        {
-        const std::string &db_name = a.getDatabaseName();
-        const std::string plain_table_name = i.table_name;
-        const FieldMeta &fm =
-            a.getFieldMeta(db_name, plain_table_name, i.field_name);
-        //assert(constr.key == fm);
+                    const RewritePlan &rp, Analysis &a) {
+    const std::string &db_name = a.getDatabaseName();
+    const std::string plain_table_name = i.table_name;
+    const FieldMeta &fm =
+        a.getFieldMeta(db_name, plain_table_name, i.field_name);
+    //check if we need onion adjustment
+    const OnionMeta &om =
+        a.getOnionMeta(db_name, plain_table_name, i.field_name,
+                       constr.o);
+    const SECLEVEL onion_level = a.getOnionLevel(om);
+    assert(onion_level != SECLEVEL::INVALID);
 
-        //check if we need onion adjustment
-        const OnionMeta &om =
-            a.getOnionMeta(db_name, plain_table_name, i.field_name,
-                           constr.o);
-        const SECLEVEL onion_level = a.getOnionLevel(om);
-        assert(onion_level != SECLEVEL::INVALID);
+    if (constr.l < onion_level) {
+        //need adjustment, throw exception
+        const TableMeta &tm =
+            a.getTableMeta(db_name, plain_table_name);
+        throw OnionAdjustExcept(tm, fm, constr.o, constr.l);
+    }
+    bool is_alias;
+    const std::string anon_table_name =
+        a.getAnonTableName(db_name, plain_table_name, &is_alias);
+    const std::string anon_field_name = om.getAnonOnionName();
+    
+    Item_field * const res =
+        make_item_field(i, anon_table_name, anon_field_name);
 
-        if (constr.l < onion_level) {
-            //need adjustment, throw exception
-            const TableMeta &tm =
-                a.getTableMeta(db_name, plain_table_name);
-            throw OnionAdjustExcept(tm, fm, constr.o, constr.l);
-        }
-
-        bool is_alias;
-        const std::string anon_table_name =
-            a.getAnonTableName(db_name, plain_table_name, &is_alias);
-        const std::string anon_field_name = om.getAnonOnionName();
-        
-        Item_field * const res =
-            make_item_field(i, anon_table_name, anon_field_name);
-
-        // HACK: to get aliases to work in DELETE FROM statements
-        if (a.inject_alias && is_alias) {
-            res->db_name = NULL;
-        }
-
-        // This information is only relevant if it comes from a
-        // HAVING clause.
-        // FIXME: Enforce this semantically.
-        a.item_cache[&i] = std::make_pair(res, constr);
-
-//        // This rewrite may be inside of an ON DUPLICATE KEY UPDATE...
-//        // where the query is using the VALUES(...) function.
-//        if (isItem_insert_value(i)) {
-//            const Item_insert_value &insert_i =
-//                static_cast<const Item_insert_value &>(i);
-//            return make_item_insert_value(insert_i, res);
-//        }
-
-        return res;
+    // HACK: to get aliases to work in DELETE FROM statements
+    if (a.inject_alias && is_alias) {
+        res->db_name = NULL;
+    }
+    // This information is only relevant if it comes from a
+    // HAVING clause.
+    // FIXME: Enforce this semantically.
+    a.item_cache[&i] = std::make_pair(res, constr);
+    return res;
 }
 
 
 static Item* my_rewrite(const Item &i, const EncSet &req_enc, Analysis &a){
-    const std::unique_ptr<RewritePlan> &rp =
-        constGetAssert(a.rewritePlans, &i);
+    const std::unique_ptr<RewritePlan> &rp = constGetAssert(a.rewritePlans, &i);
+
     const EncSet solution = rp->es_out.intersect(req_enc);
-    // FIXME: Use version that takes reason, expects 0 children,
-    // and lets us indicate what our EncSet does have.
+
     TEST_NoAvailableEncSet(solution, i.type(), req_enc, rp->r.why,
                            std::vector<std::shared_ptr<RewritePlan> >());
+
     return my_do_rewrite_type(static_cast<const Item_field&>(i), solution.chooseOne(), *rp.get(), a);
 }
 
@@ -334,7 +316,6 @@ my_rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
             ir = cached_rewritten_i->second.first;
             olk = cached_rewritten_i->second.second;
         } else {
-            //对于select中的选择域来说,这里对应的是rewrite_field.cc中的83, do_rewrite_type
             ir = my_rewrite(i, rp.es_out, a);
             olk = rp.es_out.chooseOne();
         }
@@ -374,13 +355,13 @@ my_rewrite_select_lex(const st_select_lex &select_lex, Analysis &a){
     auto item_it =
         RiboldMYSQL::constList_iterator<Item>(select_lex.item_list);
     List<Item> newList;
-    //item的改写, 是写到newlist里面, 所以item本身不会有变化.
+    //rewrite item
     for (;;) {
         const Item *const item = item_it++;
         if (!item)
             break;
         my_rewrite_proj(*item,
-                     *constGetAssert(a.rewritePlans, item).get(),
+                     *constGetAssert(a.rewritePlans, item).get(),//get the rewrite plain
                      a, &newList);
     }
     new_select_lex->item_list = newList;
@@ -394,6 +375,7 @@ AbstractQueryExecutor * my_rewrite_select(Analysis &a, LEX *lex){
     //this is actually table list instead of join list.
     new_lex->select_lex.top_join_list =
             rewrite_table_list(lex->select_lex.top_join_list, a);
+
     SELECT_LEX *const select_lex_res = my_rewrite_select_lex(new_lex->select_lex, a);
     set_select_lex(new_lex,select_lex_res);
     return new DMLQueryExecutor(*new_lex, a.rmeta);
@@ -420,20 +402,16 @@ static void testCreateTableHandler(std::string query,std::string db="tdb"){
     //just like what we do in Rewrite::rewrite,dispatchOnLex
     Analysis analysis(std::string("tdb"),*schema,TK,
                         SECURITY_RATING::SENSITIVE);
-
     assert(analysis.getMasterKey().get()!=NULL);
     assert(getKey(std::string("113341234"))!=NULL);
     std::unique_ptr<query_parse> p;
     p = std::unique_ptr<query_parse>(
                 new query_parse(db, query));
     LEX *const lex = p->lex();
-
     std::string table(lex->select_lex.table_list.first->table_name);
     my_gather_select(analysis,lex);
-
     auto executor = my_rewrite_select(analysis,lex);
     QueryRewrite *qr = new QueryRewrite(QueryRewrite(true, analysis.rmeta, analysis.kill_zone, executor));
-
     sp_next(db,query,qr,MygetResTypeFromLuaTable(true));
 }
 
@@ -452,7 +430,6 @@ main() {
     ps = new ProxyState(*shared_ps);
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
     globalConn->execute("use tdb");
-
     ps->safeCreateEmbeddedTHD();
     std::string query1 = "select * from child;"; 
     std::vector<std::string> querys{query1};
