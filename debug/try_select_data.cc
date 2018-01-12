@@ -68,9 +68,9 @@ ResType MygetResTypeFromLuaTable(bool isNULL,rawReturnValue *inRow = NULL,int in
             }
             rows.push_back(curTempRow);
         }
-        return ResType(true, 0 ,
-                               in_last_insert_id, std::move(names),
-                                   std::move(types), std::move(rows));
+        return ResType(true,0,in_last_insert_id, 
+                       std::move(names),
+                       std::move(types), std::move(rows));
     }
 }
 
@@ -182,19 +182,25 @@ static void sp_next(std::string db, std::string query, QueryRewrite *qr,ResType 
     }
 }
 
-//static 
-//RewritePlan * 
-//my_gather(const Item &i, Analysis &a){
-//    return itemTypes.do_gather(i, a);
-//}
-//
+static 
+RewritePlan * 
+my_gather(const Item_field &i, Analysis &a){
+    const std::string fieldname = i.field_name;
+    const std::string table = i.table_name;//we donot deduce here
+    FieldMeta &fm =
+        a.getFieldMeta(a.getDatabaseName(), table, fieldname);
+    const EncSet es = EncSet(a, &fm);
+    const std::string why = "is a field";
+    reason rsn(es, why, i);
+    return new RewritePlan(es, rsn);
+}
+
 static
 void
 my_gatherAndAddAnalysisRewritePlan(const Item &i, Analysis &a)
 {
-    a.rewritePlans[&i] = std::unique_ptr<RewritePlan>(gather(i, a));
+    a.rewritePlans[&i] = std::unique_ptr<RewritePlan>(my_gather(static_cast<const Item_field&>(i), a));
 }
-
 
 
 
@@ -203,7 +209,6 @@ void
 my_process_select_lex(const st_select_lex &select_lex, Analysis &a){
     auto item_it =
         RiboldMYSQL::constList_iterator<Item>(select_lex.item_list);
-    int numOfItem = 0;
     for (;;) {
     /*not used in normal insert queries;
       processes id and name in the table student
@@ -211,7 +216,6 @@ my_process_select_lex(const st_select_lex &select_lex, Analysis &a){
         const Item *const item = item_it++;
         if (!item)
             break;
-        numOfItem++;
         my_gatherAndAddAnalysisRewritePlan(*item, a);
     }
 }
@@ -221,29 +225,104 @@ static void my_gather_select(Analysis &a, LEX *const lex){
 }
 
 
-//static st_select_lex *
-//my_rewrite_select_lex(const st_select_lex &select_lex, Analysis &a){
-//    //do not support filter
-//    st_select_lex *const new_select_lex = copyWithTHD(&select_lex);
-//    auto item_it =
-//        RiboldMYSQL::constList_iterator<Item>(select_lex.item_list);
-//    List<Item> newList;
-//    int numOfItem=0;
-//    //item的改写, 是写到newlist里面, 所以item本身不会有变化.
-//    for (;;) {
-//
-//        const Item *const item = item_it++;
-//        if (!item)
-//            break;
-//        numOfItem++;
-//        rewrite_proj(*item,
-//                     *constGetAssert(a.rewritePlans, item).get(),
-//                     a, &newList);
-//    }
-//    new_select_lex->item_list = newList;
-//    return new_select_lex;    
-//}
-//
+//==========================================================Rewrite=================================================
+
+
+static void
+my_addToReturn(ReturnMeta *const rm, int pos, const OLK &constr,
+            bool has_salt, const std::string &name){
+    const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
+    TEST_TextMessageError(test, "ReturnMeta has badly ordered"
+                                " ReturnFields!");
+
+    const int salt_pos = has_salt ? pos + 1 : -1;
+    std::pair<int, ReturnField>
+        pair(pos, ReturnField(false, name, constr, salt_pos));
+    rm->rfmeta.insert(pair);
+}
+
+static void
+my_addSaltToReturn(ReturnMeta *const rm, int pos)
+{
+    const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
+    TEST_TextMessageError(test, "ReturnMeta has badly ordered"
+                                " ReturnFields!");
+
+    std::pair<int, ReturnField>
+        pair(pos, ReturnField(true, "", OLK::invalidOLK(), -1));
+    rm->rfmeta.insert(pair);
+}
+
+
+
+
+static void
+my_rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
+             List<Item> *const newList) {
+    AssignOnce<OLK> olk;
+    AssignOnce<Item *> ir;
+
+    if (i.type() == Item::Type::FIELD_ITEM) {
+        const Item_field &field_i = static_cast<const Item_field &>(i);
+        const auto &cached_rewritten_i = a.item_cache.find(&field_i);
+        if (cached_rewritten_i != a.item_cache.end()) {
+            ir = cached_rewritten_i->second.first;
+            olk = cached_rewritten_i->second.second;
+        } else {
+            //对于select中的选择域来说,这里对应的是rewrite_field.cc中的83, do_rewrite_type
+            ir = rewrite(i, rp.es_out, a);
+            olk = rp.es_out.chooseOne();
+        }
+    } else {
+        ir = rewrite(i, rp.es_out, a);
+        olk = rp.es_out.chooseOne();
+    }
+    //和insert不同, select的时候, 只要一个洋葱, 选取一个进行改写就可以了, 不需要扩展.
+    assert(ir.assigned() && ir.get());
+    newList->push_back(ir.get());
+    const bool use_salt = needsSalt(olk.get());
+
+    // This line implicity handles field aliasing for at least some cases.
+    // As i->name can/will be the alias.
+    my_addToReturn(&a.rmeta, a.pos++, olk.get(), use_salt, i.name);
+
+    if (use_salt) {
+        TEST_TextMessageError(Item::Type::FIELD_ITEM == ir.get()->type(),
+            "a projection requires a salt and is not a field; cryptdb"
+            " does not currently support such behavior");
+        const std::string &anon_table_name =
+            static_cast<Item_field *>(ir.get())->table_name;
+        const std::string &anon_field_name = olk.get().key->getSaltName();
+        Item_field *const ir_field =
+            make_item_field(*static_cast<Item_field *>(ir.get()),
+                            anon_table_name, anon_field_name);
+        newList->push_back(ir_field);
+        my_addSaltToReturn(&a.rmeta, a.pos++);
+    }
+}
+
+
+
+static st_select_lex *
+my_rewrite_select_lex(const st_select_lex &select_lex, Analysis &a){
+    //do not support filter
+    st_select_lex *const new_select_lex = copyWithTHD(&select_lex);
+    auto item_it =
+        RiboldMYSQL::constList_iterator<Item>(select_lex.item_list);
+    List<Item> newList;
+    //item的改写, 是写到newlist里面, 所以item本身不会有变化.
+    for (;;) {
+        const Item *const item = item_it++;
+        if (!item)
+            break;
+        my_rewrite_proj(*item,
+                     *constGetAssert(a.rewritePlans, item).get(),
+                     a, &newList);
+    }
+    new_select_lex->item_list = newList;
+    return new_select_lex;    
+}
+
 
 static
 AbstractQueryExecutor * my_rewrite_select(Analysis &a, LEX *lex){
@@ -251,7 +330,7 @@ AbstractQueryExecutor * my_rewrite_select(Analysis &a, LEX *lex){
     //this is actually table list instead of join list.
     new_lex->select_lex.top_join_list =
             rewrite_table_list(lex->select_lex.top_join_list, a);
-    SELECT_LEX *const select_lex_res = rewrite_select_lex(new_lex->select_lex, a);
+    SELECT_LEX *const select_lex_res = my_rewrite_select_lex(new_lex->select_lex, a);
     set_select_lex(new_lex,select_lex_res);
     return new DMLQueryExecutor(*new_lex, a.rmeta);
 }
