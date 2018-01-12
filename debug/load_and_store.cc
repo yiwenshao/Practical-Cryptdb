@@ -2,36 +2,22 @@
 * 2. plaintext insert query should be able to recover directly
 * 3. should be able to used exsisting data to reduce the computation overhead(to be implemented)
 */
-#include <cstdlib>
-#include <cstdio>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string>
 #include <map>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include <main/Connect.hh>
 #include <main/rewrite_main.hh>
 #include <main/rewrite_util.hh>
-//#include <main/sql_handler.hh>
-//#include <main/dml_handler.hh>
-//#include <main/ddl_handler.hh>
-#include <main/metadata_tables.hh>
-//#include <main/macro_util.hh>
-#include <main/CryptoHandlers.hh>
-//#include <util/errstream.hh>
-//#include <util/cryptdb_log.hh>
-//#include <util/enum_text.hh>
-//#include <util/yield.hpp>
-
 using std::cout;
 using std::cin;
 using std::endl;
 using std::vector;
 using std::string;
 using std::to_string;
-
-
 
 class WrapperState {
     WrapperState(const WrapperState &other);
