@@ -10,6 +10,7 @@
 #include <crypto/blowfish.hh>
 #include <parser/sql_utils.hh>
 #include <crypto/SWPSearch.hh>
+#include "crypto/ASHE.hh"
 
 #include <main/dbobject.hh>
 #include <main/macro_util.hh>
@@ -119,7 +120,9 @@ private:
 
 class ASHE : public EncLayer {
 public:
-    ASHE(const Create_field &cf, const std::string &seed_key);
+    ASHE(const Create_field &cf, const std::string &seed_key):seed_key(seed_key),ashe(1){
+
+    }
 
     // serialize and deserialize
     std::string doSerialize() const {return seed_key;}
@@ -136,6 +139,7 @@ public:
     Item * decrypt(const Item &c, uint64_t IV) const;
 protected:
     std::string const seed_key;
+    const RAW_ASHE ashe;
 };
 
 

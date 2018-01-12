@@ -1814,34 +1814,42 @@ const std::vector<udf_func*> udf_list = {
 
 /************************************************ASHE********************************************/
 
-ASHE::ASHE(const Create_field &f, const std::string &seed_key)
-    : seed_key(seed_key)
-{}
+ASHE::ASHE(unsigned int id, const std::string &serial):ashe(1){}
 
-ASHE::ASHE(unsigned int id, const std::string &serial){}
-
+/*the type of filed after the ASHE layer is used.*/
 Create_field *
 ASHE::newCreateField(const Create_field &cf,
                     const std::string &anonname) const{
-    return NULL;
+    const THD * const thd = current_thd;
+    Create_field * const f0 = cf.clone(thd->mem_root);
+//    if (charset != NULL) {
+//        f0->charset = charset;
+//    }
+  
+    if (anonname.size() > 0) {
+        f0->field_name = make_thd_string(anonname);
+    }
+    return f0;
 }
 
 //if first, use seed key to generate
 Item *
 ASHE::encrypt(const Item &ptext, uint64_t IV) const{
-    return NULL;
+    ulonglong pt = const_cast<Item &>(ptext).val_uint();
+    
+    return new (current_thd->mem_root)
+               Item_int(static_cast<ulonglong>(pt));
 }
 
 Item *
 ASHE::decrypt(const Item &ctext, uint64_t IV) const
 {
-    return NULL;
+    long long ct = const_cast<Item &>(ctext).val_uint();
+    return new (current_thd->mem_root)
+               Item_int(static_cast<ulonglong>(ct));
 }
 
 ASHE::~ASHE() {
 
 }
-
-
-
 
