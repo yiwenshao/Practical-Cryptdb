@@ -31,30 +31,21 @@
 #include <main/macro_util.hh>
 #include <main/CryptoHandlers.hh>
 
-#include <parser/embedmysql.hh>
-#include <parser/stringify.hh>
-#include <parser/lex_util.hh>
+//#include <parser/embedmysql.hh>
+//#include <parser/stringify.hh>
+//#include <parser/lex_util.hh>
 
-#include <readline/readline.h>
-#include <readline/history.h>
+//#include <readline/readline.h>
+//#include <readline/history.h>
 
-#include <crypto/ecjoin.hh>
+//#include <crypto/ecjoin.hh>
+
 #include <util/errstream.hh>
 #include <util/cryptdb_log.hh>
 #include <util/enum_text.hh>
 #include <util/yield.hpp>
 
-//#include<util/timer.hh>
-//#include <sstream>
-//#include <unistd.h>
-//#include <map>
 #include <fstream>
-
-//#include<sys/stat.h>
-//#include<sys/types.h>
-
-//#include <fcntl.h>
-//#include <unistd.h>
 
 using std::cout;
 using std::cin;
