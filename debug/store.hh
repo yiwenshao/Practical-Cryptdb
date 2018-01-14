@@ -214,3 +214,117 @@ getFieldMeta(SchemaInfo &schema,
 	 return std::vector<FieldMeta *>();
      }
 }
+
+
+
+
+static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
+    std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
+    std::unique_ptr<SchemaInfo> schema(new SchemaInfo());
+
+    std::function<DBMeta *(DBMeta *const)> loadChildren =
+        [&loadChildren, &e_conn](DBMeta *const parent) {
+            auto kids = parent->fetchChildren(e_conn);
+            for (auto it : kids) {
+                loadChildren(it);
+            }
+            return parent;
+        };
+    //load all metadata and then store it in schema
+    loadChildren(schema.get());
+
+    Analysis analysis(std::string("student"),*schema,
+                      std::unique_ptr<AES_KEY>(getKey(std::string("113341234"))),
+                        SECURITY_RATING::SENSITIVE);
+    return schema;
+}
+
+
+
+
+
+static void
+addToReturn(ReturnMeta *const rm, int pos, const OLK &constr,
+            bool has_salt, const std::string &name) {
+
+    const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
+
+    TEST_TextMessageError(test, "ReturnMeta has badly ordered"
+                                " ReturnFields!");
+
+    const int salt_pos = has_salt ? pos + 1 : -1;
+
+    std::pair<int, ReturnField>
+        pair(pos, ReturnField(false, name, constr, salt_pos));
+
+    rm->rfmeta.insert(pair);
+}
+
+static void
+addSaltToReturn(ReturnMeta *const rm, int pos) {
+
+    const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
+    TEST_TextMessageError(test, "ReturnMeta has badly ordered"
+                                " ReturnFields!");
+
+    std::pair<int, ReturnField>
+        pair(pos, ReturnField(true, "", OLK::invalidOLK(), -1));
+    rm->rfmeta.insert(pair);
+}
+
+
+//get returnMeta
+//for each filed, we have a fieldmeta. we can chosse one onion under that field to construct a return meta.
+//in fact, a returnmeta can contain many fields.
+static
+std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vector<transField> &tfds){
+    assert(fms.size()==tfds.size());
+    std::shared_ptr<ReturnMeta> myReturnMeta = std::make_shared<ReturnMeta>();
+    int pos=0;
+    //construct OLK
+    for(auto i=0u;i<tfds.size();i++){
+        OLK curOLK(tfds[i].onions[tfds[i].onionIndex],
+                tfds[i].originalOm[tfds[i].onionIndex]->getSecLevel(),tfds[i].originalFm);
+	addToReturn(myReturnMeta.get(),pos++,curOLK,true,tfds[i].originalFm->getFieldName());
+        addSaltToReturn(myReturnMeta.get(),pos++);
+    }
+    return myReturnMeta;
+}
+
+
+
+
+
+
+struct meta_file{
+    string db,table;
+    int num_of_fields;
+    vector<string> field_types;
+    vector<int> field_lengths;
+    vector<string> field_names;
+    vector<int> choosen_onions;
+
+    void show(){
+        cout<<db<<endl;
+        cout<<table<<endl;
+        cout<<num_of_fields<<endl;
+        for(auto item:field_types){
+            cout<<item<<"\t";
+        }
+        cout<<endl;
+        for(auto item:field_lengths){
+            cout<<item<<"\t";
+        }
+
+	cout<<endl;
+        for(auto item:field_names){
+            cout<<item<<"\t";
+        }
+	cout<<endl;
+        for(auto item:choosen_onions){
+           cout<<item<<"\t";
+        }
+        cout<<endl;
+    }
+};
+
