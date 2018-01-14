@@ -4,7 +4,7 @@
 static void
 test_search(){
     search_priv s("my key");
-    auto cl = s.transform({"hello", "world", "hello", "testing", "test"});
+    auto cl = s.transform({"hexxxxxxxxxxxxxxxxxxxllo", "world", "hello", "testing", "test"});
     throw_c(s.match(cl, s.wordkey("hello")));
     throw_c(!s.match(cl, s.wordkey("Hello")));
     throw_c(s.match(cl, s.wordkey("world")));

@@ -322,7 +322,7 @@ toHex(const std::string  & x) {
 
 std::list<std::string>
 split(const std::string &s, const char * const separators) {
-    std::unique_ptr<char, void (*)(void *)>
+/*    std::unique_ptr<char, void (*)(void *)>
         cp_s(strdup(s.c_str()), &std::free);
     if (!cp_s) {
         throw CryptDBError("insufficient memory!");
@@ -333,6 +333,19 @@ split(const std::string &s, const char * const separators) {
         parts.push_back(std::string(tok));
         tok = strtok(NULL, separators);
     }
+*/
+    std::list<std::string> parts = std::list<std::string>();
+    unsigned int step=8;
+    unsigned int start = 0;
+    unsigned int len = s.size();
+    std::string sub;
+    while((start+step)<=len){
+        sub = s.substr(start,step);
+        start+=step;
+        parts.push_back(sub);
+    }
+    sub = s.substr(start);
+    parts.push_back(sub);
     return parts;
 }
 
