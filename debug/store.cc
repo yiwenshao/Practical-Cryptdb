@@ -1,79 +1,21 @@
 #include "debug/store.hh"
 
-/*for each field, convert the format to transField*/
-static std::vector<transField> getTransField(std::vector<FieldMeta *> pfms){
-    std::vector<transField> res;
-    //for every field
-    for(auto pfm:pfms){
-        transField tf;
-	    tf.originalFm = pfm;
-        for(std::pair<const OnionMetaKey *, OnionMeta *> &ompair:pfm->orderedOnionMetas()){
-            tf.numOfOnions++;
-            tf.fields.push_back((ompair.second)->getAnonOnionName());
-            tf.onions.push_back(ompair.first->getValue());
-            tf.originalOm.push_back(ompair.second);
-        }
-        if(pfm->getHasSalt()){
-            tf.hasSalt=true;
-	        tf.fields.push_back(pfm->getSaltName());
-        }
-        res.push_back(tf);
-    }
-    return res;
-}
-
-
-//query for testing purposes
-static
-std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
-                                     std::string db="tdb",std::string table="student1"){
-    std::string res = "SELECT ";
-    const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
-    //get databaseMeta, search in the map
-    DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
-    const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
-    std::string annotablename = tbm.getAnonTableName();    
-    //then a list of onion names
-    for(auto item:tfds){
-        for(auto index:item.choosenOnions){
-            res += item.fields[index];
-            res += " , ";
-        }
-    	if(item.hasSalt){
-            res += item.originalFm->getSaltName()+" , ";
-        }
-    }
-    res = res.substr(0,res.size()-2);
-    res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
-    return res;
-}
-
-/*
-    only support relative path
-*/
-static bool make_path(string directory){
-    struct stat st;
-    if(directory.size()==0||directory[0]=='/') return false;
-    if(directory.back()=='/') directory.pop_back();
-    int start = 0,next=0;
-    while(stat(directory.c_str(),&st)==-1&&next!=-1){
-        next = directory.find('/',start);
-        if(next!=-1){
-            string sub = directory.substr(0,next);
-            if(stat(sub.c_str(),&st)==-1)
-                mkdir(sub.c_str(),0700);
-            start =  next + 1;
-        }else{
-            mkdir(directory.c_str(),0700);
-        }
-    }
-    return true;
-}
-
-
 static void write_meta(rawMySQLReturnValue& resraw,string db,string table){
     //write metadata
-    FILE * localmeta = NULL;
+//    FILE * localmeta = NULL;
+    metadata_file mf;
+    mf.set_db_table(db,table);
+    mf.set_num_of_fields(resraw.fieldNames.size());
+    std::vector<std::string> temp;
+    for(auto item:resraw.fieldTypes){
+        temp.push_back(std::to_string(static_cast<int>(item)));
+    }
+    mf.set_field_types(temp);
+    mf.set_field_lengths(resraw.lengths);
+    mf.set_field_names(resraw.fieldNames);
+    mf.set_choosen_onions(resraw.choosen_onions);
+    mf.serilize();
+/*
     string prefix = string("data/")+db+"/"+table;
     make_path(prefix);    
     localmeta = fopen((prefix+"/metadata.data").c_str(),"w");
@@ -85,6 +27,7 @@ static void write_meta(rawMySQLReturnValue& resraw,string db,string table){
     fwrite(s.c_str(),1,s.size(),localmeta);
     s = string("num_of_fields:")+to_string(resraw.fieldNames.size())+"\n";
     fwrite(s.c_str(),1,s.size(),localmeta);
+
     s = string("field_types:");
     for(auto item:resraw.fieldTypes){
         s+=std::to_string(item)+=" ";
@@ -98,14 +41,12 @@ static void write_meta(rawMySQLReturnValue& resraw,string db,string table){
     }
     s.back()='\n';
     fwrite(s.c_str(),1,s.size(),localmeta);
-
     s = string("field_names:");
     for(auto item : resraw.fieldNames){
         s+=item+=" ";
     }
     s.back()='\n';
     fwrite(s.c_str(),1,s.size(),localmeta);
-
     s = string("choosen_onions:");
     for(auto item : resraw.choosen_onions){
         s+=to_string(item)+=" ";
@@ -113,6 +54,7 @@ static void write_meta(rawMySQLReturnValue& resraw,string db,string table){
     s.back()='\n';
     fwrite(s.c_str(),1,s.size(),localmeta);
     fclose(localmeta);
+    */
 }
 
 
