@@ -2,70 +2,55 @@
 * 2. plaintext insert query should be able to recover directly
 * 3. should be able to used exsisting data to reduce the computation overhead(to be implemented)
 */
-#include <cstdlib>
-#include <cstdio>
+#include <stdlib.h>
+#include <stdio.h>
 #include <string>
 #include <map>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <stdexcept>
 #include <vector>
-#include <set>
-#include <list>
-#include <algorithm>
-#include <functional>
-#include <cctype>
-#include <locale>
-#include <unistd.h>
-#include <sys/types.h>
-#include <dirent.h>
-
-#include <main/Connect.hh>
 #include <main/rewrite_main.hh>
 #include <main/rewrite_util.hh>
-#include <main/sql_handler.hh>
-#include <main/dml_handler.hh>
-#include <main/ddl_handler.hh>
-#include <main/metadata_tables.hh>
-#include <main/macro_util.hh>
-#include <main/CryptoHandlers.hh>
-
-#include <parser/embedmysql.hh>
-#include <parser/stringify.hh>
-#include <parser/lex_util.hh>
-
-#include <readline/readline.h>
-#include <readline/history.h>
-
-#include <crypto/ecjoin.hh>
-#include <util/errstream.hh>
-#include <util/cryptdb_log.hh>
-#include <util/enum_text.hh>
-#include <util/yield.hpp>
-
-#include<util/timer.hh>
-#include <sstream>
-#include <unistd.h>
-#include <map>
-#include <fstream>
-
-#include<sys/stat.h>
-#include<sys/types.h>
-
-#include <fcntl.h>
-#include <unistd.h>
-#include "big_proxy.hh"
-
-
-
-
 using std::cout;
 using std::cin;
 using std::endl;
 using std::vector;
 using std::string;
 using std::to_string;
+
+class WrapperState {
+    WrapperState(const WrapperState &other);
+    WrapperState &operator=(const WrapperState &rhs);
+    KillZone kill_zone;
+public:
+    std::string last_query;
+    std::string default_db;
+
+    WrapperState() {}
+    ~WrapperState() {}
+    const std::unique_ptr<QueryRewrite> &getQueryRewrite() const {
+        assert(this->qr);
+        return this->qr;
+    }
+    void setQueryRewrite(std::unique_ptr<QueryRewrite> &&in_qr) {
+        this->qr = std::move(in_qr);
+    }
+    void selfKill(KillZone::Where where) {
+        kill_zone.die(where);
+    }
+    void setKillZone(const KillZone &kz) {
+        kill_zone = kz;
+    }
+    
+    std::unique_ptr<ProxyState> ps;
+    std::vector<SchemaInfoRef> schema_info_refs;
+
+private:
+    std::unique_ptr<QueryRewrite> qr;
+};
+
+
 
 static std::string embeddedDir="/t/cryt/shadow";
 
@@ -604,9 +589,6 @@ struct meta_file{
     }
 };
 
-
-
-#include <sstream>
 static meta_file load_meta(string db="tdb", string table="student", string filename="metadata.data"){
     //FILE * meta = NULL;
     //localmeta = fopen(filename.c_str(),"r");
@@ -900,15 +882,15 @@ main(int argc, char* argv[]) {
     if(option=="store"){
         store(db,table);
     }else if(option == "load"){
-        ResType res =  load_files(db,table);
-        rawMySQLReturnValue str;
-        add(str,res);
-        std::vector<string> res_query;
-        construct_insert(str,table,res_query);
+//        ResType res =  load_files(db,table);
+//        rawMySQLReturnValue str;
+//        add(str,res);
+//        std::vector<string> res_query;
+//        construct_insert(str,table,res_query);
 
-        for(auto item:res_query){
-            cout<<item<<endl;
-        }
+//        for(auto item:res_query){
+//            cout<<item<<endl;
+//        }
     }
     free(globalEsp);
     return 0;
