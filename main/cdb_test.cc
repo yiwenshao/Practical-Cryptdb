@@ -200,6 +200,7 @@ bool myRewrite(std::string curQuery,unsigned long long _thread_id,std::string cl
         c_wrapper->setQueryRewrite(std::move(qr));
         }catch(...){
             std::cout<<"rewrite exception!!!"<<std::endl;
+            exit(0);
             return false;
         }
         return true;
@@ -333,6 +334,7 @@ void myNext(std::string client,bool isFirst,ResType inRes) {
         }
     }catch(...){
         std::cout<<"next error"<<std::endl;
+        exit(0);
     }
 }
 
