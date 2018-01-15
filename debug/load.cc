@@ -18,7 +18,6 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vect
     return myReturnMeta;
 }
 
-
 static metadata_file load_meta(string db="tdb", string table="student", string filename="metadata.data"){
     metadata_file mf;
     mf.set_db(db);
@@ -26,8 +25,6 @@ static metadata_file load_meta(string db="tdb", string table="student", string f
     mf.deserialize(filename);
     return mf;
 }
-
-
 
 static void load_num(string filename,vector<string> &res){
     std::ifstream infile(filename);
@@ -89,18 +86,20 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     if(types.size()==1){
         //to be
     }
-
     metadata_file res_meta = load_meta(db,table);
-
     for(unsigned int i=0;i<res_meta.get_choosen_onions().size();i++){
+        //choosen onion for each field
 	res[i].choosenOnions.push_back(res_meta.get_choosen_onions()[i]);
     }
+
     std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
 
     //why do we need this??
     std::string backq = "show databases";
     executeAndGetResultRemote(globalConn,backq);
+
     rawMySQLReturnValue resraw2;
+
     //load fields in the stored file
     vector<vector<string>> res_field = load_table_fields(res_meta);
     resraw2.rowValues = res_field;
@@ -114,22 +113,17 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     return finalresults;
 }
 
-
-
 int
-main(int argc, char* argv[]) {
+main(int argc, char* argv[]){
     init();
     std::string db="tdb",table="student";
-
     globalEsp = (char*)malloc(sizeof(char)*5000);
-
     if(globalEsp==NULL){
         printf("unable to allocate esp\n");
         return 0;
     }
     /*load and decrypt*/
     ResType res =  load_files(db,table);
-
     /*transform*/
     rawMySQLReturnValue str;
     transform_to_rawMySQLReturnValue(str,res);
@@ -141,6 +135,6 @@ main(int argc, char* argv[]) {
     }
     free(globalEsp);
     /*the next step is to construct encrypted insert query*/
-
     return 0;
 }
+

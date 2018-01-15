@@ -1,22 +1,48 @@
 #include "debug/store.hh"
 #include "debug/common.hh"
 
-static void write_meta(rawMySQLReturnValue& resraw,string db,string table){
-    metadata_file mf;
+static void write_meta(rawMySQLReturnValue& resraw,std::vector<transField> &res,string db,string table){
+    metadata_files mf;
     mf.set_db_table(db,table);
-    mf.set_num_of_fields(resraw.fieldNames.size());
-    std::vector<std::string> temp;
-    for(auto item:resraw.fieldTypes){
-        temp.push_back(std::to_string(static_cast<int>(item)));
+
+    vector<vector<int>> selected_field_types;
+    vector<vector<int>> selected_field_lengths;
+    vector<vector<string>> selected_field_names;
+    vector<int> dec_onion_index;
+    vector<string> has_salt;
+    for(auto item:res){
+        vector<int> field_types;
+        vector<int> field_lengths;
+        vector<string> field_names=item.fields;
+        int onion_index = item.onionIndex;
+        for(auto tp:resraw.fieldTypes)
+            field_types.push_back(static_cast<int>(tp));
+        field_lengths = resraw.lengths;
+        if(item.hasSalt){
+            has_salt.push_back("true");
+        }else has_salt.push_back("false");
+
+        selected_field_types.push_back(field_types);
+        selected_field_lengths.push_back(field_lengths);
+        selected_field_names.push_back(field_names);
+        dec_onion_index.push_back(onion_index);               
     }
-    mf.set_field_types(temp);
-    mf.set_field_lengths(resraw.lengths);
-    mf.set_field_names(resraw.fieldNames);
-    mf.set_choosen_onions(resraw.choosen_onions);
-    mf.serilize();
+    mf.set_selected_field_types(selected_field_types);
+    mf.set_selected_field_lengths(selected_field_lengths);
+    mf.set_selected_field_names(selected_field_names);
+    mf.set_dec_onion_index(dec_onion_index);
+    mf.set_has_salt(has_salt);
+//    std::vector<std::string> temp;
+//    for(auto item:resraw.fieldTypes){
+//        temp.push_back(std::to_string(static_cast<int>(item)));
+//    }
+//    mf.set_field_types(temp);
+//    mf.set_field_lengths(resraw.lengths);
+//    mf.set_field_names(resraw.fieldNames);
+//    mf.set_choosen_onions(resraw.choosen_onions);
+//    mf.serilize();
+    mf.serialize();
 }
-
-
 static void write_row_data(rawMySQLReturnValue& resraw,string db, string table){
     vector<FILE*> data_files;
     string prefix = string("data/")+db+"/"+table+"/";
@@ -38,36 +64,28 @@ static void write_row_data(rawMySQLReturnValue& resraw,string db, string table){
         fclose(item);
     }
 }
-
-
 static
-void write_raw_data_to_files(rawMySQLReturnValue& resraw,string db,string table){
+void write_raw_data_to_files(rawMySQLReturnValue& resraw,std::vector<transField> &res ,string db,string table){
     //write metafiles
-    write_meta(resraw,db,table);
+    write_meta(resraw,res,db,table);
     //write datafiles
     write_row_data(resraw,db,table);
 }
-
 static void store(std::string db, std::string table){
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
     //get all the fields in the tables
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
     //transform the field so that selected onions can be used
     std::vector<transField> res = getTransField(fms);
-
-    for(auto &item:res){
-        item.choosenOnions.push_back(0);
-    }
     //generate the backup query and then fetch the tuples
-//    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-    std::string backq = getTestQuery(*schema,res,db,table);
-    rawMySQLReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
-
+    std::string backup_query = getTestQuery(*schema,res,db,table);
+    rawMySQLReturnValue resraw =  executeAndGetResultRemote(globalConn,backup_query);
     for(auto &item:res){
-        resraw.choosen_onions.push_back(item.choosenOnions[0]);
+        (void)item;
+        resraw.choosen_onions.push_back(0);
     }
     //write the tuples into files
-    write_raw_data_to_files(resraw,db,table);
+    write_raw_data_to_files(resraw,res,db,table);
 }
 
 int

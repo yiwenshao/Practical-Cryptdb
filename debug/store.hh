@@ -114,7 +114,7 @@ struct transField{
     //onions
     std::vector<std::string> fields;
     std::vector<onion> onions;
-    std::vector<OnionMeta*>originalOm;
+//    std::vector<OnionMeta*>originalOm;
 };
 
 
@@ -245,16 +245,14 @@ static std::vector<transField> getTransField(std::vector<FieldMeta *> pfms){
     //for every field
     for(auto pfm:pfms){
         transField tf;
-	    tf.originalFm = pfm;
+	tf.originalFm = pfm;
         for(std::pair<const OnionMetaKey *, OnionMeta *> &ompair:pfm->orderedOnionMetas()){
-            tf.numOfOnions++;
             tf.fields.push_back((ompair.second)->getAnonOnionName());
             tf.onions.push_back(ompair.first->getValue());
-            tf.originalOm.push_back(ompair.second);
         }
         if(pfm->getHasSalt()){
             tf.hasSalt=true;
-	        tf.fields.push_back(pfm->getSaltName());
+	    tf.fields.push_back(pfm->getSaltName());
         }
         res.push_back(tf);
     }
@@ -271,7 +269,8 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
     //get databaseMeta, search in the map
     DatabaseMeta * dbm = schema.getChild(*dbmeta_key);
     const TableMeta & tbm = *((*dbm).getChild(IdentityMetaKey(table)));
-    std::string annotablename = tbm.getAnonTableName();    
+    std::string annotablename = tbm.getAnonTableName();
+
     //then a list of onion names
     for(auto item:tfds){
         for(auto index:item.choosenOnions){
@@ -282,6 +281,7 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
             res += item.originalFm->getSaltName()+" , ";
         }
     }
+
     res = res.substr(0,res.size()-2);
     res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
     return res;
