@@ -1,4 +1,5 @@
 #include "debug/store.hh"
+#include "debug/common.hh"
 
 static void write_meta(rawMySQLReturnValue& resraw,string db,string table){
     //write metadata
