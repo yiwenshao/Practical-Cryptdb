@@ -109,56 +109,7 @@ void rawMySQLReturnValue::show(){
     cout<<endl;
 }
 
-
-//must be static, or we get "no previous declaration"
-//execute the query and get the rawReturnVale, this struct can be copied.
-static 
-rawMySQLReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
-    std::unique_ptr<DBResult> dbres;
-    curConn->execute(query, &dbres);
-    rawMySQLReturnValue myRaw;
-    
-    if(dbres==nullptr||dbres->n==NULL){
-        std::cout<<"no results"<<std::endl;
-        return myRaw;
-    }
-
-    int num = mysql_num_rows(dbres->n);
-    
-    int numOfFields = mysql_num_fields(dbres->n);
-
-    MYSQL_FIELD *field;
-    MYSQL_ROW row;
-
-    if(num!=0){
-        while( (row = mysql_fetch_row(dbres->n)) ){
-            //what's the difference between fieldlen
-	    unsigned long * fieldLen = mysql_fetch_lengths(dbres->n);
-            std::vector<std::string> curRow;
-            for(int i=0;i<numOfFields;i++){
-                if (i == 0) {
-                    while( (field = mysql_fetch_field(dbres->n)) ) {
-                        myRaw.fieldNames.push_back(std::string(field->name));
-                        myRaw.fieldTypes.push_back(field->type);
-                        //myRaw.lengths.push_back(field->length);
-                        //myRaw.lengths.push_back(fieldLen[i]);
-                        myRaw.lengths.push_back(field->max_length);
-                        myRaw.maxlengths.push_back(field->max_length);
-                        //cout<<field->length<<"::"<<field->max_length<<endl;
-                    }
-                }
-                if(row[i]==NULL) curRow.push_back("NULL");
-                else curRow.push_back(std::string(row[i],fieldLen[i]));
-            }
-            myRaw.rowValues.push_back(curRow);
-        }
-    }
-    return myRaw;
-}
-
-
 //helper function for transforming the rawMySQLReturnValue
-
 static Item_null *
 make_null(const std::string &name = ""){
     char *const n = current_thd->strdup(name.c_str());

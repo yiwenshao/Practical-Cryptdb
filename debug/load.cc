@@ -102,32 +102,25 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
         //to be
     }
     metadata_files res_meta = load_meta(db,table);
-
-//    for(unsigned int i=0;i<res_meta.dec_onion_index.size();i++){
-        //choosen onion for each field
-//	res[i].choosenOnions.push_back(res_meta.get_choosen_onions()[i]);
-//    }
     std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
 
     //why do we need this??
-    std::string backq = "show databases";
-    executeAndGetResultRemote(globalConn,backq);
+    create_embedded_thd(0);
 
-    rawMySQLReturnValue resraw2;
+    rawMySQLReturnValue resraw;
 
     //load fields in the stored file
     vector<vector<string>> res_field = load_table_fields(res_meta);
-    resraw2.rowValues = res_field;
+    resraw.rowValues = res_field;
     auto field_names = flat_vec(res_meta.selected_field_names);
     auto field_types = flat_vec(res_meta.selected_field_types);
     auto field_lengths = flat_vec(res_meta.selected_field_lengths);
     
-    resraw2.fieldNames = field_names;
-//    resraw2.choosen_onions = ;
+    resraw.fieldNames = field_names;
     for(unsigned int i=0;i<field_types.size();++i) {
-	resraw2.fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
+	resraw.fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
     }
-    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
+    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
     auto finalresults = decryptResults(rawtorestype,*rm);
     return finalresults;
 }
@@ -135,6 +128,7 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
 int
 main(int argc, char* argv[]){
     init();
+    create_embedded_thd(0);
     std::string db="tdb",table="student";
     globalEsp = (char*)malloc(sizeof(char)*5000);
     if(globalEsp==NULL){
