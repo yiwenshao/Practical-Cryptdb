@@ -5,7 +5,7 @@ class metadata_file{
     vector<string> field_types;
     vector<int> field_lengths;
     vector<string> field_names;
-    vector<int> choosen_onions;
+    vector<int> choosen_onions;/*choosen onion for decryption, only one per field.The value could be 0,1,2,3...*/
 public:
     void set_db(std::string idb){db=idb;}
     std::string get_db(){return db;}

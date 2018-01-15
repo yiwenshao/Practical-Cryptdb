@@ -2,8 +2,6 @@
 #include "debug/common.hh"
 
 static void write_meta(rawMySQLReturnValue& resraw,string db,string table){
-    //write metadata
-//    FILE * localmeta = NULL;
     metadata_file mf;
     mf.set_db_table(db,table);
     mf.set_num_of_fields(resraw.fieldNames.size());
@@ -16,46 +14,6 @@ static void write_meta(rawMySQLReturnValue& resraw,string db,string table){
     mf.set_field_names(resraw.fieldNames);
     mf.set_choosen_onions(resraw.choosen_onions);
     mf.serilize();
-/*
-    string prefix = string("data/")+db+"/"+table;
-    make_path(prefix);    
-    localmeta = fopen((prefix+"/metadata.data").c_str(),"w");
-    string s = string("database:")+db;
-    s+="\n";
-    fwrite(s.c_str(),1,s.size(),localmeta);
-    s = string("table:")+table;
-    s+="\n";
-    fwrite(s.c_str(),1,s.size(),localmeta);
-    s = string("num_of_fields:")+to_string(resraw.fieldNames.size())+"\n";
-    fwrite(s.c_str(),1,s.size(),localmeta);
-
-    s = string("field_types:");
-    for(auto item:resraw.fieldTypes){
-        s+=std::to_string(item)+=" ";
-    }
-    s.back()='\n';
-    fwrite(s.c_str(),1,s.size(),localmeta);
-
-    s = string("field_lengths:");
-    for(auto item : resraw.lengths){
-        s+=to_string(item)+=" ";
-    }
-    s.back()='\n';
-    fwrite(s.c_str(),1,s.size(),localmeta);
-    s = string("field_names:");
-    for(auto item : resraw.fieldNames){
-        s+=item+=" ";
-    }
-    s.back()='\n';
-    fwrite(s.c_str(),1,s.size(),localmeta);
-    s = string("choosen_onions:");
-    for(auto item : resraw.choosen_onions){
-        s+=to_string(item)+=" ";
-    }
-    s.back()='\n';
-    fwrite(s.c_str(),1,s.size(),localmeta);
-    fclose(localmeta);
-    */
 }
 
 
@@ -101,7 +59,7 @@ static void store(std::string db, std::string table){
         item.choosenOnions.push_back(0);
     }
     //generate the backup query and then fetch the tuples
-    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+//    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
     std::string backq = getTestQuery(*schema,res,db,table);
     rawMySQLReturnValue resraw =  executeAndGetResultRemote(globalConn,backq);
 
@@ -113,7 +71,7 @@ static void store(std::string db, std::string table){
 }
 
 int
-main(int argc, char* argv[]) {
+main(int argc, char* argv[]){
     init();
     std::string db="tdb",table="student";
     store(db,table);
