@@ -1,6 +1,8 @@
 #include "debug/store.hh"
 #include "debug/common.hh"
 
+
+
 static void write_meta(rawMySQLReturnValue& resraw,std::vector<transField> &res,string db,string table){
     metadata_files mf;
     mf.set_db_table(db,table);
@@ -32,15 +34,6 @@ static void write_meta(rawMySQLReturnValue& resraw,std::vector<transField> &res,
     mf.set_selected_field_names(selected_field_names);
     mf.set_dec_onion_index(dec_onion_index);
     mf.set_has_salt(has_salt);
-//    std::vector<std::string> temp;
-//    for(auto item:resraw.fieldTypes){
-//        temp.push_back(std::to_string(static_cast<int>(item)));
-//    }
-//    mf.set_field_types(temp);
-//    mf.set_field_lengths(resraw.lengths);
-//    mf.set_field_names(resraw.fieldNames);
-//    mf.set_choosen_onions(resraw.choosen_onions);
-//    mf.serilize();
     mf.serialize();
 }
 static void write_row_data(rawMySQLReturnValue& resraw,string db, string table){
@@ -77,13 +70,13 @@ static void store(std::string db, std::string table){
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
     //transform the field so that selected onions can be used
     std::vector<transField> res = getTransField(fms);
+    for(auto &item:res){
+        (void)item;
+        item.choosenOnions.push_back(0);
+    }
     //generate the backup query and then fetch the tuples
     std::string backup_query = getTestQuery(*schema,res,db,table);
     rawMySQLReturnValue resraw =  executeAndGetResultRemote(globalConn,backup_query);
-    for(auto &item:res){
-        (void)item;
-        resraw.choosen_onions.push_back(0);
-    }
     //write the tuples into files
     write_raw_data_to_files(resraw,res,db,table);
 }

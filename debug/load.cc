@@ -18,8 +18,8 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms, std::vect
     return myReturnMeta;
 }
 
-static metadata_file load_meta(string db="tdb", string table="student", string filename="metadata.data"){
-    metadata_file mf;
+static metadata_files load_meta(string db="tdb", string table="student", string filename="metadata.data"){
+    metadata_files mf;
     mf.set_db(db);
     mf.set_table(table);
     mf.deserialize(filename);
@@ -44,23 +44,38 @@ static void load_string(string filename, vector<string> &res,unsigned long lengt
     close(fd);
 }
 
-static vector<vector<string>> load_table_fields(metadata_file & input) {
+template<class T>
+vector<T> flat_vec(vector<vector<T>> &input){
+    vector<T> res;
+    for(auto item:input){
+        for(auto i:item){
+            res.push_back(i);
+        }
+    }
+    return res;
+}
+
+static vector<vector<string>> load_table_fields(metadata_files & input) {
     string db = input.get_db();
     string table = input.get_table();
     vector<vector<string>> res;
     string prefix = string("data/")+db+"/"+table+"/";
 
     vector<string> datafiles;
-    for(auto item:input.get_field_names()){
+    auto field_names = flat_vec(input.selected_field_names);
+    auto field_types = flat_vec(input.selected_field_types);
+    auto field_lengths = flat_vec(input.selected_field_lengths);
+
+    for(auto item:field_names){
         datafiles.push_back(prefix+item);
     }
 
-    for(unsigned int i=0u;i<input.get_field_names().size();i++){
+    for(unsigned int i=0u;i<field_names.size();i++){
        vector<string> column;
-       if(IS_NUM(std::stoi(input.get_field_types()[i]))){
+       if(IS_NUM(field_types[i])){
            load_num(datafiles[i],column);
        }else{
-           load_string(datafiles[i],column,input.get_field_lengths()[i]);
+           load_string(datafiles[i],column,field_lengths[i]);
        }
        for(unsigned int j=0u; j<column.size(); j++){
            if(j>=res.size()){
@@ -86,12 +101,12 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     if(types.size()==1){
         //to be
     }
-    metadata_file res_meta = load_meta(db,table);
-    for(unsigned int i=0;i<res_meta.get_choosen_onions().size();i++){
-        //choosen onion for each field
-	res[i].choosenOnions.push_back(res_meta.get_choosen_onions()[i]);
-    }
+    metadata_files res_meta = load_meta(db,table);
 
+//    for(unsigned int i=0;i<res_meta.dec_onion_index.size();i++){
+        //choosen onion for each field
+//	res[i].choosenOnions.push_back(res_meta.get_choosen_onions()[i]);
+//    }
     std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
 
     //why do we need this??
@@ -103,10 +118,14 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     //load fields in the stored file
     vector<vector<string>> res_field = load_table_fields(res_meta);
     resraw2.rowValues = res_field;
-    resraw2.fieldNames = res_meta.get_field_names();
-    resraw2.choosen_onions = res_meta.get_choosen_onions();
-    for(unsigned int i=0;i<res_meta.get_field_types().size();++i) {
-	resraw2.fieldTypes.push_back(static_cast<enum_field_types>(std::stoi(res_meta.get_field_types()[i])));
+    auto field_names = flat_vec(res_meta.selected_field_names);
+    auto field_types = flat_vec(res_meta.selected_field_types);
+    auto field_lengths = flat_vec(res_meta.selected_field_lengths);
+    
+    resraw2.fieldNames = field_names;
+//    resraw2.choosen_onions = ;
+    for(unsigned int i=0;i<field_types.size();++i) {
+	resraw2.fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
     }
     ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw2);
     auto finalresults = decryptResults(rawtorestype,*rm);

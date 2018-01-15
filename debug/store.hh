@@ -53,6 +53,20 @@ private:
     std::unique_ptr<QueryRewrite> qr;
 };
 
+//representation of one field.
+struct transField{
+    bool hasSalt;
+    FieldMeta *originalFm;
+    vector<int> choosenOnions;
+    //used to construct return meta
+    int onionIndex = 0;
+    int numOfOnions=0;
+    //onions
+    std::vector<std::string> fields;
+    std::vector<onion> onions;
+};
+
+
 static std::string embeddedDir="/t/cryt/shadow";
 //global map, for each client, we have one WrapperState which contains ProxyState.
 static std::map<std::string, WrapperState*> clients;
@@ -103,19 +117,7 @@ void rawMySQLReturnValue::show(){
     cout<<endl;
 }
 
-//representation of one field.
-struct transField{
-    bool hasSalt;
-    FieldMeta *originalFm;
-    vector<int> choosenOnions;
-    //used to construct return meta
-    int onionIndex = 0;
-    int numOfOnions=0;
-    //onions
-    std::vector<std::string> fields;
-    std::vector<onion> onions;
-//    std::vector<OnionMeta*>originalOm;
-};
+
 
 
 static void init(){

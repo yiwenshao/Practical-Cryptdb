@@ -1,11 +1,12 @@
 #pragma once
-class metadata_file{
+
+/*class metadata_file{
     string db,table;
     int num_of_fields;
     vector<string> field_types;
     vector<int> field_lengths;
     vector<string> field_names;
-    vector<int> choosen_onions;/*choosen onion for decryption, only one per field.The value could be 0,1,2,3...*/
+    vector<int> choosen_onions;
 public:
     void set_db(std::string idb){db=idb;}
     std::string get_db(){return db;}
@@ -177,18 +178,21 @@ void metadata_file::show(){
     }
     cout<<endl;
 }
+*/
+
 
 
 /*******************************************************************************************************************/
 
 class metadata_files{
+public:
     string db,table;
     /*selected fields*/
     vector<vector<int>> selected_field_types;
     vector<vector<int>> selected_field_lengths;
     vector<vector<string>> selected_field_names;
     vector<string> has_salt;
-    vector<int> dec_onion_index;/*should be 0,1,2,3...*/    
+    vector<int> dec_onion_index;/*should be 0,1,2,3...*/
     std::string serialize_vec_int(std::string s,vector<int> vec_int){
         s+=":";
         for(auto item:vec_int){
@@ -266,7 +270,7 @@ public:
 
 void metadata_files::serialize(){
     FILE * localmeta = NULL;
-    string prefix = string("adata/")+db+"/"+table;
+    string prefix = string("data/")+db+"/"+table;
     make_path(prefix);
     localmeta = fopen((prefix+"/metadata.data").c_str(),"w");
 
@@ -304,7 +308,7 @@ void metadata_files::serialize(){
 }
 
 void metadata_files::deserialize(std::string filename){
-    filename = string("adata/")+db+"/"+table+"/"+filename;
+    filename = string("data/")+db+"/"+table+"/"+filename;
     std::ifstream infile(filename);
     string line;
     while(std::getline(infile,line)){

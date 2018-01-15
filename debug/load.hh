@@ -259,6 +259,7 @@ static std::vector<transField> getTransField(std::vector<FieldMeta *> pfms){
             tf.numOfOnions++;
             tf.fields.push_back((ompair.second)->getAnonOnionName());
             tf.onions.push_back(ompair.first->getValue());
+            tf.originalOm.push_back(ompair.second);
         }
         if(pfm->getHasSalt()){
             tf.hasSalt=true;
