@@ -62,6 +62,7 @@ class DBResult {
     vector<enum_field_types> getTypes(){return types;}
     vector<string> getTypesString(){return typesString;}
     vector<string> getFields(){return fields;}
+    vector<vector<int>> getLengths(){return lengths;}
     ~DBResult();
  private:
     const uint64_t affected_rows;
