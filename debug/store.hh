@@ -60,7 +60,6 @@ struct transField{
     vector<int> choosenOnions;
     //used to construct return meta
     int onionIndex = 0;
-    int numOfOnions=0;
     //onions
     std::vector<std::string> fields;
     std::vector<onion> onions;
@@ -192,11 +191,6 @@ rawMySQLReturnValue executeAndGetResultRemote(Connect * curConn,std::string quer
     return myRaw;
 }
 
-
-
-
-
-
 //first step of back
 static 
 std::vector<FieldMeta *> 
@@ -216,9 +210,6 @@ getFieldMeta(SchemaInfo &schema,
 	 return std::vector<FieldMeta *>();
      }
 }
-
-
-
 
 static std::unique_ptr<SchemaInfo> myLoadSchemaInfo() {
     std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
@@ -283,7 +274,6 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<transField> &tfds,
             res += item.originalFm->getSaltName()+" , ";
         }
     }
-
     res = res.substr(0,res.size()-2);
     res = res + "FROM `"+db+std::string("`.`")+annotablename+"`";
     return res;

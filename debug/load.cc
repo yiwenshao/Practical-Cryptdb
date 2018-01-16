@@ -54,18 +54,62 @@ vector<T> flat_vec(vector<vector<T>> &input){
     }
     return res;
 }
+struct batch{
+    vector<string> field_names;
+    vector<int> field_types;
+    vector<int> field_lengths;
+};
 
-static vector<vector<string>> load_table_fields(metadata_files & input) {
+static
+batch get_batch(metadata_files & input,std::vector<transField> &tfms){
+    vector<vector<int>> selected_field_types = input.get_selected_field_types();
+    vector<vector<int>> selected_field_lengths = input.get_selected_field_lengths();
+    vector<vector<string>> selected_field_names = input.get_selected_field_names();
+    vector<int> dec_onion_index = input.get_dec_onion_index();
+    vector<string> has_salt = input.get_has_salt();
+   
+    vector<string> field_names;
+    vector<int> field_types;
+    vector<int> field_lengths;
+
+    for(auto i=0u;i<tfms.size();i++){
+         int index = dec_onion_index[i];
+         string dec_field_name = tfms[i].fields[index];
+         auto f =  find(selected_field_names[i].begin(),selected_field_names[i].end(),dec_field_name);
+         assert(f!=selected_field_names[i].end());
+         int j = f - selected_field_names[i].begin();
+         if(has_salt[i]==string("true")){
+             field_names.push_back(selected_field_names[i][j]);
+             field_types.push_back(selected_field_types[i][j]);
+             field_lengths.push_back(selected_field_lengths[i][j]);
+
+             field_names.push_back(selected_field_names[i].back());
+             field_types.push_back(selected_field_types[i].back());
+             field_lengths.push_back(selected_field_lengths[i].back());             
+         }else{
+             assert(1==2);
+         }
+    }
+    batch bt;
+    bt.field_names = field_names;
+    bt.field_types = field_types;
+    bt.field_lengths = field_lengths;
+    return bt;
+}
+
+#include <algorithm>
+static vector<vector<string>> load_table_fields(metadata_files & input,std::vector<transField> &tfms) {
     string db = input.get_db();
     string table = input.get_table();
     vector<vector<string>> res;
     string prefix = string("data/")+db+"/"+table+"/";
 
-    vector<string> datafiles;
-    auto field_names = flat_vec(input.selected_field_names);
-    auto field_types = flat_vec(input.selected_field_types);
-    auto field_lengths = flat_vec(input.selected_field_lengths);
-
+    auto bt = get_batch(input,tfms);
+    vector<string> field_names = bt.field_names;
+    vector<int> field_types = bt.field_types;
+    vector<int> field_lengths = bt.field_lengths;
+ 
+    vector<string> datafiles;  
     for(auto item:field_names){
         datafiles.push_back(prefix+item);
     }
@@ -87,37 +131,32 @@ static vector<vector<string>> load_table_fields(metadata_files & input) {
     return res;
 }
 
-
 static ResType load_files(std::string db="tdb", std::string table="student"){
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo();
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
     auto res = getTransField(fms);
-
     std::vector<enum_field_types> types;//Added
-    for(auto item:fms){
-        types.push_back(item->getSqlType());
-    }//Add new field form FieldMeta
-    if(types.size()==1){
-        //to be
-    }
     metadata_files res_meta = load_meta(db,table);
     std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
-
     //why do we need this??
     create_embedded_thd(0);
-
     rawMySQLReturnValue resraw;
-
     //load fields in the stored file
-    vector<vector<string>> res_field = load_table_fields(res_meta);
+    vector<vector<string>> res_field = load_table_fields(res_meta,res);
     resraw.rowValues = res_field;
-    auto field_names = flat_vec(res_meta.selected_field_names);
-    auto field_types = flat_vec(res_meta.selected_field_types);
-    auto field_lengths = flat_vec(res_meta.selected_field_lengths);
-    
+
+//    auto field_names = flat_vec(res_meta.selected_field_names);
+//    auto field_types = flat_vec(res_meta.selected_field_types);
+//    auto field_lengths = flat_vec(res_meta.selected_field_lengths);
+
+    auto bt = get_batch(res_meta,res);
+    vector<string> field_names = bt.field_names;
+    vector<int> field_types = bt.field_types;
+    vector<int> field_lengths = bt.field_lengths;
+
     resraw.fieldNames = field_names;
-    for(unsigned int i=0;i<field_types.size();++i) {
+    for(unsigned int i=0;i<field_types.size();++i){
 	resraw.fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
     }
     ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);

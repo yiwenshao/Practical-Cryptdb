@@ -131,9 +131,8 @@ static
 ResType MygetResTypeFromLuaTable(bool isNULL,rawMySQLReturnValue *inRow = NULL,int in_last_insert_id = 0){
     std::vector<std::string> names;
     std::vector<enum_field_types> types;
-    std::vector<std::vector<Item *> > rows;
-
-    //return NULL restype 
+    std::vector<std::vector<Item *>> rows;
+    //return NULL restype
     if(isNULL){
         return ResType(true,0,0,std::move(names),
                       std::move(types),std::move(rows));
@@ -151,9 +150,7 @@ ResType MygetResTypeFromLuaTable(bool isNULL,rawMySQLReturnValue *inRow = NULL,i
             }
             rows.push_back(curTempRow);
         }
-        return ResType(true, 0 ,
-                               in_last_insert_id, std::move(names),
-                                   std::move(types), std::move(rows));
+        return ResType(true,0,in_last_insert_id,std::move(names),std::move(types),std::move(rows));
     }
 }
 
@@ -323,17 +320,12 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
             dec_names.push_back(rf.fieldCalled());
         }
     }
-
-
     const unsigned int real_cols = dec_names.size();
-
     std::vector<std::vector<Item *> > dec_rows(rows);
-
     //real cols depends on plain text names.
     for (unsigned int i = 0; i < rows; i++) {
         dec_rows[i] = std::vector<Item *>(real_cols);
     }
-
     //
     unsigned int col_index = 0;
     for (unsigned int c = 0; c < cols; c++) {
@@ -341,16 +333,13 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
         if (rf.getIsSalt()) {
             continue;
         }
-
         //the key is in fieldMeta
         FieldMeta *const fm = rf.getOLK().key;
-
         for (unsigned int r = 0; r < rows; r++) {
 	    //
             if (!fm || dbres.rows[r][c]->is_null()) {
                 dec_rows[r][col_index] = dbres.rows[r][c];
             } else {
-
                 uint64_t salt = 0;
                 const int salt_pos = rf.getSaltPosition();
                 //read salt from remote datab for descrypting.
@@ -360,7 +349,6 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
                     assert_s(!salt_item->null_value, "salt item is null");
                     salt = salt_item->value;
                 }
-
                  //specify fieldMeta, onion, and salt should be able to decrpyt
                 //peel onion
                 dec_rows[r][col_index] =
@@ -369,53 +357,16 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
         }
         col_index++;
     }
-
     std::vector<enum_field_types> types;
-
     for(auto item:dec_rows[0]){
         types.push_back(item->field_type());
     }
-
     //resType is used befor and after descrypting.
     return ResType(dbres.ok, dbres.affected_rows, dbres.insert_id,
                    std::move(dec_names),
                    std::vector<enum_field_types>(types),//different from previous version
                    std::move(dec_rows));
 }
-
-
-struct meta_file{
-    string db,table;
-    int num_of_fields;
-    vector<string> field_types;
-    vector<int> field_lengths;
-    vector<string> field_names;
-    vector<int> choosen_onions;
-
-    void show(){
-        cout<<db<<endl;
-        cout<<table<<endl;
-        cout<<num_of_fields<<endl;
-        for(auto item:field_types){
-            cout<<item<<"\t";
-        }
-        cout<<endl;
-        for(auto item:field_lengths){
-            cout<<item<<"\t";
-        }
-
-	cout<<endl;
-        for(auto item:field_names){
-            cout<<item<<"\t";
-        }
-	cout<<endl;
-        for(auto item:choosen_onions){
-           cout<<item<<"\t";
-        }
-        cout<<endl;
-    }
-};
-
 
 static void init(){
     std::string client="192.168.1.1:1234";
@@ -464,11 +415,8 @@ static void construct_insert(rawMySQLReturnValue & str,std::string table,std::ve
         cur+="(";        
         for(unsigned int j=0u;j<str.rowValues[i].size();j++){
             if(IS_NUM(str.fieldTypes[j])) {
-//                cout<<str.fieldTypes[j]<<endl;
                 cur+=str.rowValues[i][j]+=",";
-//                cout<<"isnum"<<endl;
             }else{
-                //cur+=string("\"")+=str.rowValues[i][j]+="\",";
                 int len = str.rowValues[i][j].size();
                 mysql_real_escape_string(globalConn->get_conn(),globalEsp,
                     str.rowValues[i][j].c_str(),len);

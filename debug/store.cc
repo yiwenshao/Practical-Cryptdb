@@ -1,25 +1,41 @@
 #include "debug/store.hh"
 #include "debug/common.hh"
-
-
-
 static void write_meta(rawMySQLReturnValue& resraw,std::vector<transField> &res,string db,string table){
     metadata_files mf;
     mf.set_db_table(db,table);
-
     vector<vector<int>> selected_field_types;
     vector<vector<int>> selected_field_lengths;
     vector<vector<string>> selected_field_names;
+    vector<vector<int>> selected_onion_index;
     vector<int> dec_onion_index;
     vector<string> has_salt;
+
+    unsigned int type_index=0u,length_index=0u;
+
     for(auto item:res){
         vector<int> field_types;
         vector<int> field_lengths;
-        vector<string> field_names=item.fields;
+        
+        vector<string> field_names;
+        //only choosen fields
+        for(auto i:item.choosenOnions){
+            field_names.push_back(item.fields[i]);
+        }
+        if(item.hasSalt){
+            field_names.push_back(item.fields.back());
+        }
+
         int onion_index = item.onionIndex;
-        for(auto tp:resraw.fieldTypes)
-            field_types.push_back(static_cast<int>(tp));
-        field_lengths = resraw.lengths;
+
+        for(unsigned int i=0u;i<field_names.size();i++){
+            field_types.push_back(static_cast<int>(resraw.fieldTypes[type_index]));
+            type_index++;
+        }
+//        field_lengths = resraw.lengths;
+        for(unsigned int i=0u;i<field_names.size();i++){
+            field_lengths.push_back(resraw.lengths[length_index]);
+            length_index++;
+        }
         if(item.hasSalt){
             has_salt.push_back("true");
         }else has_salt.push_back("false");
@@ -27,7 +43,7 @@ static void write_meta(rawMySQLReturnValue& resraw,std::vector<transField> &res,
         selected_field_types.push_back(field_types);
         selected_field_lengths.push_back(field_lengths);
         selected_field_names.push_back(field_names);
-        dec_onion_index.push_back(onion_index);               
+        dec_onion_index.push_back(onion_index);
     }
     mf.set_selected_field_types(selected_field_types);
     mf.set_selected_field_lengths(selected_field_lengths);
@@ -70,6 +86,7 @@ static void store(std::string db, std::string table){
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
     //transform the field so that selected onions can be used
     std::vector<transField> res = getTransField(fms);
+
     for(auto &item:res){
         (void)item;
         item.choosenOnions.push_back(0);
@@ -80,7 +97,6 @@ static void store(std::string db, std::string table){
     //write the tuples into files
     write_raw_data_to_files(resraw,res,db,table);
 }
-
 int
 main(int argc, char* argv[]){
     init();
