@@ -4,7 +4,7 @@ function generate_insert_int(){
     count=$3
     for((i=1;i<$count;i++))do
         res=$head
-        for((j=2;j<$pipe;j++))do
+        for((j=1;j<$pipe;j++))do
             res="${res}($RANDOM),"
         done
         res="${res}($RANDOM);"
