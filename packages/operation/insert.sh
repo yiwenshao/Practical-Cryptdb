@@ -1,7 +1,7 @@
 dir="~/Insert/"
 cur_dir=`pwd`
 cdb_test_dir="../../"
-target_db="tpcc1000"
+target_db="micro_db"
 
 cd ${cdb_test_dir}
 
@@ -15,6 +15,6 @@ for data in ${arrayfiles[@]}
 do
     ss="./obj/main/cdb_test ${target_db} < $data"
     eval $ss
-#    echo $ss
+    echo $ss
 done
 
