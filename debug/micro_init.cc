@@ -11,7 +11,6 @@ main(int argc,char ** argv) {
     string length(argv[1]);
 
     std::vector<string> create{
-        "drop database if exists micro_db;",
         "create database micro_db;",
         "use micro_db;",
         "create table int_table(id integer);",
