@@ -2,7 +2,7 @@ function generate_insert_int(){
     head=$1
     pipe=$2
     count=$3
-    for((i=1;i<$count;i++))do
+    for((i=1;i<=$count;i++))do
         res=$head
         for((j=1;j<$pipe;j++))do
             res="${res}($RANDOM),"
@@ -14,4 +14,4 @@ function generate_insert_int(){
 }
 
 h="INSERT INTO int_table VALUES "
-generate_insert_int "$h" 10 10
+generate_insert_int "$h" 100 10000
