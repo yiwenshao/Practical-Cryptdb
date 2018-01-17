@@ -36,13 +36,17 @@ void parseResType(const ResType &rd) {
 
 static void sp_next_second(std::string db, std::string query, QueryRewrite *qr,ResType inRes){
     ps->safeCreateEmbeddedTHD();
-    const ResType &res = inRes;
+    const ResType &resin = inRes;
     try{
         //AbstractQueryExecutor::ResultType::RESULTS
         NextParams nparams(*ps,db,query);
-        const auto &new_results = qr->executor->next(res, nparams);
+        nparams.ps.getSchemaCache().updateStaleness(nparams.ps.getEConn(),false);
+        
+//        const auto &new_results = qr->executor->next(res, nparams);
         //const auto &result_type = new_results.first;
-        const auto &res = new_results.second->extract<ResType>();
+//        const auto &res = new_results.second->extract<ResType>();
+
+        const auto &res = decryptResults(resin,((DMLQueryExecutor*)(qr->executor).get())->getReturnMeta());
         parseResType(res);
     }catch(...){
         std::cout<<"second next error"<<std::endl;
@@ -51,15 +55,18 @@ static void sp_next_second(std::string db, std::string query, QueryRewrite *qr,R
 
 static void sp_next_first(std::string db, std::string query, QueryRewrite *qr,ResType inRes){
     ps->safeCreateEmbeddedTHD();
-    const ResType &res = inRes;
+//    const ResType &res = inRes;
     try{
-        NextParams nparams(*ps,db,query);
-        const auto &new_results = qr->executor->next(res, nparams);
-//        const auto &result_type = new_results.first;
         //AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN
-        const auto &output =
-            std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
-        const auto &next_query = output.second;
+        NextParams nparams(*ps,db,query);
+
+        nparams.ps.getSchemaCache().updateStaleness(nparams.ps.getEConn(),false);
+        const std::string next_query = ((DMLQueryExecutor*)(qr->executor).get())->getQuery();
+
+//x        const auto &new_results = qr->executor->next(res, nparams);
+//x        const auto &output =
+//x            std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
+//x        const auto &next_query = output.second;
         //here we execute the query against the remote database, and get rawReturnValue
         rawMySQLReturnValue resRemote = executeAndGetResultRemote(globalConn,next_query);
         //transform rawReturnValue first
