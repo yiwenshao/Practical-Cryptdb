@@ -83,5 +83,8 @@ ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta);
 
 std::vector<FieldMeta_Wrapper> FieldMeta_to_Wrapper(std::vector<FieldMeta *> pfms);
 
-void transform_to_rawMySQLReturnValue(rawMySQLReturnValue & str,ResType & item );
+void transform_to_rawMySQLReturnValue(rawMySQLReturnValue & str,ResType & item);
+
+rawMySQLReturnValue
+executeAndGetResultRemote(Connect * curConn,std::string query);
 
