@@ -139,7 +139,7 @@ public:
     Item * decrypt(const Item &c, uint64_t IV) const;
 protected:
     std::string const seed_key;
-    const RAW_ASHE ashe;
+    mutable RAW_ASHE ashe;
 };
 
 

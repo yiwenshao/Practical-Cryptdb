@@ -1825,7 +1825,8 @@ ASHE::newCreateField(const Create_field &cf,
 //    if (charset != NULL) {
 //        f0->charset = charset;
 //    }
-  
+    f0->flags = f0->flags ^ UNSIGNED_FLAG;
+    f0->sql_type = MYSQL_TYPE_LONGLONG;
     if (anonname.size() > 0) {
         f0->field_name = make_thd_string(anonname);
     }
@@ -1836,17 +1837,18 @@ ASHE::newCreateField(const Create_field &cf,
 Item *
 ASHE::encrypt(const Item &ptext, uint64_t IV) const{
     ulonglong pt = const_cast<Item &>(ptext).val_uint();
-    
+    auto res = ashe.encrypt(pt,IV);
     return new (current_thd->mem_root)
-               Item_int(static_cast<ulonglong>(pt));
+               Item_int(static_cast<longlong>(res.first));
 }
 
 Item *
 ASHE::decrypt(const Item &ctext, uint64_t IV) const
 {
     long long ct = const_cast<Item &>(ctext).val_uint();
+    auto res = ashe.decrypt(ct,IV);
     return new (current_thd->mem_root)
-               Item_int(static_cast<ulonglong>(ct));
+               Item_int(static_cast<ulonglong>(res));
 }
 
 ASHE::~ASHE() {
