@@ -1,5 +1,5 @@
 #include "debug/store.hh"
-#include "debug/common.hh"
+#include "wrapper/common.hh"
 static void write_meta(rawMySQLReturnValue& resraw,std::vector<transField> &res,string db,string table){
     metadata_files mf;
     mf.set_db_table(db,table);

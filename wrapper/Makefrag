@@ -1,0 +1,22 @@
+OBJDIRS	+= wrapper
+
+WRAPPER_SRCS := common.cc
+
+all: $(OBJDIR)/libwrapper.so
+
+WRAPPER_OBJS := $(patsubst %.cc,$(OBJDIR)/wrapper/%.o,$(WRAPPER_SRCS))
+
+$(OBJDIR)/libwrapper.so: $(WRAPPER_OBJS) \
+			 $(OBJDIR)/libedbcrypto.so \
+			 $(OBJDIR)/libedbutil.so \
+			 $(OBJDIR)/libedbparser.so \
+			 $(OBJDIR)/libcryptdb.so
+	$(CXX) -shared -g -o $@ $(WRAPPER_OBJS) $(LDFLAGS) $(LDRPATH) \
+	       -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto -lcryptdb
+
+install: install_wrapper
+
+.PHONY: install_wrapper
+install_wrapper: $(OBJDIR)/libwrapper.so
+	install -m 644 $(OBJDIR)/libwrapper.so /usr/lib
+# vim: set noexpandtab:
