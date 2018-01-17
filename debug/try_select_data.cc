@@ -17,6 +17,12 @@ To make this work properly, you should at least make sure that the database tdb 
 
 static std::string embeddedDir="/t/cryt/shadow";
 
+struct help_select{
+    ReturnMeta rmeta;
+    std::string query;
+};
+
+
 SharedProxyState *shared_ps;
 Connect  *globalConn;
 ProxyState *ps;
@@ -34,44 +40,30 @@ void parseResType(const ResType &rd) {
     }
 }
 
-static void sp_next_second(std::string db, std::string query, QueryRewrite *qr,ResType inRes){
+static void sp_next_second(std::string db, std::string query,const help_select & hs,ResType inRes){
     ps->safeCreateEmbeddedTHD();
     const ResType &resin = inRes;
     try{
         //AbstractQueryExecutor::ResultType::RESULTS
         NextParams nparams(*ps,db,query);
         nparams.ps.getSchemaCache().updateStaleness(nparams.ps.getEConn(),false);
-        
-//        const auto &new_results = qr->executor->next(res, nparams);
-        //const auto &result_type = new_results.first;
-//        const auto &res = new_results.second->extract<ResType>();
-
-        const auto &res = decryptResults(resin,((DMLQueryExecutor*)(qr->executor).get())->getReturnMeta());
+        const auto &res = decryptResults(resin,hs.rmeta);
         parseResType(res);
     }catch(...){
         std::cout<<"second next error"<<std::endl;
     }
 }
 
-static void sp_next_first(std::string db, std::string query, QueryRewrite *qr,ResType inRes){
+static void sp_next_first(std::string db, std::string query,const help_select &hs){
     ps->safeCreateEmbeddedTHD();
-//    const ResType &res = inRes;
     try{
         //AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN
         NextParams nparams(*ps,db,query);
-
         nparams.ps.getSchemaCache().updateStaleness(nparams.ps.getEConn(),false);
-        const std::string next_query = ((DMLQueryExecutor*)(qr->executor).get())->getQuery();
-
-//x        const auto &new_results = qr->executor->next(res, nparams);
-//x        const auto &output =
-//x            std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
-//x        const auto &next_query = output.second;
-        //here we execute the query against the remote database, and get rawReturnValue
+        const std::string next_query = hs.query;
         rawMySQLReturnValue resRemote = executeAndGetResultRemote(globalConn,next_query);
-        //transform rawReturnValue first
         const auto &againGet = MygetResTypeFromLuaTable(false,&resRemote);
-        sp_next_second(db,query,qr,againGet);
+        sp_next_second(db,query,hs,againGet);
     }catch(...){
         std::cout<<"first next error"<<std::endl;
     }
@@ -239,14 +231,17 @@ my_rewrite_select_lex(const st_select_lex &select_lex, Analysis &a){
 
 
 static
-AbstractQueryExecutor * my_rewrite_select(Analysis &a, LEX *lex){
+help_select my_rewrite_select(Analysis &a, LEX *lex){
     LEX *const new_lex = copyWithTHD(lex);
     //this is actually table list instead of join list.
     new_lex->select_lex.top_join_list =
             rewrite_table_list(lex->select_lex.top_join_list, a);
     SELECT_LEX *const select_lex_res = my_rewrite_select_lex(new_lex->select_lex, a);
     set_select_lex(new_lex,select_lex_res);
-    return new DMLQueryExecutor(*new_lex, a.rmeta);
+    help_select hs;
+    hs.query = lexToQuery(*new_lex);
+    hs.rmeta = a.rmeta;
+    return hs;
 }
 
 
@@ -278,9 +273,9 @@ static void testCreateTableHandler(std::string query,std::string db="tdb"){
     LEX *const lex = p->lex();
     std::string table(lex->select_lex.table_list.first->table_name);
     my_gather_select(analysis,lex);
-    auto executor = my_rewrite_select(analysis,lex);
-    QueryRewrite *qr = new QueryRewrite(QueryRewrite(true, analysis.rmeta, analysis.kill_zone, executor));
-    sp_next_first(db,query,qr,MygetResTypeFromLuaTable(true));
+    help_select hs = my_rewrite_select(analysis,lex);
+    //QueryRewrite *qr = new QueryRewrite(QueryRewrite(true, analysis.rmeta, analysis.kill_zone, executor));
+    sp_next_first(db,query,hs);
 }
 
 int
