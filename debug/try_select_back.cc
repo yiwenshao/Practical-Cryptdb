@@ -13,13 +13,109 @@ To make this work properly, you should at least make sure that the database tdb 
 #include <main/dml_handler.hh>
 #include <main/ddl_handler.hh>
 #include <main/CryptoHandlers.hh>
-#include "wrapper/reuse.hh"
 
 static std::string embeddedDir="/t/cryt/shadow";
 
 SharedProxyState *shared_ps;
 Connect  *globalConn;
 ProxyState *ps;
+
+struct rawReturnValue{
+    std::vector<std::vector<std::string> > rowValues;
+    std::vector<std::string> fieldNames;
+    std::vector<int> fieldTypes;
+};
+
+//helper function for transforming the rawReturnValue
+static Item_null *
+make_null(const std::string &name = ""){
+    char *const n = current_thd->strdup(name.c_str());
+    return new Item_null(n);
+}
+//helper function for transforming the rawReturnValue
+static std::vector<Item *>
+itemNullVector(unsigned int count)
+{
+    std::vector<Item *> out;
+    for (unsigned int i = 0; i < count; ++i) {
+        out.push_back(make_null());
+    }
+    return out;
+}
+
+
+
+static
+ResType MygetResTypeFromLuaTable(bool isNULL,rawReturnValue *inRow = NULL,int in_last_insert_id = 0){
+    std::vector<std::string> names;
+    std::vector<enum_field_types> types;
+    std::vector<std::vector<Item *> > rows;
+    //return NULL restype 
+    if(isNULL){
+        return ResType(true,0,0,std::move(names),
+                      std::move(types),std::move(rows));
+    } else {
+        for(auto inNames:inRow->fieldNames){
+            names.push_back(inNames);
+        }
+        for(auto inTypes:inRow->fieldTypes){
+            types.push_back(static_cast<enum_field_types>(inTypes));
+        }
+        for(auto inRows:inRow->rowValues) {
+            std::vector<Item *> curTempRow = itemNullVector(types.size());
+            for(int i=0;i< (int)(inRows.size());i++){
+                curTempRow[i] = (MySQLFieldTypeToItem(types[i],inRows[i]) );
+            }
+            rows.push_back(curTempRow);
+        }
+        return ResType(true,0,in_last_insert_id, 
+                       std::move(names),
+                       std::move(types), std::move(rows));
+    }
+}
+
+static
+rawReturnValue executeAndGetResultRemote(Connect * curConn,std::string query){
+    std::unique_ptr<DBResult> dbres;
+    curConn->execute(query, &dbres);
+    rawReturnValue myRaw;
+
+    if(dbres==nullptr||dbres->n==NULL){
+        //std::cout<<"no results"<<std::endl;
+        return myRaw;
+    }
+
+    int num = mysql_num_rows(dbres->n);
+    if(num!=0)
+        std::cout<<"num of rows: "<<num<<std::endl;
+
+    int numOfFields = mysql_num_fields(dbres->n);
+    if(numOfFields!=0)
+        std::cout<<"num of fields: "<<numOfFields<<std::endl;
+
+    MYSQL_FIELD *field;
+    MYSQL_ROW row;
+
+    if(num!=0){
+        while( (row = mysql_fetch_row(dbres->n)) ){
+            unsigned long * fieldLen = mysql_fetch_lengths(dbres->n);
+            std::vector<std::string> curRow;
+            for(int i=0;i<numOfFields;i++){
+                if (i == 0) {
+                    while( (field = mysql_fetch_field(dbres->n)) ) {
+                        myRaw.fieldNames.push_back(std::string(field->name));
+                        myRaw.fieldTypes.push_back(field->type);
+                    }
+                }
+                if(row[i]==NULL) curRow.push_back("NULL");
+                else curRow.push_back(std::string(row[i],fieldLen[i]));
+            }
+            myRaw.rowValues.push_back(curRow);
+        }
+    }
+    return myRaw;
+}
+
 static
 void parseResType(const ResType &rd) {
     for(auto name:rd.names){
@@ -34,43 +130,60 @@ void parseResType(const ResType &rd) {
     }
 }
 
-static void sp_next_second(std::string db, std::string query, QueryRewrite *qr,ResType inRes){
-    ps->safeCreateEmbeddedTHD();
-    const ResType &res = inRes;
-    try{
-        //AbstractQueryExecutor::ResultType::RESULTS
-        NextParams nparams(*ps,db,query);
-        const auto &new_results = qr->executor->next(res, nparams);
-        //const auto &result_type = new_results.first;
-        const auto &res = new_results.second->extract<ResType>();
-        parseResType(res);
-    }catch(...){
-        std::cout<<"second next error"<<std::endl;
-    }
-}
+static void sp_next(std::string db, std::string query, QueryRewrite *qr,ResType inRes){
 
-static void sp_next_first(std::string db, std::string query, QueryRewrite *qr,ResType inRes){
     ps->safeCreateEmbeddedTHD();
-    const ResType &res = inRes;
+    //then we come to the next step.
+    const ResType &res = inRes;//MygetResTypeFromLuaTable(true);
     try{
         NextParams nparams(*ps,db,query);
         const auto &new_results = qr->executor->next(res, nparams);
-//        const auto &result_type = new_results.first;
-        //AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN
-        const auto &output =
-            std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
-        const auto &next_query = output.second;
-        //here we execute the query against the remote database, and get rawReturnValue
-        rawMySQLReturnValue resRemote = executeAndGetResultRemote(globalConn,next_query);
-        //transform rawReturnValue first
-        const auto &againGet = MygetResTypeFromLuaTable(false,&resRemote);
-        sp_next_second(db,query,qr,againGet);
+        const auto &result_type = new_results.first;
+        switch (result_type){
+            //execute the query, fetch the results, and call next again
+            case AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN: {
+            //    std::cout<<RED_BEGIN<<"case one"<<COLOR_END<<std::endl;
+                const auto &output =
+                    std::get<1>(new_results)->extract<std::pair<bool, std::string> >();
+                const auto &next_query = output.second;
+                //here we execute the query against the remote database, and get rawReturnValue
+                rawReturnValue resRemote = executeAndGetResultRemote(globalConn,next_query);
+                //transform rawReturnValue first
+                const auto &againGet = MygetResTypeFromLuaTable(false,&resRemote);
+                
+                sp_next(db,query,qr,againGet);
+                break;
+            }
+    
+            //only execute the query, without processing the retults
+            case AbstractQueryExecutor::ResultType::QUERY_USE_RESULTS:{
+            //    std::cout<<RED_BEGIN<<"case two"<<COLOR_END<<std::endl;
+                const auto &new_query =
+                    std::get<1>(new_results)->extract<std::string>();
+                auto resRemote = executeAndGetResultRemote(globalConn,new_query);
+               
+                break;
+            }
+    
+            //return the results to the client directly 
+            case AbstractQueryExecutor::ResultType::RESULTS:{
+            //    std::cout<<RED_BEGIN<<"case three"<<COLOR_END<<std::endl;
+                const auto &res = new_results.second->extract<ResType>();
+                parseResType(res);              
+                break;
+            }
+    
+            default:{
+                std::cout<<"case default"<<std::endl;
+            }
+        }
     }catch(...){
-        std::cout<<"first next error"<<std::endl;
+        std::cout<<"next error"<<std::endl;
     }
 }
 
-//=================================gather part======================================
+//===================================================gather part==========================================================
+
 static 
 RewritePlan * 
 my_gather(const Item_field &i, Analysis &a){
@@ -111,7 +224,32 @@ static void my_gather_select(Analysis &a, LEX *const lex){
 }
 
 
-//===========================================Rewrite=============================================
+//==========================================================Rewrite=================================================
+
+
+static void
+my_addToReturn(ReturnMeta *const rm, int pos, const OLK &constr,
+            bool has_salt, const std::string &name){
+    const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
+    TEST_TextMessageError(test, "ReturnMeta has badly ordered"
+                                " ReturnFields!");
+    const int salt_pos = has_salt ? pos + 1 : -1;
+    std::pair<int, ReturnField>
+        pair(pos, ReturnField(false, name, constr, salt_pos));
+    rm->rfmeta.insert(pair);
+}
+
+static void
+my_addSaltToReturn(ReturnMeta *const rm, int pos){
+    const bool test = static_cast<unsigned int>(pos) == rm->rfmeta.size();
+    TEST_TextMessageError(test, "ReturnMeta has badly ordered"
+                                " ReturnFields!");
+    std::pair<int, ReturnField>
+        pair(pos, ReturnField(true, "", OLK::invalidOLK(), -1));
+    rm->rfmeta.insert(pair);
+}
+
+
 static
 Item *
     my_do_rewrite_type(const Item_field &i, const OLK &constr,
@@ -191,7 +329,7 @@ my_rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
 
     // This line implicity handles field aliasing for at least some cases.
     // As i->name can/will be the alias.
-    addToReturn(&a.rmeta, a.pos++, olk.get(), use_salt, i.name);
+    my_addToReturn(&a.rmeta, a.pos++, olk.get(), use_salt, i.name);
 
     if (use_salt) {
         TEST_TextMessageError(Item::Type::FIELD_ITEM == ir.get()->type(),
@@ -204,7 +342,7 @@ my_rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
             make_item_field(*static_cast<Item_field *>(ir.get()),
                             anon_table_name, anon_field_name);
         newList->push_back(ir_field);
-        addSaltToReturn(&a.rmeta, a.pos++);
+        my_addSaltToReturn(&a.rmeta, a.pos++);
     }
 }
 
@@ -237,6 +375,7 @@ AbstractQueryExecutor * my_rewrite_select(Analysis &a, LEX *lex){
     //this is actually table list instead of join list.
     new_lex->select_lex.top_join_list =
             rewrite_table_list(lex->select_lex.top_join_list, a);
+
     SELECT_LEX *const select_lex_res = my_rewrite_select_lex(new_lex->select_lex, a);
     set_select_lex(new_lex,select_lex_res);
     return new DMLQueryExecutor(*new_lex, a.rmeta);
@@ -273,7 +412,7 @@ static void testCreateTableHandler(std::string query,std::string db="tdb"){
     my_gather_select(analysis,lex);
     auto executor = my_rewrite_select(analysis,lex);
     QueryRewrite *qr = new QueryRewrite(QueryRewrite(true, analysis.rmeta, analysis.kill_zone, executor));
-    sp_next_first(db,query,qr,MygetResTypeFromLuaTable(true));
+    sp_next(db,query,qr,MygetResTypeFromLuaTable(true));
 }
 
 int

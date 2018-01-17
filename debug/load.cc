@@ -28,6 +28,39 @@ static std::map<std::string, WrapperState*> clients;
 Connect  *globalConn;
 /*for each field, convert the format to FieldMeta_Wrapper*/
 
+static
+void
+construct_insert(rawMySQLReturnValue & str,std::string table,std::vector<std::string> &res){
+    std::string head = string("INSERT INTO `")+table+"` VALUES ";
+    int cnt = 0;
+    string cur=head;
+    for(unsigned int i=0u; i<str.rowValues.size();i++){
+        ++cnt;
+        cur+="(";        
+        for(unsigned int j=0u;j<str.rowValues[i].size();j++){
+            if(IS_NUM(str.fieldTypes[j])) {
+                cur+=str.rowValues[i][j]+=",";
+            }else{
+                int len = str.rowValues[i][j].size();
+                mysql_real_escape_string(globalConn->get_conn(),globalEsp,
+                    str.rowValues[i][j].c_str(),len);
+                cur+=string("\"")+=string(globalEsp)+="\",";
+            }
+        }
+        cur.back()=')';
+        cur+=",";
+        if(cnt == num_of_pipe){
+            cnt = 0;
+            cur.back()=';';
+            res.push_back(cur);
+            cur=head;
+        }
+    }
+    if(cnt!=0){
+        cur.back()=';';
+        res.push_back(cur);
+    }
+}
 
 static void init(){
     std::string client="192.168.1.1:1234";
@@ -137,43 +170,6 @@ static void load_string(string filename, vector<string> &res,unsigned long lengt
     close(fd);
 }
 
-static
-void
-construct_insert(rawMySQLReturnValue & str,std::string table,std::vector<std::string> &res){
-    std::string head = string("INSERT INTO `")+table+"` VALUES ";
-    int cnt = 0;
-    string cur=head;
-    for(unsigned int i=0u; i<str.rowValues.size();i++){
-        ++cnt;
-        cur+="(";        
-        for(unsigned int j=0u;j<str.rowValues[i].size();j++){
-            if(IS_NUM(str.fieldTypes[j])) {
-                cur+=str.rowValues[i][j]+=",";
-            }else{
-                int len = str.rowValues[i][j].size();
-                mysql_real_escape_string(globalConn->get_conn(),globalEsp,
-                    str.rowValues[i][j].c_str(),len);
-                cur+=string("\"")+=string(globalEsp)+="\",";
-            }
-        }
-        cur.back()=')';
-        cur+=",";
-        if(cnt == num_of_pipe){
-            cnt = 0;
-            cur.back()=';';
-            res.push_back(cur);
-            cur=head;
-        }
-    }
-    if(cnt!=0){
-        cur.back()=';';
-        res.push_back(cur);
-    }
-}
-
-
-
-
 template<class T>
 vector<T> flat_vec(vector<vector<T>> &input){
     vector<T> res;
@@ -276,4 +272,3 @@ main(int argc, char* argv[]){
     /*the next step is to construct encrypted insert query*/
     return 0;
 }
-
