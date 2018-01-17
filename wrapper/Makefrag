@@ -1,6 +1,6 @@
 OBJDIRS	+= wrapper
 
-WRAPPER_SRCS := common.cc
+WRAPPER_SRCS := common.cc reuse.cc
 
 all: $(OBJDIR)/libwrapper.so
 
