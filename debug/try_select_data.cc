@@ -40,6 +40,7 @@ void parseResType(const ResType &rd) {
     }
 }
 
+/*
 static void sp_next_second(const help_select & hs,ResType inRes){
     ps->safeCreateEmbeddedTHD();
     const ResType &resin = inRes;
@@ -51,7 +52,7 @@ static void sp_next_second(const help_select & hs,ResType inRes){
     }catch(...){
         std::cout<<"second next error"<<std::endl;
     }
-}
+}*/
 
 static void sp_next_first(const help_select &hs){
     ps->safeCreateEmbeddedTHD();
@@ -61,7 +62,9 @@ static void sp_next_first(const help_select &hs){
         const std::string next_query = hs.query;
         rawMySQLReturnValue resRemote = executeAndGetResultRemote(globalConn,next_query);
         const auto &againGet = MygetResTypeFromLuaTable(false,&resRemote);
-        sp_next_second(hs,againGet);
+        //AbstractQueryExecutor::ResultType::RESULTS
+        const auto &res = decryptResults(againGet,hs.rmeta);
+        parseResType(res);
     }catch(...){
         std::cout<<"first next error"<<std::endl;
     }
