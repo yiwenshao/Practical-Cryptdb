@@ -77,7 +77,7 @@ $(OBJDIR)/%.o: $(OBJDIR)/%.cc
 	$(CXX) -MD $(CXXFLAGS) -c $< -o $@
 
 ##rules for .cc in debug directory
-mtl/%:$(OBJDIR)/debug/%.o
+mtl/%:$(OBJDIR)/debug/%.o $(OBJDIR)/libwrapper.so
 	@mkdir -p $(@D)
 	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 

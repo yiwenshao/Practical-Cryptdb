@@ -40,12 +40,48 @@ struct rawMySQLReturnValue {
     void show();
 };
 
-//Item_null*
-//make_null(const std::string &name);
+//representation of one field.
+struct FieldMeta_Wrapper{
+    bool hasSalt;
+    FieldMeta *originalFm;
+    std::vector<int> choosenOnions;
+    //used to construct return meta
+    int onionIndex = 0;
+    int numOfOnions=0;
+    //onions
+    std::vector<std::string> fields;
+    std::vector<onion> onions;
+    std::vector<OnionMeta*>originalOm;
+    void show();
+};
 
-//std::vector<Item *>
-//itemNullVector(unsigned int count);
 
-//ResType MygetResTypeFromLuaTable(bool isNULL,rawMySQLReturnValue *inRow = NULL,int in_last_insert_id = 0);
 
+/*Functions*/
+Item_null*
+make_null(const std::string &name="");
+std::vector<Item *>
+itemNullVector(unsigned int count);
+ResType MygetResTypeFromLuaTable(bool isNULL,rawMySQLReturnValue *inRow = NULL,int in_last_insert_id = 0);
+
+
+void
+addToReturn(ReturnMeta *const rm, int pos, const OLK &constr, bool has_salt, const std::string &name);
+void
+addSaltToReturn(ReturnMeta *const rm, int pos);
+
+std::vector<FieldMeta *> getFieldMeta(SchemaInfo &schema,
+                                      std::string db = "tdb",
+                                      std::string table="student1");
+std::unique_ptr<SchemaInfo> myLoadSchemaInfo(std::string embeddedDir="shadow");
+
+Item *
+decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
+                    uint64_t IV);
+
+ResType decryptResults(const ResType &dbres, const ReturnMeta &rmeta);
+
+std::vector<FieldMeta_Wrapper> FieldMeta_to_Wrapper(std::vector<FieldMeta *> pfms);
+
+void transform_to_rawMySQLReturnValue(rawMySQLReturnValue & str,ResType & item );
 
