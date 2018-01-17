@@ -40,20 +40,6 @@ void parseResType(const ResType &rd) {
     }
 }
 
-/*
-static void sp_next_second(const help_select & hs,ResType inRes){
-    ps->safeCreateEmbeddedTHD();
-    const ResType &resin = inRes;
-    try{
-        //AbstractQueryExecutor::ResultType::RESULTS
-        ps->getSchemaCache().updateStaleness(ps->getEConn(),false);
-        const auto &res = decryptResults(resin,hs.rmeta);
-        parseResType(res);
-    }catch(...){
-        std::cout<<"second next error"<<std::endl;
-    }
-}*/
-
 static void sp_next_first(const help_select &hs){
     ps->safeCreateEmbeddedTHD();
     try{
@@ -112,6 +98,10 @@ static void my_gather_select(Analysis &a, LEX *const lex){
 
 
 //===========================================Rewrite=============================================
+
+/*Rewrite an Item_field using the selected OLK.(get the anno field name) 
+  The OLK comes from the chooseOne function
+*/
 static
 Item *
     my_do_rewrite_type(const Item_field &i, const OLK &constr,
@@ -237,8 +227,11 @@ help_select my_rewrite_select(Analysis &a, LEX *lex){
     //this is actually table list instead of join list.
     new_lex->select_lex.top_join_list =
             rewrite_table_list(lex->select_lex.top_join_list, a);
+
     SELECT_LEX *const select_lex_res = my_rewrite_select_lex(new_lex->select_lex, a);
+
     set_select_lex(new_lex,select_lex_res);
+
     help_select hs;
     hs.query = lexToQuery(*new_lex);
     hs.rmeta = a.rmeta;

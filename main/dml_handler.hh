@@ -16,6 +16,7 @@ public:
     std::pair<ResultType, AbstractAnything *>
         nextImpl(const ResType &res, const NextParams &nparams);
     std::string getQuery(){return query;}
+    const ReturnMeta & getReturnMeta(){return rmeta;}
 private:
     const std::string query;
     const ReturnMeta rmeta;
