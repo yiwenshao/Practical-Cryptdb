@@ -40,13 +40,12 @@ void parseResType(const ResType &rd) {
     }
 }
 
-static void sp_next_second(std::string db, std::string query,const help_select & hs,ResType inRes){
+static void sp_next_second(const help_select & hs,ResType inRes){
     ps->safeCreateEmbeddedTHD();
     const ResType &resin = inRes;
     try{
         //AbstractQueryExecutor::ResultType::RESULTS
-        NextParams nparams(*ps,db,query);
-        nparams.ps.getSchemaCache().updateStaleness(nparams.ps.getEConn(),false);
+        ps->getSchemaCache().updateStaleness(ps->getEConn(),false);
         const auto &res = decryptResults(resin,hs.rmeta);
         parseResType(res);
     }catch(...){
@@ -54,16 +53,15 @@ static void sp_next_second(std::string db, std::string query,const help_select &
     }
 }
 
-static void sp_next_first(std::string db, std::string query,const help_select &hs){
+static void sp_next_first(const help_select &hs){
     ps->safeCreateEmbeddedTHD();
     try{
         //AbstractQueryExecutor::ResultType::QUERY_COME_AGAIN
-        NextParams nparams(*ps,db,query);
-        nparams.ps.getSchemaCache().updateStaleness(nparams.ps.getEConn(),false);
+        ps->getSchemaCache().updateStaleness(ps->getEConn(),false);
         const std::string next_query = hs.query;
         rawMySQLReturnValue resRemote = executeAndGetResultRemote(globalConn,next_query);
         const auto &againGet = MygetResTypeFromLuaTable(false,&resRemote);
-        sp_next_second(db,query,hs,againGet);
+        sp_next_second(hs,againGet);
     }catch(...){
         std::cout<<"first next error"<<std::endl;
     }
@@ -275,7 +273,7 @@ static void testCreateTableHandler(std::string query,std::string db="tdb"){
     my_gather_select(analysis,lex);
     help_select hs = my_rewrite_select(analysis,lex);
     //QueryRewrite *qr = new QueryRewrite(QueryRewrite(true, analysis.rmeta, analysis.kill_zone, executor));
-    sp_next_first(db,query,hs);
+    sp_next_first(hs);
 }
 
 int
