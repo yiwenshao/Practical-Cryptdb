@@ -14,11 +14,28 @@ std::pair<long,uint64_t> RAW_ASHE::encrypt(unsigned int plaintext){
     return std::make_pair(ciphertext,IV);
 }
 
+std::pair<long,uint64_t> RAW_ASHE::encrypt(unsigned int plaintext,uint64_t inIV){
+    uint64_t i = Fi(inIV)%RAW_ASHE_MAX, i_1=Fi_1(inIV)%RAW_ASHE_MAX;    
+    long res = (long)i_1 - (long)i;
+    ciphertext = ((long)plaintext + res)%RAW_ASHE_MAX;
+    return std::make_pair(ciphertext,inIV);
+}
+
+
+
 unsigned int RAW_ASHE::decrypt(long ciphertext){
     uint64_t i = Fi(IV)%RAW_ASHE_MAX, i_1=Fi_1(IV)%RAW_ASHE_MAX;
     long res = (long)i - (long)i_1;
     return (ciphertext + res)%RAW_ASHE_MAX;
 }
+
+
+unsigned int RAW_ASHE::decrypt(long ciphertext,uint64_t inIV){
+    uint64_t i = Fi(inIV)%RAW_ASHE_MAX, i_1=Fi_1(inIV)%RAW_ASHE_MAX;
+    long res = (long)i - (long)i_1;
+    return (ciphertext + res)%RAW_ASHE_MAX;
+}
+
 
 std::pair<long,std::vector<uint64_t>> RAW_ASHE::sum(std::vector<RAW_ASHE> input){
     long res=0;

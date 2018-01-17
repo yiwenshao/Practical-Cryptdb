@@ -192,11 +192,11 @@ OLK EncSet::extract_singleton() const
     return OLK(it->first, it->second.first, it->second.second);
 }
 
-// needsSaltz must have consistent semantics.
+// needsSaltz must have consistent semantics. shaoyiwen
 static bool
 needsSalt(SECLEVEL l)
 {
-    return l == SECLEVEL::RND;
+    return l == SECLEVEL::RND||l==SECLEVEL::ASHE;
 }
 
 bool

@@ -12,8 +12,8 @@ int main(){
         uint64_t IV = randomValue();
         if(IV==0) IV=1;
         ass.push_back(RAW_ASHE(IV));
-        ass.back().encrypt(seed);
-        unsigned int res = ass.back().decrypt(ass.back().get_ciphertext());
+        ass.back().encrypt(seed,IV);
+        unsigned int res = ass.back().decrypt(ass.back().get_ciphertext(),IV);
         if(res==seed) std::cout<<"pass"<<std::endl;
         else std::cout<<"not pass!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
         seed++;

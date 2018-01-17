@@ -16,7 +16,11 @@ public:
 
 
     std::pair<long,uint64_t> encrypt(unsigned int plaintext);
+    std::pair<long,uint64_t> encrypt(unsigned int plaintext,uint64_t inIv);
+
+
     unsigned int decrypt(long ciphertext);
+    unsigned int decrypt(long ciphertext,uint64_t inIv);
     uint64_t get_IV(){return IV;};
 
     static uint64_t Fi(uint64_t IV){return bf.encrypt(IV)%100000;}
