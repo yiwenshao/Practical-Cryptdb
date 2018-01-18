@@ -102,7 +102,7 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
     int pos=0;
     //construct OLK
     for(auto i=0u;i<tfds.size();i++){
-        int index = getDecryptionOnionIndex(tfds);
+        int index = getDecryptionOnionIndex(tfds[i]);
         onion o = tfds[i].getChoosenOnionO()[index];
         SECLEVEL l = tfds[i].getOriginalFieldMeta()->getOnionMeta(o)->getSecLevel();
         FieldMeta *k = tfds[i].getOriginalFieldMeta();

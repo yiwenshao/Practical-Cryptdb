@@ -153,4 +153,4 @@ enum class STORE_STRATEGY{
     ALL
 };
 
-int getDecryptionOnionIndex(std::vector<FieldMetaTrans>& res);
+int getDecryptionOnionIndex(FieldMetaTrans& fdtrans);

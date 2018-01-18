@@ -1,4 +1,5 @@
 #include "wrapper/reuse.hh"
+#include <map>
 using std::cout;
 using std::cin;
 using std::endl;
@@ -401,9 +402,28 @@ void storeStrategies(std::vector<FieldMetaTrans>& res){
 }
 
 
-int getDecryptionOnionIndex(std::vector<FieldMetaTrans>& fdtrans) {
-    int res = 0;
+static const std::vector<onion> onion_order = {
+        oDET,
+        oOPE,
+        oAGG, 
+        oASHE,
+        oSWP,
+        oPLAIN
+};
 
+int getDecryptionOnionIndex(FieldMetaTrans& fdtrans) {
+    int res = -1;
+    auto onionsO = fdtrans.getChoosenOnionO();
+    std::map<onion,unsigned int> onionIndexPair;
+    for(unsigned int i=0u;i<onionsO.size();i++){
+        onionIndexPair[onionsO[i]]=i;
+    }
+    for(auto item:onion_order){
+        if(onionIndexPair.find(item)!=onionIndexPair.end()){
+            res = onionIndexPair[item];
+            break;
+        }
+    }
     return res;
 }
 
