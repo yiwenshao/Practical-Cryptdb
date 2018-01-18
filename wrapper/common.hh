@@ -25,6 +25,7 @@ public:
     vector<vector<string>> selected_field_names;
     vector<string> has_salt;
     vector<int> dec_onion_index;/*should be 0,1,2,3...*/
+
     string serialize_vec_int(string s,vector<int> vec_int);
     string serialize_vec_str(string s,vector<string> vec_str);
     vector<string> string_to_vec_str(string line);
@@ -57,12 +58,3 @@ public:
     void serialize();
     void deserialize(string filename);
 };
-
-
-
-
-
-
-
-
-

@@ -40,8 +40,42 @@ void FieldMeta_Wrapper::show(){
         if(hasSalt){
             cout<<"has salt"<<endl;
         }else cout<<"do not have salt"<<endl;
+}
 
 
+void FieldMetaTrans::trans(FieldMeta *fm) {
+    originalFm=fm;
+    if(fm->getHasSalt()){
+        hasSalt = true;
+        saltName = fm->getSaltName();
+    }else{
+        hasSalt = false;        
+    }
+    for(std::pair<const OnionMetaKey *, OnionMeta *> &omkv:fm->orderedOnionMetas()){
+        onion o = omkv.first->getValue();
+        OnionMeta* om = omkv.second;
+        onionsO.push_back(o);
+//        onionsStr.push_back(TypeText<onion>::toText(o));
+        onionsOm.push_back(om);
+        onionsName.push_back(om->getAnonOnionName());
+    }
+}
+
+
+void FieldMetaTrans::choose(std::vector<onion> onionSet){
+    choosenOnionO = onionSet;
+    for(auto &o:onionSet){
+            choosenOnionName.push_back(originalFm->getOnionMeta(o)->getAnonOnionName()
+        );
+    }
+}
+
+void FieldMetaTrans::choose(std::vector<int> onionIndexSet){
+    choosenIndex = onionIndexSet;
+    for(auto index:onionIndexSet){
+        choosenOnionO.push_back(onionsO[index]);
+        choosenOnionName.push_back(onionsName[index]);
+    }
 }
 
 
@@ -65,7 +99,7 @@ itemNullVector(unsigned int count)
     return out;
 }
 
-ResType MygetResTypeFromLuaTable(bool isNULL,rawMySQLReturnValue *inRow,int in_last_insert_id){
+ResType rawMySQLReturnValue_to_ResType(bool isNULL,rawMySQLReturnValue *inRow,int in_last_insert_id){
     std::vector<std::string> names;
     std::vector<enum_field_types> types;
     std::vector<std::vector<Item *>> rows;
@@ -253,7 +287,8 @@ std::vector<FieldMeta_Wrapper> FieldMeta_to_Wrapper(std::vector<FieldMeta *> pfm
     for(auto pfm:pfms){
         FieldMeta_Wrapper tf;
 	    tf.originalFm = pfm;
-        for(std::pair<const OnionMetaKey *, OnionMeta *> &ompair:pfm->orderedOnionMetas()){
+        for(std::pair<const OnionMetaKey *, OnionMeta *> &ompair:
+                                               pfm->orderedOnionMetas()){
             tf.numOfOnions++;
             tf.fields.push_back((ompair.second)->getAnonOnionName());
             tf.onions.push_back(ompair.first->getValue());
@@ -323,5 +358,25 @@ executeAndGetResultRemote(Connect * curConn,std::string query){
     return myRaw;
 }
 
-
-
+void
+write_row_data(rawMySQLReturnValue& resraw,std::string db,std::string table,std::string prefix){
+    std::vector<FILE*> data_files;
+    prefix = prefix+db+"/"+table+"/";
+    for(auto item:resraw.fieldNames){
+        item=prefix+item;
+        FILE * data  = fopen(item.c_str(),"w");
+        data_files.push_back(data);
+    }
+    const std::string token = "\n";
+    for(auto &item : resraw.rowValues){        
+        for(unsigned int i=0u;i<item.size();i++){
+           fwrite(item[i].c_str(),1,item[i].size(),data_files[i]);
+           if(IS_NUM(resraw.fieldTypes[i])){
+               fwrite(token.c_str(),1,token.size(),data_files[i]);
+           }
+        }
+    }
+    for(auto item:data_files){
+        fclose(item);
+    }
+}

@@ -22,7 +22,6 @@ struct help_select{
     std::string query;
 };
 
-
 SharedProxyState *shared_ps;
 Connect  *globalConn;
 ProxyState *ps;
@@ -47,7 +46,13 @@ static void sp_next_first(const help_select &hs){
         ps->getSchemaCache().updateStaleness(ps->getEConn(),false);
         const std::string next_query = hs.query;
         rawMySQLReturnValue resRemote = executeAndGetResultRemote(globalConn,next_query);
-        const auto &againGet = MygetResTypeFromLuaTable(false,&resRemote);
+        const auto &againGet = rawMySQLReturnValue_to_ResType(false,&resRemote);
+
+        rawMySQLReturnValue str;
+        transform_to_rawMySQLReturnValue(str,const_cast<ResType &>(againGet));
+        str.fieldNames = againGet.names;
+        write_row_data(str,"tdb","student","tdata/");
+
         //AbstractQueryExecutor::ResultType::RESULTS
         const auto &res = decryptResults(againGet,hs.rmeta);
         parseResType(res);

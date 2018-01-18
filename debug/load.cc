@@ -242,7 +242,7 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     for(unsigned int i=0;i<field_types.size();++i){
 	resraw.fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
     }
-    ResType rawtorestype = MygetResTypeFromLuaTable(false, &resraw);
+    ResType rawtorestype = rawMySQLReturnValue_to_ResType(false, &resraw);
     auto finalresults = decryptResults(rawtorestype,*rm);
     return finalresults;
 }

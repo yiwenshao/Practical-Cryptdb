@@ -36,7 +36,7 @@ static void init(){
 
 //query for testing purposes
 static
-std::string getTestQuery(SchemaInfo &schema, std::vector<FieldMeta_Wrapper> &tfds,
+std::string getTestQuery(SchemaInfo &schema, std::vector<FieldMetaTrans> &tfds,
                                      std::string db="tdb",std::string table="student1"){
     std::string res = "SELECT ";
     const std::unique_ptr<IdentityMetaKey> dbmeta_key(new IdentityMetaKey(db));
@@ -46,13 +46,13 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<FieldMeta_Wrapper> &tfd
     std::string annotablename = tbm.getAnonTableName();
 
     //then a list of onion names
-    for(auto item:tfds){
-        for(auto index:item.choosenOnions){
-            res += item.fields[index];
+    for(auto tf:tfds){
+        for(auto item : tf.getChoosenOnionName()){
+            res += item;
             res += " , ";
         }
-    	if(item.hasSalt){
-            res += item.originalFm->getSaltName()+" , ";
+    	if(tf.getHasSalt()){
+            res += tf.getSaltName() + " , ";
         }
     }
     res = res.substr(0,res.size()-2);
@@ -60,7 +60,7 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<FieldMeta_Wrapper> &tfd
     return res;
 }
 
-static void write_meta(rawMySQLReturnValue& resraw,std::vector<FieldMeta_Wrapper> &res,string db,string table){
+static void write_meta(rawMySQLReturnValue& resraw,std::vector<FieldMetaTrans> &res,string db,string table){
     metadata_files mf;
     mf.set_db_table(db,table);
     vector<vector<int>> selected_field_types;
@@ -72,31 +72,31 @@ static void write_meta(rawMySQLReturnValue& resraw,std::vector<FieldMeta_Wrapper
 
     unsigned int type_index=0u,length_index=0u;
 
-    for(auto item:res){
+    for(auto ft:res){
         vector<int> field_types;
         vector<int> field_lengths;
         
         vector<string> field_names;
         //only choosen fields
-        for(auto i:item.choosenOnions){
-            field_names.push_back(item.fields[i]);
+        for(auto item:ft.getChoosenOnionName()){
+            field_names.push_back(item);
         }
-        if(item.hasSalt){
-            field_names.push_back(item.fields.back());
+        if(ft.getHasSalt()){
+            field_names.push_back(ft.getSaltName());
         }
 
-        int onion_index = item.onionIndex;
+        int onion_index = 0;
 
         for(unsigned int i=0u;i<field_names.size();i++){
             field_types.push_back(static_cast<int>(resraw.fieldTypes[type_index]));
             type_index++;
         }
-//        field_lengths = resraw.lengths;
         for(unsigned int i=0u;i<field_names.size();i++){
             field_lengths.push_back(resraw.lengths[length_index]);
             length_index++;
         }
-        if(item.hasSalt){
+
+        if(ft.getHasSalt()){
             has_salt.push_back("true");
         }else has_salt.push_back("false");
 
@@ -113,30 +113,8 @@ static void write_meta(rawMySQLReturnValue& resraw,std::vector<FieldMeta_Wrapper
     mf.serialize();
 }
 
-
-static void write_row_data(rawMySQLReturnValue& resraw,string db, string table){
-    vector<FILE*> data_files;
-    string prefix = string("data/")+db+"/"+table+"/";
-    for(auto item:resraw.fieldNames){
-        item=prefix+item;
-        FILE * data  = fopen(item.c_str(),"w");
-        data_files.push_back(data);
-    }
-    const string token = "\n";
-    for(auto &item : resraw.rowValues){        
-        for(unsigned int i=0u;i<item.size();i++){
-           fwrite(item[i].c_str(),1,item[i].size(),data_files[i]);
-           if(IS_NUM(resraw.fieldTypes[i])){
-               fwrite(token.c_str(),1,token.size(),data_files[i]);
-           }
-        }
-    }
-    for(auto item:data_files){
-        fclose(item);
-    }
-}
 static
-void write_raw_data_to_files(rawMySQLReturnValue& resraw,std::vector<FieldMeta_Wrapper> &res ,string db,string table){
+void write_raw_data_to_files(rawMySQLReturnValue& resraw,std::vector<FieldMetaTrans> &res ,string db,string table){
     //write metafiles
     write_meta(resraw,res,db,table);
     //write datafiles
@@ -148,11 +126,14 @@ static void store(std::string db, std::string table){
     //get all the fields in the tables
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
     //transform the field so that selected onions can be used
-    std::vector<FieldMeta_Wrapper> res = FieldMeta_to_Wrapper(fms);
-
-    for(auto &item:res){
-        (void)item;
-        item.choosenOnions.push_back(0);
+    std::vector<FieldMetaTrans> res;
+    for(auto i=0u;i<fms.size();i++){
+        FieldMetaTrans ft;
+        res.push_back(ft);
+        res.back().trans(fms[i]);
+        std::vector<int> in{0};
+        //this is our strategy !!!!!
+        res.back().choose(in);
     }
     //generate the backup query and then fetch the tuples
     std::string backup_query = getTestQuery(*schema,res,db,table);

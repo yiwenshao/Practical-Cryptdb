@@ -45,24 +45,50 @@ struct FieldMeta_Wrapper{
     bool hasSalt;
     FieldMeta *originalFm;
     std::vector<int> choosenOnions;
+    std::vector<onion> choosen_onions_o;
+    std::vector<std::string> choosen_onions_str;
     //used to construct return meta
     int onionIndex = 0;
     int numOfOnions=0;
     //onions
     std::vector<std::string> fields;
     std::vector<onion> onions;
+    std::vector<std::string> onion_str;
     std::vector<OnionMeta*>originalOm;
     void show();
 };
 
 
+/*Transformed version of FieldMeta*/
+class FieldMetaTrans{
+    FieldMeta *originalFm;
+    bool hasSalt;
+    std::string saltName;
+
+    std::vector<OnionMeta*> onionsOm;
+    std::vector<onion> onionsO;
+    std::vector<std::string> onionsName;
+
+    std::vector<int> choosenIndex;
+    std::vector<onion> choosenOnionO;
+    std::vector<std::string> choosenOnionName;
+public:
+    void trans(FieldMeta *fm); 
+    void choose(std::vector<onion> onionSet);
+    void choose(std::vector<int> onionIndexSet);
+
+    const std::vector<std::string> getChoosenOnionName(){return choosenOnionName;}
+    bool getHasSalt(){return hasSalt;}
+    std::string getSaltName(){return saltName;}
+};
 
 /*Functions*/
 Item_null*
 make_null(const std::string &name="");
 std::vector<Item *>
 itemNullVector(unsigned int count);
-ResType MygetResTypeFromLuaTable(bool isNULL,rawMySQLReturnValue *inRow = NULL,int in_last_insert_id = 0);
+
+ResType rawMySQLReturnValue_to_ResType(bool isNULL,rawMySQLReturnValue *inRow = NULL,int in_last_insert_id = 0);
 
 
 void
@@ -87,4 +113,9 @@ void transform_to_rawMySQLReturnValue(rawMySQLReturnValue & str,ResType & item);
 
 rawMySQLReturnValue
 executeAndGetResultRemote(Connect * curConn,std::string query);
+
+
+void
+write_row_data(rawMySQLReturnValue& resraw,std::string db,std::string table,std::string prefix="data/");
+
 
