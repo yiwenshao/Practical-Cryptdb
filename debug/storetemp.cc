@@ -6,10 +6,6 @@ static std::map<std::string, WrapperState*> clients;
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
 
-//must be static, or we get "no previous declaration"
-//execute the query and get the rawReturnVale, this struct can be copied.
-
-
 static void init(){
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
@@ -66,8 +62,6 @@ static void write_meta(rawMySQLReturnValue& resraw,std::vector<FieldMetaTrans> &
     mf.serialize();
 }
 
-
-
 static
 void write_raw_data_to_files(rawMySQLReturnValue& resraw,std::vector<FieldMetaTrans> &res ,string db,string table){
     //write metafiles
@@ -80,16 +74,16 @@ static void store(std::string db, std::string table){
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
     //get all the fields in the tables
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
+
     //transform the field so that selected onions can be used
     std::vector<FieldMetaTrans> res;
     for(auto i=0u;i<fms.size();i++){
         FieldMetaTrans ft;
         res.push_back(ft);
         res.back().trans(fms[i]);
-        std::vector<int> in{0};
-        //this is our strategy !!!!!
-        res.back().choose(in);
     }
+    storeStrategies(res);
+
     //generate the backup query and then fetch the tuples
     std::string backup_query = getTestQuery(*schema,res,db,table);
     rawMySQLReturnValue resraw =  executeAndGetResultRemote(globalConn,backup_query);
@@ -97,17 +91,14 @@ static void store(std::string db, std::string table){
     //then we should set the type and length of FieldMetaTrans
     auto types = resraw.fieldTypes;
     auto lengths = resraw.lengths;
-
     int base_types = 0;
     int base_lengths = 0;
     for(auto &item:res){
         vector<int> tempTypes;
         vector<int> tempLengths;
         for(unsigned int i=0u;i<item.getChoosenOnionName().size();i++){
-            tempTypes.push_back(types[base_types]);
-            tempLengths.push_back(lengths[base_lengths]);
-            base_types++;
-            base_lengths++;
+            tempTypes.push_back(types[base_types++]);
+            tempLengths.push_back(lengths[base_lengths++]);
         }
         item.setChoosenFieldTypes(tempTypes);
         item.setChoosenFieldLengths(tempLengths);

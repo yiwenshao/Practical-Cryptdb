@@ -380,3 +380,23 @@ write_row_data(rawMySQLReturnValue& resraw,std::string db,std::string table,std:
         fclose(item);
     }
 }
+
+
+STORE_STRATEGY currentStrategy = STORE_STRATEGY::FIRST;
+
+/*storage used when we store*/
+void storeStrategies(std::vector<FieldMetaTrans>& res){    
+
+    if(currentStrategy == STORE_STRATEGY::FIRST){
+        std::vector<int> in{0};
+        for(auto &item:res){
+            item.choose(in);
+        }
+    }else if(currentStrategy == STORE_STRATEGY::ALL){
+
+
+    }else{
+        exit(0);
+    }
+}
+

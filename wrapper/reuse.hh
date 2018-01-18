@@ -146,4 +146,9 @@ executeAndGetResultRemote(Connect * curConn,std::string query);
 void
 write_row_data(rawMySQLReturnValue& resraw,std::string db,std::string table,std::string prefix="data/");
 
+void storeStrategies(std::vector<FieldMetaTrans>& res);
 
+enum class STORE_STRATEGY{
+    FIRST,
+    ALL
+};
