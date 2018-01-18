@@ -64,6 +64,8 @@ class FieldMetaTrans{
     FieldMeta *originalFm;
     bool hasSalt;
     std::string saltName;
+    int saltType;
+    int saltLength;
 
     std::vector<OnionMeta*> onionsOm;
     std::vector<onion> onionsO;
@@ -72,14 +74,40 @@ class FieldMetaTrans{
     std::vector<int> choosenIndex;
     std::vector<onion> choosenOnionO;
     std::vector<std::string> choosenOnionName;
+
+    std::vector<int> choosenFieldTypes;
+    std::vector<int> choosenFieldLengths;
 public:
+    FieldMeta *getOriginalFieldMeta(){return originalFm;}
     void trans(FieldMeta *fm); 
     void choose(std::vector<onion> onionSet);
     void choose(std::vector<int> onionIndexSet);
 
     const std::vector<std::string> getChoosenOnionName(){return choosenOnionName;}
+    void setChoosenOnionName(const std::vector<std::string> input){choosenOnionName=input;}
+
+    const std::vector<onion> getChoosenOnionO(){return choosenOnionO;}
+    void setChoosenOnionO(std::vector<onion> input){choosenOnionO=input;}
+
     bool getHasSalt(){return hasSalt;}
+    void setHasSalt(bool input){hasSalt=input;}
+
     std::string getSaltName(){return saltName;}
+    void setSaltName(std::string input){saltName=input;}
+
+    std::vector<int> getChoosenFieldTypes(){return choosenFieldTypes;}
+    void setChoosenFieldTypes(std::vector<int> input){choosenFieldTypes = input;}
+
+    std::vector<int> getChoosenFieldLengths(){return choosenFieldLengths;}
+    void setChoosenFieldLengths(std::vector<int> input){choosenFieldLengths=input;}
+
+    std::string getFieldPlainName(){return originalFm->getFieldName(); }
+
+    int getSaltType(){return saltType;}
+    void setSaltType(int input){saltType=input;}
+
+    int getSaltLength(){return saltLength;}
+    void setSaltLength(int input){saltLength=input;}
 };
 
 /*Functions*/

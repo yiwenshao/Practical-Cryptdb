@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include "wrapper/reuse.hh"
 
 using std::cout;
 using std::cin;
@@ -14,6 +15,7 @@ using std::endl;
 using std::vector;
 using std::string;
 using std::to_string;
+
 
 
 class metadata_files{
@@ -55,6 +57,36 @@ public:
     void set_has_salt(vector<string> input){has_salt = input;}
     vector<string> &get_has_salt(){return has_salt;}
 
-    void serialize();
-    void deserialize(string filename);
+    void serialize(std::string prefix="data/");
+    void deserialize(std::string filename, std::string prefix="data/");
 };
+
+
+class TableMetaTrans{
+    string db,table;
+    std::vector<FieldMetaTrans> fts;
+
+    string serialize_vec_int(string s,vector<int> vec_int);
+    string serialize_vec_str(string s,vector<string> vec_str);
+    vector<string> string_to_vec_str(string line);
+    vector<int> string_to_vec_int(string line);
+    static bool make_path(string directory);
+public:
+    TableMetaTrans(std::string idb,std::string itable,std::vector<FieldMetaTrans> ifts):db(idb),table(itable),fts(ifts){}
+    TableMetaTrans(){}
+    void set_db(std::string idb){db=idb;}
+    string get_db(){return db;}
+
+    void set_table(string itable){table=itable;}
+    string get_table(){return table;}
+    std::vector<FieldMetaTrans> getFts(){return fts;}
+
+    void set_db_table(string idb,string itable){db=idb;table=itable;}
+    void serialize(std::string filename="metadata.data", std::string prefix="data/");
+    void deserialize(std::string filename="metadata.data", std::string prefix="data/");
+};
+
+
+
+
+

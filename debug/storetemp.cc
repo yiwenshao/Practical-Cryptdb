@@ -61,55 +61,8 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<FieldMetaTrans> &tfds,
 }
 
 static void write_meta(rawMySQLReturnValue& resraw,std::vector<FieldMetaTrans> &res,string db,string table){
-    metadata_files mf;
+    TableMetaTrans mf(db,table,res);
     mf.set_db_table(db,table);
-    vector<vector<int>> selected_field_types;
-    vector<vector<int>> selected_field_lengths;
-    vector<vector<string>> selected_field_names;
-    vector<vector<int>> selected_onion_index;
-    vector<int> dec_onion_index;
-    vector<string> has_salt;
-
-    unsigned int type_index=0u,length_index=0u;
-
-    for(auto ft:res){
-        vector<int> field_types;
-        vector<int> field_lengths;
-
-        vector<string> field_names;
-        //only choosen fields
-        for(auto item:ft.getChoosenOnionName()){
-            field_names.push_back(item);
-        }
-        if(ft.getHasSalt()){
-            field_names.push_back(ft.getSaltName());
-        }
-
-        int onion_index = 0;
-
-        for(unsigned int i=0u;i<field_names.size();i++){
-            field_types.push_back(static_cast<int>(resraw.fieldTypes[type_index]));
-            type_index++;
-        }
-        for(unsigned int i=0u;i<field_names.size();i++){
-            field_lengths.push_back(resraw.lengths[length_index]);
-            length_index++;
-        }
-
-        if(ft.getHasSalt()){
-            has_salt.push_back("true");
-        }else has_salt.push_back("false");
-
-        selected_field_types.push_back(field_types);
-        selected_field_lengths.push_back(field_lengths);
-        selected_field_names.push_back(field_names);
-        dec_onion_index.push_back(onion_index);
-    }
-    mf.set_selected_field_types(selected_field_types);
-    mf.set_selected_field_lengths(selected_field_lengths);
-    mf.set_selected_field_names(selected_field_names);
-    mf.set_dec_onion_index(dec_onion_index);
-    mf.set_has_salt(has_salt);
     mf.serialize();
 }
 
@@ -140,6 +93,29 @@ static void store(std::string db, std::string table){
     //generate the backup query and then fetch the tuples
     std::string backup_query = getTestQuery(*schema,res,db,table);
     rawMySQLReturnValue resraw =  executeAndGetResultRemote(globalConn,backup_query);
+
+    //then we should set the type and length of FieldMetaTrans
+    auto types = resraw.fieldTypes;
+    auto lengths = resraw.lengths;
+
+    int base_types = 0;
+    int base_lengths = 0;
+    for(auto &item:res){
+        vector<int> tempTypes;
+        vector<int> tempLengths;
+        for(unsigned int i=0u;i<item.getChoosenOnionName().size();i++){
+            tempTypes.push_back(types[base_types]);
+            tempLengths.push_back(lengths[base_lengths]);
+            base_types++;
+            base_lengths++;
+        }
+        item.setChoosenFieldTypes(tempTypes);
+        item.setChoosenFieldLengths(tempLengths);
+        if(item.getHasSalt()){
+            item.setSaltType(types[base_types++]);
+            item.setSaltLength(lengths[base_lengths++]);
+        }
+    }
     //write the tuples into files
     write_raw_data_to_files(resraw,res,db,table);
 }

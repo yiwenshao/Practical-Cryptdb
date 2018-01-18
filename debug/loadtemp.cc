@@ -91,64 +91,38 @@ struct batch{
     vector<int> field_lengths;
 };
 
-static
-batch get_batch(metadata_files & input,std::vector<FieldMeta_Wrapper> &tfms){
-    vector<vector<int>> selected_field_types = input.get_selected_field_types();
-    vector<vector<int>> selected_field_lengths = input.get_selected_field_lengths();
-    vector<vector<string>> selected_field_names = input.get_selected_field_names();
-    vector<int> dec_onion_index = input.get_dec_onion_index();
-    vector<string> has_salt = input.get_has_salt();
-   
-    vector<string> field_names;
-    vector<int> field_types;
-    vector<int> field_lengths;
+batch ggbt;
 
-    for(auto i=0u;i<tfms.size();i++){
-         int index = dec_onion_index[i];
-         string dec_field_name = tfms[i].fields[index];
-         auto f =  find(selected_field_names[i].begin(),selected_field_names[i].end(),dec_field_name);
-         assert(f!=selected_field_names[i].end());
-         int j = f - selected_field_names[i].begin();
-         if(has_salt[i]==string("true")){
-             field_names.push_back(selected_field_names[i][j]);
-             field_types.push_back(selected_field_types[i][j]);
-             field_lengths.push_back(selected_field_lengths[i][j]);
-
-             field_names.push_back(selected_field_names[i].back());
-             field_types.push_back(selected_field_types[i].back());
-             field_lengths.push_back(selected_field_lengths[i].back());             
-         }else{
-             assert(1==2);
-         }
-    }
-    batch bt;
-    bt.field_names = field_names;
-    bt.field_types = field_types;
-    bt.field_lengths = field_lengths;
-    return bt;
-}
-
+/*should choose the right decryption onion*/
 static
 std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
-                                      std::vector<FieldMeta_Wrapper> &tfds){
+                                      std::vector<FieldMetaTrans> &tfds){
     assert(fms.size()==tfds.size());
     std::shared_ptr<ReturnMeta> myReturnMeta = std::make_shared<ReturnMeta>();
     int pos=0;
     //construct OLK
     for(auto i=0u;i<tfds.size();i++){
-        OLK curOLK(tfds[i].onions[tfds[i].onionIndex],
-                tfds[i].originalOm[tfds[i].onionIndex]->getSecLevel(),tfds[i].originalFm);
-	addToReturn(myReturnMeta.get(),pos++,curOLK,true,tfds[i].originalFm->getFieldName());
+        onion o = tfds[i].getChoosenOnionO()[0];
+        SECLEVEL l = tfds[i].getOriginalFieldMeta()->getOnionMeta(o)->getSecLevel();
+        FieldMeta *k = tfds[i].getOriginalFieldMeta();
+        OLK curOLK(o,l,k);
+	addToReturn(myReturnMeta.get(),pos++,curOLK,true,k->getFieldName());
         addSaltToReturn(myReturnMeta.get(),pos++);
+
+        ggbt.field_types.push_back(tfds[i].getChoosenFieldTypes()[0]);
+        ggbt.field_names.push_back(tfds[i].getChoosenOnionName()[0]);
+        ggbt.field_lengths.push_back(tfds[i].getChoosenFieldLengths()[0]);        
+        ggbt.field_types.push_back(tfds[i].getSaltType());
+        ggbt.field_names.push_back(tfds[i].getSaltName());
+        ggbt.field_lengths.push_back(tfds[i].getSaltLength());
     }
     return myReturnMeta;
 }
 
-static metadata_files load_meta(string db="tdb", string table="student", string filename="metadata.data"){
-    metadata_files mf;
-    mf.set_db(db);
-    mf.set_table(table);
-    mf.deserialize(filename);
+static TableMetaTrans load_meta(string db="tdb", string table="student", string filename="metadata.data"){
+    TableMetaTrans mf;
+    mf.set_db_table(db,table);
+    mf.deserialize();
     return mf;
 }
 
@@ -170,29 +144,17 @@ static void load_string(string filename, vector<string> &res,unsigned long lengt
     close(fd);
 }
 
-template<class T>
-vector<T> flat_vec(vector<vector<T>> &input){
-    vector<T> res;
-    for(auto item:input){
-        for(auto i:item){
-            res.push_back(i);
-        }
-    }
-    return res;
-}
-
-/*load fields in plain string*/
-static vector<vector<string>> load_table_fields(metadata_files & input,
-                                    std::vector<FieldMeta_Wrapper> &tfms) {
+/*load fields in string, only part of it can be decrypted*/
+static vector<vector<string>> load_table_fields(TableMetaTrans & input,
+                                    std::vector<FieldMetaTrans> &tfms) {
     string db = input.get_db();
     string table = input.get_table();
     vector<vector<string>> res;
     string prefix = string("data/")+db+"/"+table+"/";
 
-    auto bt = get_batch(input,tfms);
-    vector<string> field_names = bt.field_names;
-    vector<int> field_types = bt.field_types;
-    vector<int> field_lengths = bt.field_lengths;
+    vector<string> field_names = ggbt.field_names;
+    vector<int> field_types = ggbt.field_types;
+    vector<int> field_lengths = ggbt.field_lengths;
  
     vector<string> datafiles;  
     for(auto item:field_names){
@@ -221,27 +183,34 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
 
-    auto res = FieldMeta_to_Wrapper(fms);
-    std::vector<FieldMetaTrans> res2;
+/*    std::vector<FieldMetaTrans> res2;
     for(auto fm:fms){
         FieldMetaTrans tf;
         res2.push_back(tf);
         res2.back().trans(fm);
     }
-    metadata_files res_meta = load_meta(db,table);
 
-    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+*/
+    TableMetaTrans res_meta = load_meta(db,table);
+
+    std::vector<FieldMetaTrans> res2 = res_meta.getFts();
+    for(unsigned int i=0;i<fms.size();i++){
+        res2[i].trans(fms[i]);
+    }
+
+    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res2);
+
     //why do we need this??
     create_embedded_thd(0);
     rawMySQLReturnValue resraw;
     //load fields in the stored file
-    vector<vector<string>> res_field = load_table_fields(res_meta,res);
+    vector<vector<string>> res_field = load_table_fields(res_meta,res2);
+
     resraw.rowValues = res_field;
 
-    auto bt = get_batch(res_meta,res);
-    vector<string> field_names = bt.field_names;
-    vector<int> field_types = bt.field_types;
-    vector<int> field_lengths = bt.field_lengths;
+    vector<string> field_names = ggbt.field_names;
+    vector<int> field_types = ggbt.field_types;
+    vector<int> field_lengths = ggbt.field_lengths;
 
     resraw.fieldNames = field_names;
     for(unsigned int i=0;i<field_types.size();++i){
