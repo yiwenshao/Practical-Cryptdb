@@ -102,16 +102,17 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
     int pos=0;
     //construct OLK
     for(auto i=0u;i<tfds.size();i++){
-        onion o = tfds[i].getChoosenOnionO()[0];
+        int index = getDecryptionOnionIndex(tfds);
+        onion o = tfds[i].getChoosenOnionO()[index];
         SECLEVEL l = tfds[i].getOriginalFieldMeta()->getOnionMeta(o)->getSecLevel();
         FieldMeta *k = tfds[i].getOriginalFieldMeta();
         OLK curOLK(o,l,k);
 	addToReturn(myReturnMeta.get(),pos++,curOLK,true,k->getFieldName());
         addSaltToReturn(myReturnMeta.get(),pos++);
 
-        ggbt.field_types.push_back(tfds[i].getChoosenFieldTypes()[0]);
-        ggbt.field_names.push_back(tfds[i].getChoosenOnionName()[0]);
-        ggbt.field_lengths.push_back(tfds[i].getChoosenFieldLengths()[0]);        
+        ggbt.field_types.push_back(tfds[i].getChoosenFieldTypes()[index]);
+        ggbt.field_names.push_back(tfds[i].getChoosenOnionName()[index]);
+        ggbt.field_lengths.push_back(tfds[i].getChoosenFieldLengths()[index]);        
         ggbt.field_types.push_back(tfds[i].getSaltType());
         ggbt.field_names.push_back(tfds[i].getSaltName());
         ggbt.field_lengths.push_back(tfds[i].getSaltLength());

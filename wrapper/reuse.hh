@@ -152,3 +152,5 @@ enum class STORE_STRATEGY{
     FIRST,
     ALL
 };
+
+int getDecryptionOnionIndex(std::vector<FieldMetaTrans>& res);

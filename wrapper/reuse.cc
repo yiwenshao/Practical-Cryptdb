@@ -400,3 +400,13 @@ void storeStrategies(std::vector<FieldMetaTrans>& res){
     }
 }
 
+
+int getDecryptionOnionIndex(std::vector<FieldMetaTrans>& fdtrans) {
+    int res = 0;
+
+    return res;
+}
+
+
+
+
