@@ -223,7 +223,6 @@ main(int argc, char* argv[]){
     /*load and decrypt*/
     ResType res =  load_files(db,table);
 
-
     /*transform*/
     rawMySQLReturnValue str;
     transform_to_rawMySQLReturnValue(str,res);

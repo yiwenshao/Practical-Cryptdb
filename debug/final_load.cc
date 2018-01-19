@@ -191,9 +191,20 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
     //为什么这里不是push item??
 //    append_list->push_back(&(const_cast<Item&>(i)));
     //do not use the plain strategy 
-
     std::vector<Item *> l;
-    my_typical_rewrite_insert_type(i,fm,a,&l);
+    const uint64_t salt = fm.getHasSalt() ? randomValue() : 0;
+    uint64_t IV = salt;
+    for (auto it : fm.orderedOnionMetas()) {
+        const onion o = it.first->getValue();
+        OnionMeta * const om = it.second;
+        l.push_back(my_encrypt_item_layers(i, o, *om, a, IV));
+    }
+    if (fm.getHasSalt()) {
+        l.push_back(new Item_int(static_cast<ulonglong>(salt)));
+    }
+
+
+
     for (auto it : l) {
         append_list->push_back(it);
     }
