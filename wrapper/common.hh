@@ -63,7 +63,7 @@ public:
 
 
 class TableMetaTrans{
-    string db,table;
+    string db,table;/*plain name*/
     std::vector<FieldMetaTrans> fts;
 
     string serialize_vec_int(string s,vector<int> vec_int);
@@ -88,5 +88,12 @@ public:
 
 
 
+
+TableMetaTrans loadTableMetaTrans(string db="tdb", string table="student", string filename="metadata.data");
+
+std::vector<std::vector<std::string>>
+loadTableFieldsForDecryption(std::string db,std::string table, 
+std::vector<std::string> field_names,std::vector<int> field_types,
+std::vector<int> field_lengths);
 
 

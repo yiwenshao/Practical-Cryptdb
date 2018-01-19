@@ -400,6 +400,10 @@ void storeStrategies(std::vector<FieldMetaTrans>& res){
     }else{
         exit(0);
     }
+    //Stored onions should be showed here
+    for(auto &item:res){
+        item.showChoosenOnionO();
+    }
 }
 
 
@@ -426,5 +430,32 @@ int getDecryptionOnionIndex(FieldMetaTrans& fdtrans) {
         }
     }
     return res;
+}
+
+
+void load_num_file(std::string filename,std::vector<std::string> &res){
+    std::ifstream infile(filename);
+    std::string line;
+    while(std::getline(infile,line)){
+        res.push_back(line);
+    }
+    infile.close();
+}
+
+
+void load_string_file(std::string filename, std::vector<std::string> &res,unsigned long length){
+    char *buf = new char[length];
+    int fd = open(filename.c_str(),O_RDONLY);
+    while(read(fd,buf,length)!=0){
+        res.push_back(std::string(buf,length));
+    }
+    close(fd);
+}
+
+
+std::ostream&
+insertManyValues(std::ostream &out,List<List_item> &newList){
+    out << " VALUES " << noparen(newList)<<";";
+    return out;
 }
 

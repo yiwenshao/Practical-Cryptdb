@@ -323,3 +323,40 @@ void TableMetaTrans::deserialize(std::string filename, std::string prefix){
     infile.close();
 }
 
+
+
+
+
+TableMetaTrans loadTableMetaTrans(string db, string table, string filename){
+    TableMetaTrans mf;
+    mf.set_db_table(db,table);
+    mf.deserialize();
+    return mf;
+}
+
+std::vector<std::vector<std::string>>
+loadTableFieldsForDecryption(std::string db, std::string table,
+std::vector<std::string> field_names,std::vector<int> field_types,
+std::vector<int> field_lengths){
+    std::string prefix = std::string("data/")+db+"/"+table+"/";
+    std::vector<std::vector<std::string>> res;
+    std::vector<std::string> datafiles;
+    for(auto item:field_names){
+        datafiles.push_back(prefix+item);
+    }
+    for(unsigned int i=0u;i<field_names.size();i++){
+       std::vector<std::string> column;
+       if(IS_NUM(field_types[i])){
+           load_num_file(datafiles[i],column);
+       }else{
+           load_string_file(datafiles[i],column,field_lengths[i]);
+       }
+       for(unsigned int j=0u; j<column.size(); j++){
+           if(j>=res.size()){
+               res.push_back(std::vector<std::string>());
+           }
+           res[j].push_back(column[j]);
+       }
+    }
+    return std::move(res);
+}

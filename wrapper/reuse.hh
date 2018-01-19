@@ -79,6 +79,12 @@ class FieldMetaTrans{
     std::vector<int> choosenFieldLengths;
 public:
     FieldMeta *getOriginalFieldMeta(){return originalFm;}
+    void showChoosenOnionO(){std::cout<<"for field "<<originalFm->getFieldName()<<std::endl;
+        for(auto item:choosenOnionO){
+            std::cout<<TypeText<onion>::toText(item)<<", ";
+        }
+        std::cout<<std::endl;
+    }
     void trans(FieldMeta *fm); 
     void choose(std::vector<onion> onionSet);
     void choose(std::vector<int> onionIndexSet);
@@ -154,4 +160,20 @@ enum class STORE_STRATEGY{
 };
 
 int getDecryptionOnionIndex(FieldMetaTrans& fdtrans);
+
+
+struct fullBackUp{
+    std::vector<std::string> field_names;//can either be anno onion name or field name
+    std::vector<int> field_types;
+    std::vector<int> field_lengths;
+    std::map<std::string,std::vector<std::string>> annoOnionNameToFileVector;//field name to vector of string
+};
+
+
+void load_num_file(std::string filename,std::vector<std::string> &res);
+void load_string_file(std::string filename, std::vector<std::string> &res,unsigned long length);
+
+std::ostream&
+insertManyValues(std::ostream &out,List<List_item> &newList);
+
 
