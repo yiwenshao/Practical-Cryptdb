@@ -208,7 +208,13 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
             std::string in = tempFileVector.back();            
             if(IS_NUM(type)){
                 //std::string in("11");
-                l.push_back(MySQLFieldTypeToItem(type,in));
+                unsigned int len = annoOnionName.size();
+                if(len>4u&&annoOnionName.substr(len-4)=="ASHE"){
+                    l.push_back(MySQLFieldTypeToItem(type,in));
+                }else{
+                    l.push_back( new (current_thd->mem_root)
+                                Item_int(static_cast<ulonglong>(valFromStr(in))) );
+                }
             }else{
                 //std::string in("hehe");
                 l.push_back(MySQLFieldTypeToItem(type,in));
@@ -226,7 +232,7 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
             std::string in = tempFileVector.back();
 //            enum_field_types type = static_cast<enum_field_types>(gfb.annoOnionNameToType[saltName]);
 //            l.push_back(MySQLFieldTypeToItem(type,in));
-            l.push_back(new (current_thd->mem_root)
+            l.push_back( new (current_thd->mem_root)
                                 Item_int(static_cast<ulonglong>(valFromStr(in)))
              );
             tempFileVector.pop_back();
