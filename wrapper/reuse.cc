@@ -463,6 +463,7 @@ insertManyValues(std::ostream &out,List<List_item> &newList){
 
 std::unique_ptr<Item>
 getIntItem(int i){
+    //Should cast, or we get strange value
     Item * it = new Item_int(i);
     return std::unique_ptr<Item>(it);
 }

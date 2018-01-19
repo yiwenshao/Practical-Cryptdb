@@ -204,20 +204,35 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
         std::string annoOnionName = om->getAnonOnionName();
         if(gfb.annoOnionNameToFileVector.find(annoOnionName)!=gfb.annoOnionNameToFileVector.end()){
             enum_field_types type = static_cast<enum_field_types>(gfb.annoOnionNameToType[annoOnionName]);
+            std::vector<std::string> &tempFileVector = gfb.annoOnionNameToFileVector[annoOnionName];
+            std::string in = tempFileVector.back();            
             if(IS_NUM(type)){
-                std::string in("11");
+                //std::string in("11");
                 l.push_back(MySQLFieldTypeToItem(type,in));
             }else{
-                std::string in("hehe");
+                //std::string in("hehe");
                 l.push_back(MySQLFieldTypeToItem(type,in));
             }
+            tempFileVector.pop_back();
             //l.push_back(&(const_cast<Item&>(i)));
         }else{
             l.push_back(my_encrypt_item_layers(i, o, *om, a, IV));
         }
     }
+    std::string saltName = fm.getSaltName();
     if (fm.getHasSalt()) {
-        l.push_back(new Item_int(static_cast<ulonglong>(salt)));
+        if(gfb.annoOnionNameToFileVector.find(saltName)!=gfb.annoOnionNameToFileVector.end()){
+            std::vector<std::string> &tempFileVector = gfb.annoOnionNameToFileVector[saltName];
+            std::string in = tempFileVector.back();
+//            enum_field_types type = static_cast<enum_field_types>(gfb.annoOnionNameToType[saltName]);
+//            l.push_back(MySQLFieldTypeToItem(type,in));
+            l.push_back(new (current_thd->mem_root)
+                                Item_int(static_cast<ulonglong>(valFromStr(in)))
+             );
+            tempFileVector.pop_back();
+        }else{
+            l.push_back(new Item_int(static_cast<ulonglong>(salt)));
+        }
     }
 
     for (auto it : l) {
