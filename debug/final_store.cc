@@ -47,6 +47,7 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<FieldMetaTrans> &tfds,
             res += item;
             res += " , ";
         }
+        //actually the salt should be selected if RND is used,this should be changed later.
     	if(tf.getHasSalt()){
             res += tf.getSaltName() + " , ";
         }
@@ -82,10 +83,13 @@ static void store(std::string db, std::string table){
         res.push_back(ft);
         res.back().trans(fms[i]);
     }
+
+    /*this is our strategy, each field should be able to choose the selected onion*/
     storeStrategies(res);
 
     //generate the backup query and then fetch the tuples
     std::string backup_query = getTestQuery(*schema,res,db,table);
+
     rawMySQLReturnValue resraw =  executeAndGetResultRemote(globalConn,backup_query);
 
     //then we should set the type and length of FieldMetaTrans
@@ -102,19 +106,24 @@ static void store(std::string db, std::string table){
         }
         item.setChoosenFieldTypes(tempTypes);
         item.setChoosenFieldLengths(tempLengths);
-        if(item.getHasSalt()){
+        if(item.getHasSalt()){//also this should be changed.
             item.setSaltType(types[base_types++]);
             item.setSaltLength(lengths[base_lengths++]);
         }
     }
+
     //write the tuples into files
     write_raw_data_to_files(resraw,res,db,table);
 }
 
 int
-main(int argc, char* argv[]){
+main(int argc, char* argv[]){    
     init();
     std::string db="tdb",table="student";
+    if(argc==3){
+        db = std::string(argv[1]);
+        table = std::string(argv[2]);
+    }
     store(db,table);
     return 0;
 }

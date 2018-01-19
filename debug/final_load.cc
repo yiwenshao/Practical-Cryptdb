@@ -252,6 +252,10 @@ main(int argc, char* argv[]){
     init();
     create_embedded_thd(0);
     std::string db="tdb",table="student";
+    if(argc==3){
+        db = std::string(argv[1]);
+        table = std::string(argv[2]);
+    }
 
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
     schema.get();
