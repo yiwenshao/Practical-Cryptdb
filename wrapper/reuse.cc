@@ -383,7 +383,7 @@ write_row_data(rawMySQLReturnValue& resraw,std::string db,std::string table,std:
 }
 
 
-STORE_STRATEGY currentStrategy = STORE_STRATEGY::FIRST;
+STORE_STRATEGY currentStrategy = STORE_STRATEGY::ALL;
 
 /*storage used when we store*/
 void storeStrategies(std::vector<FieldMetaTrans>& res){    
@@ -394,8 +394,9 @@ void storeStrategies(std::vector<FieldMetaTrans>& res){
             item.choose(in);
         }
     }else if(currentStrategy == STORE_STRATEGY::ALL){
-
-
+        for(auto &item:res){
+            item.chooseAll();
+        }
     }else{
         exit(0);
     }
@@ -426,7 +427,4 @@ int getDecryptionOnionIndex(FieldMetaTrans& fdtrans) {
     }
     return res;
 }
-
-
-
 

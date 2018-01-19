@@ -82,7 +82,7 @@ public:
     void trans(FieldMeta *fm); 
     void choose(std::vector<onion> onionSet);
     void choose(std::vector<int> onionIndexSet);
-
+    void chooseAll(){choosenOnionO = onionsO; choosenOnionName = onionsName;}
     const std::vector<std::string> getChoosenOnionName(){return choosenOnionName;}
     void setChoosenOnionName(const std::vector<std::string> input){choosenOnionName=input;}
 
@@ -154,3 +154,4 @@ enum class STORE_STRATEGY{
 };
 
 int getDecryptionOnionIndex(FieldMetaTrans& fdtrans);
+

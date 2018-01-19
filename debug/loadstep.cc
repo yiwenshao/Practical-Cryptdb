@@ -13,6 +13,7 @@
 #include <algorithm>
 #include "wrapper/reuse.hh"
 #include "wrapper/common.hh"
+#include "wrapper/insert_lib.hh"
 using std::cout;
 using std::cin;
 using std::endl;
@@ -175,12 +176,7 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     auto finalresults = decryptResults(rawtorestype,*rm);
     return finalresults;
 }
-static
-void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
-                           List<Item> *const append_list){
-    //为什么这里不是push item??
-    append_list->push_back(&(const_cast<Item&>(i)));
-}
+
 
 static std::ostream&
 insert_list_show(std::ostream &out,List<List_item> &newList){
@@ -188,31 +184,53 @@ insert_list_show(std::ostream &out,List<List_item> &newList){
     return out;
 }
 
+
+static
+void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
+                           List<Item> *const append_list){
+    //为什么这里不是push item??
+//    append_list->push_back(&(const_cast<Item&>(i)));
+    //do not use the plain strategy 
+
+    std::vector<Item *> l;
+    my_typical_rewrite_insert_type(i,fm,a,&l);
+    for (auto it : l) {
+        append_list->push_back(it);
+    }
+}
+
+
 int
 main(int argc, char* argv[]){
     init();
     create_embedded_thd(0);
     std::string db="tdb",table="student";
 
-    /*load and decrypt*/
-    ResType res =  load_files(db,table);
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
     schema.get();
     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
-    Analysis analysis(db,*schema,TK,
-                        SECURITY_RATING::SENSITIVE);
-    List<List_item> newList;
-    for(auto field_name:res.names){
-        std::cout<<field_name<<std::endl;
-        FieldMeta & fm = analysis.getFieldMeta(db,table,field_name);
+    Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);
+
+    /*choose decryption onion, load and decrypt to plain text*/
+    ResType res =  load_files(db,table);
+    std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
+
+    const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
+
+    /*reencryption to get the encrypted insert!!!*/
+    for(auto &row:res.rows){
+        List<List_item> newList;
         List<Item> *const newList0 = new List<Item>();
-        local_wrapper(*res.rows[0][0],fm,analysis,newList0);
+        for(auto i=0u;i<res.names.size();i++){
+            std::string field_name = res.names[i];
+            FieldMeta & fm = analysis.getFieldMeta(db,table,field_name);
+            local_wrapper(*row[i],fm,analysis,newList0);
+        }
         newList.push_back(newList0);
+        std::ostringstream o;
+        insert_list_show(o,newList);
+        std::cout<<(head+o.str())<<std::endl;
     }
-    std::ostringstream o;
-    insert_list_show(o,newList);
-    std::cout<<o.str()<<std::endl;
     return 0;
 }
-
 
