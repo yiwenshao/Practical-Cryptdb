@@ -459,3 +459,22 @@ insertManyValues(std::ostream &out,List<List_item> &newList){
     return out;
 }
 
+
+
+std::unique_ptr<Item>
+getIntItem(int i){
+    Item * it = new Item_int(i);
+    return std::unique_ptr<Item>(it);
+}
+
+std::unique_ptr<Item>
+getStringItem(std::string s){
+    Item * it = new Item_string(make_thd_string(s),s.length(),&my_charset_bin);
+    return std::unique_ptr<Item>(it);
+
+}
+
+
+
+
+

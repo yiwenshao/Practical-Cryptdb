@@ -167,6 +167,7 @@ struct fullBackUp{
     std::vector<int> field_types;
     std::vector<int> field_lengths;
     std::map<std::string,std::vector<std::string>> annoOnionNameToFileVector;//field name to vector of string
+    std::map<std::string,int> annoOnionNameToType;
 };
 
 
@@ -176,4 +177,10 @@ void load_string_file(std::string filename, std::vector<std::string> &res,unsign
 std::ostream&
 insertManyValues(std::ostream &out,List<List_item> &newList);
 
+
+std::unique_ptr<Item>
+getIntItem(int i);
+
+std::unique_ptr<Item>
+getStringItem(std::string s);
 

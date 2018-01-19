@@ -128,6 +128,11 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
         }
         gfb.annoOnionNameToFileVector[gfb.field_names[i]] = std::move(column);
     }
+
+    //init another map
+    for(unsigned int i=0;i<gfb.field_names.size();i++){
+        gfb.annoOnionNameToType[gfb.field_names[i]] = gfb.field_types[i];
+    }
 }
 
 
@@ -157,8 +162,8 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     //load fields in the stored file
 
     //Fast version
-    vector<vector<string>> resss_field = loadTableFieldsForDecryption(db,table,field_names, field_types, field_lengths);
-
+    vector<vector<string>> resss_field = loadTableFieldsForDecryption(db,
+                                         table,field_names, field_types, field_lengths);
     vector<vector<string>> res_field;   
     for(auto item:field_names){
         res_field.push_back(gfb.annoOnionNameToFileVector[item]);
@@ -188,8 +193,7 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
 static
 void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
                            List<Item> *const append_list){
-    //为什么这里不是push item??
-//    append_list->push_back(&(const_cast<Item&>(i)));
+    //append_list->push_back(&(const_cast<Item&>(i)));
     //do not use the plain strategy 
     std::vector<Item *> l;
     const uint64_t salt = fm.getHasSalt() ? randomValue() : 0;
@@ -197,7 +201,20 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
     for (auto it : fm.orderedOnionMetas()) {
         const onion o = it.first->getValue();
         OnionMeta * const om = it.second;
-        l.push_back(my_encrypt_item_layers(i, o, *om, a, IV));
+        std::string annoOnionName = om->getAnonOnionName();
+        if(gfb.annoOnionNameToFileVector.find(annoOnionName)!=gfb.annoOnionNameToFileVector.end()){
+            enum_field_types type = static_cast<enum_field_types>(gfb.annoOnionNameToType[annoOnionName]);
+            if(IS_NUM(type)){
+                std::string in("11");
+                l.push_back(MySQLFieldTypeToItem(type,in));
+            }else{
+                std::string in("hehe");
+                l.push_back(MySQLFieldTypeToItem(type,in));
+            }
+            //l.push_back(&(const_cast<Item&>(i)));
+        }else{
+            l.push_back(my_encrypt_item_layers(i, o, *om, a, IV));
+        }
     }
     if (fm.getHasSalt()) {
         l.push_back(new Item_int(static_cast<ulonglong>(salt)));
