@@ -28,40 +28,6 @@ static std::map<std::string, WrapperState*> clients;
 Connect  *globalConn;
 /*for each field, convert the format to FieldMeta_Wrapper*/
 
-static
-void
-construct_insert(rawMySQLReturnValue & str,std::string table,std::vector<std::string> &res){
-    std::string head = string("INSERT INTO `")+table+"` VALUES ";
-    int cnt = 0;
-    string cur=head;
-    for(unsigned int i=0u; i<str.rowValues.size();i++){
-        ++cnt;
-        cur+="(";        
-        for(unsigned int j=0u;j<str.rowValues[i].size();j++){
-            if(IS_NUM(str.fieldTypes[j])) {
-                cur+=str.rowValues[i][j]+=",";
-            }else{
-                int len = str.rowValues[i][j].size();
-                mysql_real_escape_string(globalConn->get_conn(),globalEsp,
-                    str.rowValues[i][j].c_str(),len);
-                cur+=string("\"")+=string(globalEsp)+="\",";
-            }
-        }
-        cur.back()=')';
-        cur+=",";
-        if(cnt == num_of_pipe){
-            cnt = 0;
-            cur.back()=';';
-            res.push_back(cur);
-            cur=head;
-        }
-    }
-    if(cnt!=0){
-        cur.back()=';';
-        res.push_back(cur);
-    }
-}
-
 static void init(){
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
@@ -209,31 +175,44 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     auto finalresults = decryptResults(rawtorestype,*rm);
     return finalresults;
 }
+static
+void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
+                           List<Item> *const append_list){
+    //为什么这里不是push item??
+    append_list->push_back(&(const_cast<Item&>(i)));
+}
+
+static std::ostream&
+insert_list_show(std::ostream &out,List<List_item> &newList){
+    out << " VALUES " << noparen(newList)<<";";
+    return out;
+}
 
 int
 main(int argc, char* argv[]){
     init();
     create_embedded_thd(0);
     std::string db="tdb",table="student";
-    globalEsp = (char*)malloc(sizeof(char)*5000);
-    if(globalEsp==NULL){
-        printf("unable to allocate esp\n");
-        return 0;
-    }
+
     /*load and decrypt*/
     ResType res =  load_files(db,table);
-
-
-    /*transform*/
-    rawMySQLReturnValue str;
-    transform_to_rawMySQLReturnValue(str,res);
-    std::vector<string> res_query;
-    /*get piped insert*/
-    construct_insert(str,table,res_query);
-    for(auto item:res_query){
-        cout<<item<<endl;
+    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
+    schema.get();
+    const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
+    Analysis analysis(db,*schema,TK,
+                        SECURITY_RATING::SENSITIVE);
+    List<List_item> newList;
+    for(auto field_name:res.names){
+        std::cout<<field_name<<std::endl;
+        FieldMeta & fm = analysis.getFieldMeta(db,table,field_name);
+        List<Item> *const newList0 = new List<Item>();
+        local_wrapper(*res.rows[0][0],fm,analysis,newList0);
+        newList.push_back(newList0);
     }
-    free(globalEsp);
-    /*the next step is to construct encrypted insert query*/
+    std::ostringstream o;
+    insert_list_show(o,newList);
+    std::cout<<o.str()<<std::endl;
     return 0;
 }
+
+
