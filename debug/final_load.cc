@@ -82,16 +82,19 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
         SECLEVEL l = tfds[i].getOriginalFieldMeta()->getOnionMeta(o)->getSecLevel();
         FieldMeta *k = tfds[i].getOriginalFieldMeta();
         OLK curOLK(o,l,k);
-	addToReturn(myReturnMeta.get(),pos++,curOLK,true,k->getFieldName());
-
+        bool use_salt = false;
         if(needsSalt(curOLK))
+            use_salt = true;
+	addToReturn(myReturnMeta.get(),pos++,curOLK,use_salt,k->getFieldName());
+
+        if(use_salt)
             addSaltToReturn(myReturnMeta.get(),pos++);
 
         ggbt.field_types.push_back(tfds[i].getChoosenFieldTypes()[index]);
         ggbt.field_names.push_back(tfds[i].getChoosenOnionName()[index]);
         ggbt.field_lengths.push_back(tfds[i].getChoosenFieldLengths()[index]);
 
-        if(needsSalt(curOLK)){
+        if(use_salt){
             ggbt.field_types.push_back(tfds[i].getSaltType());
             ggbt.field_names.push_back(tfds[i].getSaltName());
             ggbt.field_lengths.push_back(tfds[i].getSaltLength());
