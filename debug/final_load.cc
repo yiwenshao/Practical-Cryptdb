@@ -74,29 +74,41 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
     int pos=0;
     //construct OLK
     for(auto i=0u;i<tfds.size();i++){
+        //the order is DET,OPE,ASHE,AGG. other onions are not decryptable!!
         int index = getDecryptionOnionIndex(tfds[i]);
+        if(index==-1) assert(0);
+
         onion o = tfds[i].getChoosenOnionO()[index];
         SECLEVEL l = tfds[i].getOriginalFieldMeta()->getOnionMeta(o)->getSecLevel();
         FieldMeta *k = tfds[i].getOriginalFieldMeta();
         OLK curOLK(o,l,k);
 	addToReturn(myReturnMeta.get(),pos++,curOLK,true,k->getFieldName());
-        addSaltToReturn(myReturnMeta.get(),pos++);
+
+        if(needsSalt(curOLK))
+            addSaltToReturn(myReturnMeta.get(),pos++);
 
         ggbt.field_types.push_back(tfds[i].getChoosenFieldTypes()[index]);
         ggbt.field_names.push_back(tfds[i].getChoosenOnionName()[index]);
         ggbt.field_lengths.push_back(tfds[i].getChoosenFieldLengths()[index]);
 
-        ggbt.field_types.push_back(tfds[i].getSaltType());
-        ggbt.field_names.push_back(tfds[i].getSaltName());
-        ggbt.field_lengths.push_back(tfds[i].getSaltLength());
+        if(needsSalt(curOLK)){
+            ggbt.field_types.push_back(tfds[i].getSaltType());
+            ggbt.field_names.push_back(tfds[i].getSaltName());
+            ggbt.field_lengths.push_back(tfds[i].getSaltLength());
+        }
     }
     return myReturnMeta;
 }
+
+/*init global full backup. */
 static
 void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
     vector<string> field_names;
     vector<int> field_types;
     vector<int> field_lengths;
+    /*choosen onions should all be included in gfb. salt is also included
+      it's hard to decide whether a FieldMetaTrans has salt because the senmantic is different from that of FieldMeta.
+    */
     for(auto &item:res){
         for(auto i:item.getChoosenOnionName()){
             field_names.push_back(i);
@@ -128,15 +140,14 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
         }
         gfb.annoOnionNameToFileVector[gfb.field_names[i]] = std::move(column);
     }
-
     //init another map
     for(unsigned int i=0;i<gfb.field_names.size();i++){
         gfb.annoOnionNameToType[gfb.field_names[i]] = gfb.field_types[i];
     }
 }
 
-
-static ResType load_files(std::string db="tdb", std::string table="student"){
+/*load file, decrypt, and then return data plain fields in the type ResType*/
+static ResType load_files(std::string db, std::string table){
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
@@ -157,13 +168,8 @@ static ResType load_files(std::string db="tdb", std::string table="student"){
     //why do we need this??
     create_embedded_thd(0);
     rawMySQLReturnValue resraw;
-    //db = res_meta.get_db();
-    //table = res_meta.get_table();
-    //load fields in the stored file
-
-    //Fast version
-    vector<vector<string>> resss_field = loadTableFieldsForDecryption(db,
-                                         table,field_names, field_types, field_lengths);
+//    vector<vector<string>> resss_field = loadTableFieldsForDecryption(db,
+//                                         table,field_names, field_types, field_lengths);
     vector<vector<string>> res_field;   
     for(auto item:field_names){
         res_field.push_back(gfb.annoOnionNameToFileVector[item]);

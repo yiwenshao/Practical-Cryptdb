@@ -51,8 +51,7 @@ static void sp_next_first(const help_select &hs){
         rawMySQLReturnValue str;
         transform_to_rawMySQLReturnValue(str,const_cast<ResType &>(againGet));
         str.fieldNames = againGet.names;
-        write_row_data(str,"tdb","student","tdata/");
-
+//        write_row_data(str,"tdb","student","tdata/");
         //AbstractQueryExecutor::ResultType::RESULTS
         const auto &res = decryptResults(againGet,hs.rmeta);
         parseResType(res);
