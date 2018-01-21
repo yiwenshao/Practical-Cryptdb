@@ -13,7 +13,7 @@
 #include <main/rewrite_main.hh>
 #include "wrapper/reuse.hh"
 
-//std::map<onion,std::vector<std::string>> fileOnions;
+std::map<onion,std::vector<std::string>> fileOnions;
 
 static std::string embeddedDir="/t/cryt/shadow";
 
@@ -72,14 +72,14 @@ my_typical_rewrite_insert_type(const Item &i, const FieldMeta &fm,
     for (auto it : fm.orderedOnionMetas()) {
         const onion o = it.first->getValue();
         OnionMeta * const om = it.second;      
-//        if(o==oAGG){
-//            std::vector<std::string> &tempFileVector = fileOnions[o];
-//            std::string in(tempFileVector.back());
-//            tempFileVector.pop_back();
-//            l->push_back(MySQLFieldTypeToItem(static_cast<enum_field_types>(253),in));
-//        }else{
+        if(o==oAGG){
+            std::vector<std::string> &tempFileVector = fileOnions[o];
+            std::string in(tempFileVector.back());
+            tempFileVector.pop_back();
+            l->push_back(MySQLFieldTypeToItem(static_cast<enum_field_types>(253),in));
+        }else{
             l->push_back(my_encrypt_item_layers(i, o, *om, a, IV));
-//        }
+        }
     }
     if (fm.getHasSalt()) {
         l->push_back(new Item_int(static_cast<ulonglong>(salt)));
@@ -185,7 +185,6 @@ static void testInsertHandler(std::string query,std::string db){
 }
 
 //fileOnions
-/*
 static 
 void initFileOnions(std::string filename,std::string dataPrefix="allTables/table_MGVGBABDMU/"){
     std::ifstream infile(filename);
@@ -203,7 +202,7 @@ void initFileOnions(std::string filename,std::string dataPrefix="allTables/table
     load_string_file(dataPrefix+onionAnnoName,res,256);
     std::reverse(res.begin(),res.end());
     fileOnions[oAGG] = std::move(res);
-}*/
+}
 
 int
 main(int argc,char**argv) {
@@ -218,7 +217,7 @@ main(int argc,char**argv) {
     }
     std::string db(argv[1]);
 
-//    initFileOnions("conf/already.cnf");
+    initFileOnions("conf/already.cnf");
 
     const std::string master_key = "113341234";
     ConnectionInfo ci("localhost", "root", "letmein",3306);

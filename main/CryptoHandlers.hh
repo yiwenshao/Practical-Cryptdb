@@ -87,6 +87,7 @@ protected:
 class HOM : public EncLayer {
 public:
     HOM(const Create_field &cf, const std::string &seed_key);
+    HOM(const std::string &seed_key);
 
     // serialize and deserialize
     std::string doSerialize() const {return seed_key;}

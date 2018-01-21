@@ -1479,6 +1479,10 @@ HOM::HOM(const Create_field &f, const std::string &seed_key)
     : seed_key(seed_key), sk(NULL), waiting(true)
 {}
 
+HOM::HOM(const std::string &seed_key)//added by shaoyiwen for testing purposes
+    : seed_key(seed_key), sk(NULL), waiting(true)
+{}
+
 HOM::HOM(unsigned int id, const std::string &serial)
     : EncLayer(id), seed_key(serial), sk(NULL), waiting(true)
 {}

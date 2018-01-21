@@ -457,7 +457,7 @@ getLayerKey(const AES_KEY * const mKey, string uniqueFieldName,
     if (l == SECLEVEL::OPEFOREIGN){
         return getKey(mKey,"foreignjoin",l);
     }
-    return getKey(mKey, uniqueFieldName, l);
+    return getKey(mKey, "uniqueFieldName", l);//disable layer key temporarily. shaoyiwen
 }
 
 
