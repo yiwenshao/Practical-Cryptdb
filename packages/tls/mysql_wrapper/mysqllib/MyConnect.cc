@@ -112,7 +112,7 @@ Connect::execute(const std::string &query){
                 curLength.push_back(fieldLen[i]);
             }
         }
-        rows.push_back(curRow);
+        rows.push_back(std::move(curRow));
         lengths.push_back(curLength);
     }
 
@@ -171,7 +171,7 @@ DBResult::printFields(){
 
 vector<vector<string>>
 DBResult::getRows(){
-    return rows;
+    return std::move(rows);
 }
 
 
