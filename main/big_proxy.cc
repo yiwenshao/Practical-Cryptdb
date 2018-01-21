@@ -148,12 +148,12 @@ void parseResType(const ResType &rd) {
     }
 }
 
-big_proxy::big_proxy(std::string db){
+big_proxy::big_proxy(std::string db,std::string ip,std::string user,std::string passwd,int port){
         client="192.168.1.1:1234";
         //one Wrapper per user.
         clients[client] = new WrapperState();    
         //Connect phase
-        ConnectionInfo ci("localhost", "root", "letmein",3306);
+        ConnectionInfo ci(ip, user, passwd,port);
         //const std::string master_key = "113341234";
         const std::string master_key = "113341234";
         char *buffer;

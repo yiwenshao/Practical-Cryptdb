@@ -88,7 +88,8 @@ struct big_proxy{
     std::string client;
     std::string embeddedDir="/t/cryt/shadow";
 
-    big_proxy(std::string db = "tdb");
+    big_proxy(std::string db = "tdb",std::string ip="127.0.0.1",std::string user="root",
+              std::string passwd="letmein",int port=3306);
     void myNext(std::string client,bool isFirst,ResType inRes);
     void batchTogether(std::string client, std::string curQuery,unsigned long long _thread_id);
     bool myRewrite(std::string curQuery,unsigned long long _thread_id,std::string client);

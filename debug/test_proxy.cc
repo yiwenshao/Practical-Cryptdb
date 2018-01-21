@@ -1,4 +1,4 @@
-#include "big_proxy.hh"
+#include "main/big_proxy.hh"
 using std::string;
 int
 main(int argc,char ** argv) {
