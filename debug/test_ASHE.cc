@@ -3,7 +3,7 @@
 #include "crypto/ASHE.hh"
 #include "util/util.cc"
 int main(){
-    const int num_of_tests = 100;
+    const int num_of_tests = 32768;
     unsigned int seed = 1u;
     std::vector<unsigned int> plain;
     std::vector<RAW_ASHE> ass;
@@ -14,7 +14,7 @@ int main(){
         ass.push_back(RAW_ASHE(IV));
         ass.back().encrypt(seed,IV);
         unsigned int res = ass.back().decrypt(ass.back().get_ciphertext(),IV);
-        if(res==seed) std::cout<<"pass"<<std::endl;
+        if(res==seed) ;
         else std::cout<<"not pass!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
         seed++;
     }

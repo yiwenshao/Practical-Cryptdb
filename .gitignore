@@ -30,3 +30,4 @@ packages/tls/mysqlWrapper/createSelect
 packages/tls/mysqlWrapper/main
 *allTables*
 *pipelinefile*
+*.conf

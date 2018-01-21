@@ -387,7 +387,6 @@ STORE_STRATEGY currentStrategy = STORE_STRATEGY::ALL;
 
 /*storage used when we store*/
 void storeStrategies(std::vector<FieldMetaTrans>& res){    
-
     if(currentStrategy == STORE_STRATEGY::FIRST){
         std::vector<int> in{0};
         for(auto &item:res){
@@ -410,10 +409,8 @@ void storeStrategies(std::vector<FieldMetaTrans>& res){
 static const std::vector<onion> onion_order = {
         oDET,
         oOPE,
-        oAGG, 
         oASHE,
-        oSWP,
-        oPLAIN
+        oAGG, 
 };
 
 int getDecryptionOnionIndex(FieldMetaTrans& fdtrans) {
