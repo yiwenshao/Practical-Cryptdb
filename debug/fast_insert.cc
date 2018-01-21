@@ -11,6 +11,10 @@
 #include <main/ddl_handler.hh>
 #include <main/CryptoHandlers.hh>
 #include <main/rewrite_main.hh>
+#include "wrapper/reuse.hh"
+
+std::map<onion,std::vector<std::string>> fileOnions;
+
 static std::string embeddedDir="/t/cryt/shadow";
 
 /*convert lex of insert into string*/
@@ -38,7 +42,6 @@ convert_insert(const LEX &lex)
 
 
 /************************************************************************************************/
-
 
 /*encrypt one onion to get item. if the onion exists, then return directly*/
 static Item *
@@ -68,8 +71,15 @@ my_typical_rewrite_insert_type(const Item &i, const FieldMeta &fm,
     uint64_t IV = salt;
     for (auto it : fm.orderedOnionMetas()) {
         const onion o = it.first->getValue();
-        OnionMeta * const om = it.second;
-        l->push_back(my_encrypt_item_layers(i, o, *om, a, IV));
+        OnionMeta * const om = it.second;      
+        if(o==oAGG){
+            std::vector<std::string> &tempFileVector = fileOnions[o];
+            std::string in(tempFileVector.back());
+            tempFileVector.pop_back();
+            l->push_back(MySQLFieldTypeToItem(static_cast<enum_field_types>(253),in));
+        }else{
+            l->push_back(my_encrypt_item_layers(i, o, *om, a, IV));
+        }
     }
     if (fm.getHasSalt()) {
         l->push_back(new Item_int(static_cast<ulonglong>(salt)));
@@ -149,7 +159,7 @@ static std::string getInsertResults(Analysis a,LEX* lex){
 }
 
 
-static void testInsertHandler(std::string query){
+static void testInsertHandler(std::string query,std::string db){
     std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
     std::unique_ptr<SchemaInfo> schema(new SchemaInfo());
     std::function<DBMeta *(DBMeta *const)> loadChildren =
@@ -164,36 +174,62 @@ static void testInsertHandler(std::string query){
     loadChildren(schema.get()); 
     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
     //just like what we do in Rewrite::rewrite,dispatchOnLex
-    Analysis analysis(std::string("tdb"),*schema,TK,
+    Analysis analysis(std::string(db),*schema,TK,
                         SECURITY_RATING::SENSITIVE);
     std::unique_ptr<query_parse> p;
     p = std::unique_ptr<query_parse>(
-                new query_parse("tdb", query));
+                new query_parse(db, query));
     LEX *const lex = p->lex();
 
     std::cout<<getInsertResults(analysis,lex)<<std::endl;
 }
 
+//fileOnions
+static 
+void initFileOnions(std::string filename,std::string dataPrefix="allTables/table_MGVGBABDMU/"){
+    std::ifstream infile(filename);
+    std::string line;
+    
+    std::string onionAnnoName;
+    while(getline(infile,line)){
+        int index = line.find(":");
+        std::string head = line.substr(0,index);
+        std::string next = line.substr(index+1);
+        onionAnnoName = next;
+    }
+
+    std::vector<std::string> res;
+    load_string_file(dataPrefix+onionAnnoName,res,256);
+    std::reverse(res.begin(),res.end());
+    fileOnions[oAGG] = std::move(res);
+}
+
 int
-main() {
+main(int argc,char**argv) {
     char *buffer;
     if((buffer = getcwd(NULL, 0)) == NULL){
         perror("getcwd error");
     }
     embeddedDir = std::string(buffer)+"/shadow";
+
+    if(argc!=2){
+        assert(0);        
+    }
+    std::string db(argv[1]);
+
+    initFileOnions("conf/already.cnf");
+
     const std::string master_key = "113341234";
     ConnectionInfo ci("localhost", "root", "letmein",3306);
     SharedProxyState *shared_ps = 
                      new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
     assert(shared_ps!=NULL);
-    std::string query1 = "insert into child values(1,\"ZHAOYUN\")";
+    std::string query1 = "insert into child values(1,\"ZHAOYUN\"),(2,'XC'),(3,'KK')";
     std::vector<std::string> querys{query1};
-
     for(auto item:querys){
         std::cout<<item<<std::endl;
-        testInsertHandler(item);
+        testInsertHandler(item,db);
         std::cout<<std::endl;
     }
-
     return 0;
 }

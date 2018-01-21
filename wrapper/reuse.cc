@@ -443,6 +443,7 @@ void load_num_file(std::string filename,std::vector<std::string> &res){
 void load_string_file(std::string filename, std::vector<std::string> &res,unsigned long length){
     char *buf = new char[length];
     int fd = open(filename.c_str(),O_RDONLY);
+    if(fd==-1) assert(0);//reading from -1 may cause errors
     while(read(fd,buf,length)!=0){
         res.push_back(std::string(buf,length));
     }
