@@ -1,1 +1,1 @@
-`pwd`/mysql-src/build/client/mysql -uroot -pletmein -h 192.168.1.9 -P3399
+`pwd`/mysql-src/build/client/mysql -uroot -pletmein -h 127.0.0.1 -P3399
