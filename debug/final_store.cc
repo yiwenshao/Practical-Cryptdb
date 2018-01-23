@@ -121,11 +121,10 @@ main(int argc, char* argv[]){
     std::string db="tdb",table="student";
     std::string ip="127.0.0.1";
     int port=3306;
-    if(argc==5){
+    if(argc==4){
         ip = std::string(argv[1]);
-        port = std::stoi(std::string(argv[2]));
-        db = std::string(argv[3]);
-        table = std::string(argv[4]);
+        db = std::string(argv[2]);
+        table = std::string(argv[3]);
     }
     init(ip,port);
     store(db,table);

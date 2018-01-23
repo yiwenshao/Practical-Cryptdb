@@ -167,6 +167,7 @@ struct fullBackUp{
     std::vector<int> field_types;
     std::vector<int> field_lengths;
     std::map<std::string,std::vector<std::string>> annoOnionNameToFileVector;//field name to vector of string
+    std::map<std::string,std::vector<Item*>> annoOnionNameToItemVector;
     std::map<std::string,int> annoOnionNameToType;
 };
 
@@ -183,4 +184,12 @@ getIntItem(int i);
 
 std::unique_ptr<Item>
 getStringItem(std::string s);
+
+
+//Item* do not work
+//void load_num_file(std::string filename,std::vector<Item> &res,enum_field_types intype);
+
+//void load_string_file(std::string filename,std::vector<Item> &res,unsigned long length,enum_field_types intype);
+
+
 

@@ -132,8 +132,6 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
     gfb.field_lengths = field_lengths;
     //then we should read the vector
     std::string prefix = std::string("data/")+db+"/"+table+"/";
-
-    unsigned long tupleNum=0;
     for(unsigned int i=0u; i<gfb.field_names.size(); i++) {
         std::string filename = prefix + gfb.field_names[i];
         std::vector<std::string> column;
@@ -142,21 +140,16 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
         }else{
             load_string_file(filename,column,gfb.field_lengths[i]);
         }
-        tupleNum = column.size();
         gfb.annoOnionNameToFileVector[gfb.field_names[i]] = std::move(column);
     }
     //init another map
     for(unsigned int i=0;i<gfb.field_names.size();i++){
         gfb.annoOnionNameToType[gfb.field_names[i]] = gfb.field_types[i];
     }
-    //extra transformation. transform rows to item*
-    for(unsigned int i=0;i<gfb.field_names.size();i++){
-        gfb.annoOnionNameToItemVector[gfb.field_names[i]] = itemNullVector(tupleNum);
-    }
 }
 
 /*load file, decrypt, and then return data plain fields in the type ResType*/
-static ResType load_files_low_memory(std::string db, std::string table){
+static ResType load_files(std::string db, std::string table){
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
@@ -176,8 +169,9 @@ static ResType load_files_low_memory(std::string db, std::string table){
 
     //why do we need this??
     create_embedded_thd(0);
-
     rawMySQLReturnValue resraw;
+//    vector<vector<string>> resss_field = loadTableFieldsForDecryption(db,
+//                                         table,field_names, field_types, field_lengths);
     vector<vector<string>> res_field;   
     for(auto item:field_names){
         res_field.push_back(gfb.annoOnionNameToFileVector[item]);
@@ -199,14 +193,13 @@ static ResType load_files_low_memory(std::string db, std::string table){
     for(unsigned int i=0;i<field_types.size();++i){
 	resraw.fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
     }
-    //mem 91%
     ResType rawtorestype = rawMySQLReturnValue_to_ResType(false, &resraw);
     auto finalresults = decryptResults(rawtorestype,*rm);
-    return std::move(finalresults);
+    return finalresults;
 }
 
 static
-void local_wrapper_low_memory(const Item &i, const FieldMeta &fm, Analysis &a,
+void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
                            List<Item> *const append_list){
     //append_list->push_back(&(const_cast<Item&>(i)));
     //do not use the plain strategy 
@@ -266,9 +259,9 @@ int
 main(int argc, char* argv[]){
     init();
     create_embedded_thd(0);
-    std::string ip = "localhost";
     std::string db="tdb",table="student";
-    if(argc==3){
+    std::string ip="localhost";
+    if(argc==4){
         ip = std::string(argv[1]);
         db = std::string(argv[2]);
         table = std::string(argv[3]);
@@ -280,7 +273,7 @@ main(int argc, char* argv[]){
     Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);
 
     /*choose decryption onion, load and decrypt to plain text*/
-    ResType res =  load_files_low_memory(db,table);
+    ResType res =  load_files(db,table);
     std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
 
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
@@ -292,7 +285,7 @@ main(int argc, char* argv[]){
         for(auto i=0u;i<res.names.size();i++){
             std::string field_name = res.names[i];
             FieldMeta & fm = analysis.getFieldMeta(db,table,field_name);
-            local_wrapper_low_memory(*row[i],fm,analysis,newList0);
+            local_wrapper(*row[i],fm,analysis,newList0);
         }
         newList.push_back(newList0);
         std::ostringstream o;

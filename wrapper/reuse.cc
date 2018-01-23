@@ -438,6 +438,16 @@ void load_num_file(std::string filename,std::vector<std::string> &res){
     }
     infile.close();
 }
+/*
+void load_num_file(std::string filename,std::vector<Item> &res,enum_field_types intype){
+    std::ifstream infile(filename);
+    std::string line;     
+    while(std::getline(infile,line)){
+        res.pusb_back((void*)MySQLFieldTypeToItem(intype,line));
+    }
+    infile.close();
+}*/
+
 
 
 void load_string_file(std::string filename, std::vector<std::string> &res,unsigned long length){
@@ -450,6 +460,17 @@ void load_string_file(std::string filename, std::vector<std::string> &res,unsign
     close(fd);
 }
 
+/*
+void load_string_file(std::string filename,std::vector<void*> &res,unsigned long length,enum_field_types intype){
+    char *buf = new char[length];
+    int fd = open(filename.c_str(),O_RDONLY);
+    if(fd==-1) assert(0);//reading from -1 may cause errors
+    while(read(fd,buf,length)!=0){
+        res.push_back((void*)MySQLFieldTypeToItem(intype,std::string(buf,length)));
+    }
+    close(fd);
+}
+*/
 
 std::ostream&
 insertManyValues(std::ostream &out,List<List_item> &newList){
