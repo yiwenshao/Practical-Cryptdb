@@ -168,6 +168,7 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
                 dest[j] = MySQLFieldTypeToItem(static_cast<enum_field_types>(gfb.field_types[i]),src[j]);
             }
         }
+        gfb.annoOnionNameToFileVector.erase(gfb.field_names[i]);
     }
 }
 
@@ -228,60 +229,6 @@ static ResType load_files_low_memory(std::string db, std::string table){
     return std::move(finalresults);
 }
 
-/*
-static
-void local_wrapper_low_memory(const Item &i, const FieldMeta &fm, Analysis &a,
-                           List<Item> *const append_list){
-    std::vector<Item *> l;
-    const uint64_t salt = fm.getHasSalt() ? randomValue() : 0;
-    uint64_t IV = salt;
-    for (auto it : fm.orderedOnionMetas()) {
-        const onion o = it.first->getValue();
-        OnionMeta * const om = it.second;
-        std::string annoOnionName = om->getAnonOnionName();
-        if(gfb.annoOnionNameToFileVector.find(annoOnionName)!=gfb.annoOnionNameToFileVector.end()){
-            enum_field_types type = static_cast<enum_field_types>(gfb.annoOnionNameToType[annoOnionName]);
-            std::vector<std::string> &tempFileVector = gfb.annoOnionNameToFileVector[annoOnionName];
-            std::string in = tempFileVector.back();            
-            if(IS_NUM(type)){
-                //std::string in("11");
-                unsigned int len = annoOnionName.size();
-                if(len>4u&&annoOnionName.substr(len-4)=="ASHE"){
-                    l.push_back(MySQLFieldTypeToItem(type,in));
-                }else{
-                    l.push_back( new (current_thd->mem_root)
-                                Item_int(static_cast<ulonglong>(valFromStr(in))) );
-                }
-            }else{
-                //std::string in("hehe");
-                l.push_back(MySQLFieldTypeToItem(type,in));
-            }
-            tempFileVector.pop_back();
-            //l.push_back(&(const_cast<Item&>(i)));
-        }else{
-            l.push_back(my_encrypt_item_layers(i, o, *om, a, IV));
-        }
-    }
-    std::string saltName = fm.getSaltName();
-    if (fm.getHasSalt()) {
-        if(gfb.annoOnionNameToFileVector.find(saltName)!=gfb.annoOnionNameToFileVector.end()){
-            std::vector<std::string> &tempFileVector = gfb.annoOnionNameToFileVector[saltName];
-            std::string in = tempFileVector.back();
-            l.push_back( new (current_thd->mem_root)
-                                Item_int(static_cast<ulonglong>(valFromStr(in)))
-            );
-            tempFileVector.pop_back();
-        }else{
-            l.push_back(new Item_int(static_cast<ulonglong>(salt)));
-        }
-    }
-
-    for (auto it : l) {
-        append_list->push_back(it);
-    }
-}
-*/
-
 static
 void local_wrapper_low_memory_item(const Item &i, const FieldMeta &fm, Analysis &a,
                            List<Item> *const append_list){
@@ -293,7 +240,6 @@ void local_wrapper_low_memory_item(const Item &i, const FieldMeta &fm, Analysis 
         OnionMeta * const om = it.second;
         std::string annoOnionName = om->getAnonOnionName();
         if(gfb.annoOnionNameToFileVector.find(annoOnionName)!=gfb.annoOnionNameToFileVector.end()){
-//            enum_field_types type = static_cast<enum_field_types>(gfb.annoOnionNameToType[annoOnionName]);
             std::vector<Item*> &tempItemVector = gfb.annoOnionNameToItemVector[annoOnionName];
             Item* in = tempItemVector.back();            
             l.push_back(in);
