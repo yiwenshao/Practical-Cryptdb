@@ -149,7 +149,7 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
 }
 
 /*load file, decrypt, and then return data plain fields in the type ResType*/
-static ResType load_files(std::string db, std::string table){
+static ResType load_files_low_memory(std::string db, std::string table){
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
@@ -169,9 +169,8 @@ static ResType load_files(std::string db, std::string table){
 
     //why do we need this??
     create_embedded_thd(0);
+
     rawMySQLReturnValue resraw;
-//    vector<vector<string>> resss_field = loadTableFieldsForDecryption(db,
-//                                         table,field_names, field_types, field_lengths);
     vector<vector<string>> res_field;   
     for(auto item:field_names){
         res_field.push_back(gfb.annoOnionNameToFileVector[item]);
@@ -193,13 +192,14 @@ static ResType load_files(std::string db, std::string table){
     for(unsigned int i=0;i<field_types.size();++i){
 	resraw.fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
     }
+
     ResType rawtorestype = rawMySQLReturnValue_to_ResType(false, &resraw);
     auto finalresults = decryptResults(rawtorestype,*rm);
-    return finalresults;
+    return std::move(finalresults);
 }
 
 static
-void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
+void local_wrapper_low_memory(const Item &i, const FieldMeta &fm, Analysis &a,
                            List<Item> *const append_list){
     //append_list->push_back(&(const_cast<Item&>(i)));
     //do not use the plain strategy 
@@ -271,7 +271,7 @@ main(int argc, char* argv[]){
     Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);
 
     /*choose decryption onion, load and decrypt to plain text*/
-    ResType res =  load_files(db,table);
+    ResType res =  load_files_low_memory(db,table);
     std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
 
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
@@ -283,7 +283,7 @@ main(int argc, char* argv[]){
         for(auto i=0u;i<res.names.size();i++){
             std::string field_name = res.names[i];
             FieldMeta & fm = analysis.getFieldMeta(db,table,field_name);
-            local_wrapper(*row[i],fm,analysis,newList0);
+            local_wrapper_low_memory(*row[i],fm,analysis,newList0);
         }
         newList.push_back(newList0);
         std::ostringstream o;
