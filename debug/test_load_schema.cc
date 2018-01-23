@@ -12,6 +12,9 @@
 #include <main/rewrite_util.hh>
 
 static std::string embeddedDir="/t/cryt/shadow";
+using std::cout;
+using std::endl;
+
 
 //My WrapperState.
 class WrapperState {
@@ -46,10 +49,20 @@ private:
 //global map, for each client, we have one WrapperState which contains ProxyState.
 static std::map<std::string, WrapperState*> clients;
 
+static void processOnionMeta(const OnionMeta &om){
+    for(auto &item:om.getLayers()){
+        cout<<" "<<TypeText<SECLEVEL>::toText(item->level())<<" ";
+    }
+    cout<<endl;
+}
+
+
 static void processFieldMeta(const FieldMeta &field){
     std::cout<<GREEN_BEGIN<<"PRINT FieldMeta"<<COLOR_END<<std::endl;
-    for(const auto & onion: field.getChildren()){
-        std::cout<<onion.second->getDatabaseID()<<":"<<onion.first.getValue()<<std::endl;
+    for(const auto & onionnow: field.getChildren()){
+        std::cout<<"onionmetaid: "<<onionnow.second->getDatabaseID()
+                 <<" ### onion name: "<<TypeText<onion>::toText(onionnow.first.getValue())<<std::endl;
+        processOnionMeta(*(onionnow.second));
     }
     std::cout<<GREEN_BEGIN<<"end FieldMeta"<<COLOR_END<<std::endl;
 }
@@ -57,7 +70,8 @@ static void processFieldMeta(const FieldMeta &field){
 static void processTableMeta(const TableMeta &table){
     std::cout<<GREEN_BEGIN<<"PRINT TableMeta"<<COLOR_END<<std::endl;
     for(const auto & field: table.getChildren()){
-        std::cout<<field.second->getDatabaseID()<<":"<<field.first.getValue()<<std::endl;
+        std::cout<<"fieldmetaid: "<<field.second->getDatabaseID()
+                 <<" ### fieldmeta name: "<<field.first.getValue()<<std::endl;
         processFieldMeta(*(field.second));
     }
 }
@@ -65,6 +79,7 @@ static void processTableMeta(const TableMeta &table){
 static void processDatabaseMeta(const DatabaseMeta & db) {
     std::cout<<GREEN_BEGIN<<"PRINT DatabaseMeta"<<COLOR_END<<std::endl;
     for(const auto & table: db.getChildren()){
+        cout<<"tablemetaid: "<<table.second->getDatabaseID()<<" ### dbmeta name: "<<table.first.getValue()<<std::endl;
         processTableMeta(*(table.second));
     }
 }
@@ -74,12 +89,13 @@ static void processSchemaInfo(SchemaInfo &schema){
      std::cout<<GREEN_BEGIN<<"PRINT SchemaInfo"<<COLOR_END<<std::endl;
     //only const auto & is allowed, now copying. or we meet use of deleted function.
     for(const auto & child : schema.getChildren()) {
-        std::cout<<child.second->getDatabaseID()<<":"<<child.first.getValue()<<std::endl;
+        std::cout<<"dbmetaid: "<<child.second->getDatabaseID()<<" ### dbmeta name:"<<child.first.getValue()<<std::endl;
         processDatabaseMeta(*(child.second));
     }
 }
 
 static DBMeta* loadChildren(DBMeta *const parent,std::unique_ptr<Connect> &e_conn){
+
     auto kids = parent->fetchChildren(e_conn);
     for (auto it : kids) {
         loadChildren(it,e_conn);
@@ -87,7 +103,8 @@ static DBMeta* loadChildren(DBMeta *const parent,std::unique_ptr<Connect> &e_con
     return parent;
 }
 
-static std::unique_ptr<SchemaInfo> myLoadSchemaInfo(){
+static 
+std::unique_ptr<SchemaInfo> myLoadSchemaInfo(){
     std::unique_ptr<Connect> e_conn(Connect::getEmbedded(embeddedDir));
     std::unique_ptr<SchemaInfo> schema(new SchemaInfo());
     loadChildren(schema.get(),e_conn);

@@ -28,7 +28,6 @@ static std::map<std::string, WrapperState*> clients;
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
 /*for each field, convert the format to FieldMeta_Wrapper*/
-
 static void init(){
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.

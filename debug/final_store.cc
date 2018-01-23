@@ -6,12 +6,12 @@ static std::map<std::string, WrapperState*> clients;
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
 
-static void init(){
+static void init(std::string ip,int port){
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
     clients[client] = new WrapperState();    
     //Connect phase
-    ConnectionInfo ci("localhost", "root", "letmein",3306);
+    ConnectionInfo ci("localhost", "root", "letmein",port);
     const std::string master_key = "113341234";
     char *buffer;
     if((buffer = getcwd(NULL, 0)) == NULL){  
@@ -26,7 +26,7 @@ static void init(){
     clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
     clients[client]->ps->safeCreateEmbeddedTHD();
     //Connect end!!
-    globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
+    globalConn = new Connect(ip, ci.user, ci.passwd, port);
 }
 
 
@@ -118,12 +118,16 @@ static void store(std::string db, std::string table){
 
 int
 main(int argc, char* argv[]){    
-    init();
     std::string db="tdb",table="student";
-    if(argc==3){
-        db = std::string(argv[1]);
-        table = std::string(argv[2]);
+    std::string ip="127.0.0.1";
+    int port=3306;
+    if(argc==5){
+        ip = std::string(argv[1]);
+        port = std::stoi(std::string(argv[2]));
+        db = std::string(argv[3]);
+        table = std::string(argv[4]);
     }
+    init(ip,port);
     store(db,table);
     return 0;
 }
