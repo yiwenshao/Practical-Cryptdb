@@ -154,8 +154,19 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
         gfb.annoOnionNameToItemVector[gfb.field_names[i]] = std::move(itemNullVector(tupleNum));
         auto &dest = gfb.annoOnionNameToItemVector[gfb.field_names[i]];
         auto &src = gfb.annoOnionNameToFileVector[gfb.field_names[i]];
+        enum_field_types ct = static_cast<enum_field_types>(field_types[i]);
         for(unsigned int j=0; j<tupleNum; j++){
-            dest[j] = MySQLFieldTypeToItem(static_cast<enum_field_types>(gfb.field_types[i]),src[j]);
+            if(IS_NUM(ct)){
+                unsigned int len = gfb.field_names[i].size();
+                if(len>4u&&gfb.field_names[i].substr(len-4)=="ASHE"){
+                    dest[j] = MySQLFieldTypeToItem(static_cast<enum_field_types>(gfb.field_types[i]),src[j]);
+                }else{//other fields should be unsigned
+                    dest[j] = new (current_thd->mem_root)
+                                Item_int(static_cast<ulonglong>(valFromStr(src[j])));
+                }
+            }else{
+                dest[j] = MySQLFieldTypeToItem(static_cast<enum_field_types>(gfb.field_types[i]),src[j]);
+            }
         }
     }
 }
