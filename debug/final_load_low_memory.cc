@@ -144,7 +144,8 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
         }
         tupleNum = column.size();
         gfb.annoOnionNameToFileVector[gfb.field_names[i]] = std::move(column);
-    }
+    }//get memory 31%
+
     //init another map
     for(unsigned int i=0;i<gfb.field_names.size();i++){
         gfb.annoOnionNameToType[gfb.field_names[i]] = gfb.field_types[i];
@@ -169,7 +170,7 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
             }
         }
         gfb.annoOnionNameToFileVector.erase(gfb.field_names[i]);
-    }
+    }//here we get memory 100% and segment fault
 }
 
 static
