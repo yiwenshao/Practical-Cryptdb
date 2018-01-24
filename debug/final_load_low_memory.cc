@@ -14,6 +14,7 @@
 #include "wrapper/reuse.hh"
 #include "wrapper/common.hh"
 #include "wrapper/insert_lib.hh"
+#include "util/constants.hh"
 using std::cout;
 using std::cin;
 using std::endl;
@@ -138,9 +139,9 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
         std::string filename = prefix + gfb.field_names[i];
         std::vector<std::string> column;
         if(IS_NUM(gfb.field_types[i])){
-            load_num_file(filename,column);
+            load_num_file_count(filename,column,constGlobalConstants.loadCount);
         }else{
-            load_string_file(filename,column,gfb.field_lengths[i]);
+            load_string_file_count(filename,column,gfb.field_lengths[i],constGlobalConstants.loadCount);
         }
         tupleNum = column.size();
         gfb.annoOnionNameToFileVector[gfb.field_names[i]] = std::move(column);
