@@ -434,7 +434,7 @@ void load_num_file(std::string filename,std::vector<std::string> &res){
     std::ifstream infile(filename);
     std::string line;
     while(std::getline(infile,line)){
-        res.push_back(line);
+        res.push_back(std::move(line));
     }
     infile.close();
 }
@@ -455,7 +455,7 @@ void load_string_file(std::string filename, std::vector<std::string> &res,unsign
     int fd = open(filename.c_str(),O_RDONLY);
     if(fd==-1) assert(0);//reading from -1 may cause errors
     while(read(fd,buf,length)!=0){
-        res.push_back(std::string(buf,length));
+        res.push_back(std::move(std::string(buf,length)));
     }
     close(fd);
 }
