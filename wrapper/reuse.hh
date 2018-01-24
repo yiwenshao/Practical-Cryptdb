@@ -186,10 +186,17 @@ std::unique_ptr<Item>
 getStringItem(std::string s);
 
 
-//Item* do not work
-//void load_num_file(std::string filename,std::vector<Item> &res,enum_field_types intype);
+void 
+load_num_file_count(std::string filename,
+              std::vector<std::string> &res,
+	      int count);
 
-//void load_string_file(std::string filename,std::vector<Item> &res,unsigned long length,enum_field_types intype);
+void
+load_string_file_count(std::string filename, 
+                       std::vector<std::string> &res,
+                       unsigned long length,
+                       int count);
+
 
 
 

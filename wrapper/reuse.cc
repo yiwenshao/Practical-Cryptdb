@@ -438,17 +438,22 @@ void load_num_file(std::string filename,std::vector<std::string> &res){
     }
     infile.close();
 }
-/*
-void load_num_file(std::string filename,std::vector<Item> &res,enum_field_types intype){
+
+void 
+load_num_file_count(std::string filename,
+              std::vector<std::string> &res,
+	      int count) {
     std::ifstream infile(filename);
-    std::string line;     
+    std::string line;
+    int localCount = 0;
     while(std::getline(infile,line)){
-        res.pusb_back((void*)MySQLFieldTypeToItem(intype,line));
+        res.push_back(std::move(line));
+        localCount++;
+        if(localCount==count)
+            break;
     }
     infile.close();
-}*/
-
-
+}
 
 void load_string_file(std::string filename, std::vector<std::string> &res,unsigned long length){
     char *buf = new char[length];
@@ -457,20 +462,30 @@ void load_string_file(std::string filename, std::vector<std::string> &res,unsign
     while(read(fd,buf,length)!=0){
         res.push_back(std::move(std::string(buf,length)));
     }
+    delete buf;
     close(fd);
 }
 
-/*
-void load_string_file(std::string filename,std::vector<void*> &res,unsigned long length,enum_field_types intype){
+
+void
+load_string_file_count(std::string filename, 
+                       std::vector<std::string> &res,
+                       unsigned long length,
+                       int count) {
     char *buf = new char[length];
+    int localCount=0;
     int fd = open(filename.c_str(),O_RDONLY);
     if(fd==-1) assert(0);//reading from -1 may cause errors
     while(read(fd,buf,length)!=0){
-        res.push_back((void*)MySQLFieldTypeToItem(intype,std::string(buf,length)));
+        res.push_back(std::move(std::string(buf,length)));
+        localCount++;
+        if(localCount==count)
+            break;
     }
+    delete buf;
     close(fd);
 }
-*/
+
 
 std::ostream&
 insertManyValues(std::ostream &out,List<List_item> &newList){

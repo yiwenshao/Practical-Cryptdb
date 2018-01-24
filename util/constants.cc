@@ -8,7 +8,7 @@ const char *cryptdb_dir = getenv("CRYPTDB_DIR");
 //assert(cryptdb_dir!=NULL);
 const globalConstants constGlobalConstants = initGlobalConstants();
 globalConstants initGlobalConstants(){
-    printf("%s",cryptdb_dir);
+//    printf("%s",cryptdb_dir);
     assert(cryptdb_dir != NULL);
     assert(cryptdb_dir[0]=='/');
     std::string prefix = std::string(cryptdb_dir);
