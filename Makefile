@@ -82,6 +82,10 @@ mtl/%:$(OBJDIR)/debug/%.o $(OBJDIR)/libwrapper.so
 	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
 
+mtl/test_wrapper_exe/%:$(OBJDIR)/test_wrapper/%.o $(OBJDIR)/libwrapper.so
+	@mkdir -p $(@D)
+	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+
 
 
 include crypto/Makefrag
@@ -91,7 +95,9 @@ include util/Makefrag
 include udf/Makefrag
 include mysqlproxy/Makefrag
 include debug/Makefrag
+include test_wrapper/Makefrag
 include wrapper/Makefrag
+
 
 $(OBJDIR)/.deps: $(foreach dir, $(OBJDIRS), $(wildcard $(OBJDIR)/$(dir)/*.d))
 	@mkdir -p $(@D)

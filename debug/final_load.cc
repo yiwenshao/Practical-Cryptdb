@@ -138,12 +138,11 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
         std::string filename = prefix + gfb.field_names[i];
         std::vector<std::string> column;
         if(IS_NUM(gfb.field_types[i])){
-//            load_num_file_count(filename,column,constGlobalConstants.loadCount);
-              loadFileNoEscape(filename,column);
+              loadFileNoEscapeLimitCount(filename,column,constGlobalConstants.loadCount);
         }else{
-//            load_string_file_count(filename,column,gfb.field_lengths[i],constGlobalConstants.loadCount);
-              loadFileEscape(filename,column,gfb.field_lengths[i]);
+              loadFileEscapeLimitCount(filename,column,gfb.field_lengths[i],constGlobalConstants.loadCount);
         }
+        std::reverse(column.begin(),column.end());
         gfb.annoOnionNameToFileVector[gfb.field_names[i]] = std::move(column);
     }
     //init another map
@@ -200,6 +199,7 @@ static ResType load_files(std::string db, std::string table){
     return finalresults;
 }
 
+unsigned long gcount=0;
 static
 void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
                            List<Item> *const append_list) {
@@ -217,7 +217,6 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
             std::vector<std::string> &tempFileVector = gfb.annoOnionNameToFileVector[annoOnionName];
             std::string in = tempFileVector.back();            
             if(IS_NUM(type)){
-                //std::string in("11");
                 unsigned int len = annoOnionName.size();
                 if(len>4u&&annoOnionName.substr(len-4)=="ASHE"){
                     l.push_back(MySQLFieldTypeToItem(type,in));
@@ -226,13 +225,12 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
                                 Item_int(static_cast<ulonglong>(valFromStr(in))) );
                 }
             }else{
-                //std::string in("hehe");
                 l.push_back(MySQLFieldTypeToItem(type,in));
             }
             tempFileVector.pop_back();
-            //l.push_back(&(const_cast<Item&>(i)));
         }else{
             l.push_back(my_encrypt_item_layers(i, o, *om, a, IV));
+            gcount++;
         }
     }
     std::string saltName = fm.getSaltName();
@@ -240,8 +238,6 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
         if(gfb.annoOnionNameToFileVector.find(saltName)!=gfb.annoOnionNameToFileVector.end()){
             std::vector<std::string> &tempFileVector = gfb.annoOnionNameToFileVector[saltName];
             std::string in = tempFileVector.back();
-//            enum_field_types type = static_cast<enum_field_types>(gfb.annoOnionNameToType[saltName]);
-//            l.push_back(MySQLFieldTypeToItem(type,in));
             l.push_back( new (current_thd->mem_root)
                                 Item_int(static_cast<ulonglong>(valFromStr(in)))
              );
@@ -294,6 +290,8 @@ main(int argc, char* argv[]){
         insertManyValues(o,newList);
         std::cout<<(head+o.str())<<std::endl;
     }
+
+    std::cout<<"gcount<<"<<gcount<<std::endl;
     return 0;
 }
 
