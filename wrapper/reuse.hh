@@ -40,6 +40,17 @@ struct rawMySQLReturnValue {
     void show();
 };
 
+/*Raw return value from mysql*/
+struct MySQLColumnData {
+    std::vector<std::vector<std::string>> columnData;/*data tuples*/
+    std::vector<std::string> fieldNames;
+    std::vector<enum_field_types> fieldTypes;
+    std::vector<int> maxLengths;/*what's the difference between length and maxlength?*/
+};
+
+
+
+
 //representation of one field.
 struct FieldMeta_Wrapper{
     bool hasSalt;
@@ -148,6 +159,9 @@ void transform_to_rawMySQLReturnValue(rawMySQLReturnValue & str,ResType & item);
 rawMySQLReturnValue
 executeAndGetResultRemote(Connect * curConn,std::string query);
 
+MySQLColumnData
+executeAndGetColumnData(Connect * conn,std::string query);
+
 
 
 rawMySQLReturnValue 
@@ -206,21 +220,35 @@ load_string_file_count(std::string filename,
                        int count);
 
 
+void 
+loadFileEscape(std::string filename,
+                    std::vector<std::string> &res,
+                    unsigned int maxLength);
 
-void load_file_escape(std::string filename,
-                      std::vector<std::string> &res);
+void 
+loadFileNoEscape(std::string filename,            
+              std::vector<std::string> &res);
 
 
 void
 writeRowdataEscapeString(const std::vector<std::string> &column,
-                      std::string db,
-                      std::string table,
                       std::string columnFilename,
                       unsigned int maxLength);
 
 
 void 
 writeRowdataNum(const std::vector<std::string> &column,
-                      std::string db,
-                      std::string table,
                       std::string columnFilename);
+
+
+void loadFileEscapeLimitCount(std::string filename,
+                    std::vector<std::string> &res,
+                    unsigned int maxLength,int limit);
+
+void 
+loadFileNoEscapeLimitCount(std::string filename,
+                 std::vector<std::string> &res,int limit);
+
+
+//Connect * initEmbeddedAndRemoteConnection(std::string ip,int port);
+

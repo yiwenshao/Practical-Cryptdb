@@ -64,24 +64,22 @@ static void write_meta(rawMySQLReturnValue& resraw,std::vector<FieldMetaTrans> &
 }
 
 static
-void write_raw_data_to_files(rawMySQLReturnValue& resraw,
-                             std::vector<FieldMetaTrans> &res,
-                             string db,
-                             string table,
-                             std::vector<int> vlen,
-                             std::vector<std::string> vstr,
-                             std::string vname) {
+void write_raw_data_to_files(rawMySQLReturnValue& resraw,std::vector<FieldMetaTrans> &res ,string db,string table){
     //write metafiles
     write_meta(resraw,res,db,table);
     //write datafiles
     write_row_data(resraw,db,table);
+    std::string prefix = std::string("data/") +db+"/"+table+"/";
+    std::vector<std::string> filenames;
+    for(auto item:resraw.fieldNames){
+        item=prefix+item;
+        filenames.push_back(item);
+    }
 
-    //write special swap
-    std::string prefix = std::string("data/")+db+"/"+table+"/";
-    std::string swpfile = prefix+vname;
-    std::string swpkeyfile = prefix+vname+"key";
-    (void)swpfile;
-    (void)swpkeyfile;
+
+
+
+
 }
 
 static void store(std::string db, std::string table){
@@ -102,15 +100,8 @@ static void store(std::string db, std::string table){
 
     //generate the backup query and then fetch the tuples
     std::string backup_query = getTestQuery(*schema,res,db,table);
-    
-    std::vector<int> vlen;
-    std::vector<std::string> vstr;
-    std::string vname;
-    rawMySQLReturnValue resraw =  executeAndGetResultRemoteWithOneVariableLen(globalConn,
-                                                                              backup_query,
-                                                                              vlen,
-                                                                              vstr,
-                                                                              vname);
+
+    rawMySQLReturnValue resraw =  executeAndGetResultRemote(globalConn,backup_query);
 
     //then we should set the type and length of FieldMetaTrans
     auto types = resraw.fieldTypes;
@@ -133,7 +124,7 @@ static void store(std::string db, std::string table){
     }
 
     //write the tuples into files
-    write_raw_data_to_files(resraw,res,db,table,vlen,vstr,vname);
+    write_raw_data_to_files(resraw,res,db,table);
 }
 
 int

@@ -361,6 +361,47 @@ executeAndGetResultRemote(Connect * curConn,std::string query){
 }
 
 
+MySQLColumnData
+executeAndGetColumnData(Connect * curConn,std::string query){
+    std::unique_ptr<DBResult> dbres;
+    curConn->execute(query, &dbres);
+    MySQLColumnData myRaw;
+    
+    if(dbres==nullptr||dbres->n==NULL){
+        std::cout<<"no results"<<std::endl;
+        return myRaw;
+    }
+
+    int num = mysql_num_rows(dbres->n);
+    int numOfFields = mysql_num_fields(dbres->n);
+
+    MYSQL_FIELD *field;
+    MYSQL_ROW row;
+
+    while( (field = mysql_fetch_field(dbres->n)) ) {
+        myRaw.fieldNames.push_back(std::string(field->name));
+        myRaw.fieldTypes.push_back(field->type);
+        myRaw.maxLengths.push_back(field->max_length);
+    }
+
+    for(int i=0;i<numOfFields;i++){
+        myRaw.columnData.push_back(std::vector<std::string>());
+    }
+
+    if(num!=0){
+        while( (row = mysql_fetch_row(dbres->n)) ){
+            //what's the difference between fieldlen
+	    unsigned long * fieldLen = mysql_fetch_lengths(dbres->n);
+            for(int i=0;i<numOfFields;i++){
+                if(row[i]==NULL) myRaw.columnData[i].push_back("NULL");
+                else myRaw.columnData[i].push_back(std::string(row[i],fieldLen[i]));
+            }
+        }
+    }
+    return myRaw;
+}
+
+
 rawMySQLReturnValue 
 executeAndGetResultRemoteWithOneVariableLen(Connect * curConn,
                                            std::string query,
@@ -437,8 +478,6 @@ write_row_data(rawMySQLReturnValue& resraw,std::string db,std::string table,std:
    string should be escaped before being written into the file */
 void
 writeRowdataEscapeString(const std::vector<std::string> &column,
-                      std::string db,
-                      std::string table,
                       std::string columnFilename,
                       unsigned int maxLength) {
     FILE* dataFileHandler = fopen(columnFilename.c_str(),"w");
@@ -458,8 +497,6 @@ writeRowdataEscapeString(const std::vector<std::string> &column,
 */
 void 
 writeRowdataNum(const std::vector<std::string> &column,
-                      std::string db,
-                      std::string table,
                       std::string columnFilename) {
     FILE* dataFileHandler = fopen(columnFilename.c_str(),"w");
     const std::string token = "\n";
@@ -469,6 +506,63 @@ writeRowdataNum(const std::vector<std::string> &column,
     }
     fclose(dataFileHandler);
 }
+
+
+void loadFileEscape(std::string filename,
+                    std::vector<std::string> &res,
+                    unsigned int maxLength) {
+    std::ifstream infile(filename);
+    std::string line;
+    char *buf = new char[2*maxLength+1u];
+    while(std::getline(infile,line)){
+        size_t len = reverse_escape_string_for_mysql_modify(buf,line.c_str());
+        std::string temp(buf,len);
+        res.push_back(temp);
+    }
+    infile.close();
+}
+
+void loadFileEscapeLimitCount(std::string filename,
+                    std::vector<std::string> &res,
+                    unsigned int maxLength,int limit) {
+    std::ifstream infile(filename);
+    std::string line;
+    char *buf = new char[2*maxLength+1u];
+    int localCount=0;
+    while(std::getline(infile,line)){
+        size_t len = reverse_escape_string_for_mysql_modify(buf,line.c_str());
+        std::string temp(buf,len);
+        res.push_back(temp);
+        localCount++;
+        if(localCount==limit) break;
+    }
+    infile.close();
+}
+
+
+void 
+loadFileNoEscape(std::string filename,            
+              std::vector<std::string> &res) {
+    std::ifstream infile(filename);                  
+    std::string line;
+    while(std::getline(infile,line)) {
+        res.push_back(line);
+    }
+}
+
+void 
+loadFileNoEscapeLimitCount(std::string filename,
+                 std::vector<std::string> &res,int limit){
+    std::ifstream infile(filename);                  
+    std::string line;
+    int localCount=0;
+    while(std::getline(infile,line)) {
+        res.push_back(line);
+        localCount++;
+        if(localCount==limit) break;
+    }
+}
+
 
 
 
@@ -528,17 +622,6 @@ void load_num_file(std::string filename,std::vector<std::string> &res){
     }
     infile.close();
 }
-
-void load_file_escape(std::string filename,
-                      std::vector<std::string> &res) {
-    std::ifstream infile(filename);
-    std::string line;
-    while(std::getline(infile,line)){
-        res.push_back(std::move(line));
-    }
-    infile.close();
-}
-
 
 void 
 load_num_file_count(std::string filename,
@@ -611,8 +694,5 @@ getStringItem(std::string s){
     return std::unique_ptr<Item>(it);
 
 }
-
-
-
 
 
