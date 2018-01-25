@@ -2,6 +2,6 @@ OBJDIRS	+= test_wrapper
 ##note that xx=*.cc will not expand. wildcard *.cc will include files from other directories.
 ##%.o will include testall
 TESTALL_OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(wildcard test_wrapper/*.cc))
-TESTALL_EXES := $(patsubst test_wrapper/%.cc,test_wrapper_exe/%,$(wildcard test_wrapper/*.cc))
+TESTALL_EXES := $(patsubst test_wrapper/%.cc,mtl/test_wrapper_exe/%,$(wildcard test_wrapper/*.cc))
 
 all: $(TESTALL_OBJS) $(TESTALL_EXES)

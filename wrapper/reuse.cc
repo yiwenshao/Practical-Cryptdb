@@ -477,7 +477,7 @@ write_row_data(rawMySQLReturnValue& resraw,std::string db,std::string table,std:
 /* Write a column of data of the type string in mysql. one line per record. 
    string should be escaped before being written into the file */
 void
-writeRowdataEscapeString(const std::vector<std::string> &column,
+writeColumndataEscapeString(const std::vector<std::string> &column,
                       std::string columnFilename,
                       unsigned int maxLength) {
     FILE* dataFileHandler = fopen(columnFilename.c_str(),"w");
@@ -496,7 +496,7 @@ writeRowdataEscapeString(const std::vector<std::string> &column,
    one record per line 
 */
 void 
-writeRowdataNum(const std::vector<std::string> &column,
+writeColumndataNum(const std::vector<std::string> &column,
                       std::string columnFilename) {
     FILE* dataFileHandler = fopen(columnFilename.c_str(),"w");
     const std::string token = "\n";

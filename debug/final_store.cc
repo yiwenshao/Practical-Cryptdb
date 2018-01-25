@@ -57,29 +57,32 @@ std::string getTestQuery(SchemaInfo &schema, std::vector<FieldMetaTrans> &tfds,
     return res;
 }
 
-static void write_meta(rawMySQLReturnValue& resraw,std::vector<FieldMetaTrans> &res,string db,string table){
+static void write_meta(std::vector<FieldMetaTrans> &res,string db,string table){
     TableMetaTrans mf(db,table,res);
     mf.set_db_table(db,table);
     mf.serialize();
 }
 
 static
-void write_raw_data_to_files(rawMySQLReturnValue& resraw,std::vector<FieldMetaTrans> &res ,string db,string table){
+void write_raw_data_to_files(MySQLColumnData& resraw,std::vector<FieldMetaTrans> &res ,string db,string table){
     //write metafiles
-    write_meta(resraw,res,db,table);
+    write_meta(res,db,table);
     //write datafiles
-    write_row_data(resraw,db,table);
     std::string prefix = std::string("data/") +db+"/"+table+"/";
     std::vector<std::string> filenames;
     for(auto item:resraw.fieldNames){
         item=prefix+item;
         filenames.push_back(item);
     }
+    int len = resraw.fieldNames.size();
 
-
-
-
-
+    for(int i=0;i<len;i++){
+        if(IS_NUM(resraw.fieldTypes[i])){
+            writeColumndataNum(resraw.columnData[i],filenames[i]);
+        }else{
+            writeColumndataEscapeString(resraw.columnData[i],filenames[i],resraw.maxLengths[i]);
+        }
+    }
 }
 
 static void store(std::string db, std::string table){
@@ -101,11 +104,11 @@ static void store(std::string db, std::string table){
     //generate the backup query and then fetch the tuples
     std::string backup_query = getTestQuery(*schema,res,db,table);
 
-    rawMySQLReturnValue resraw =  executeAndGetResultRemote(globalConn,backup_query);
+    MySQLColumnData resraw =  executeAndGetColumnData(globalConn,backup_query);
 
     //then we should set the type and length of FieldMetaTrans
     auto types = resraw.fieldTypes;
-    auto lengths = resraw.lengths;
+    auto lengths = resraw.maxLengths;
     int base_types = 0;
     int base_lengths = 0;
     for(auto &item:res){

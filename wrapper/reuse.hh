@@ -231,13 +231,13 @@ loadFileNoEscape(std::string filename,
 
 
 void
-writeRowdataEscapeString(const std::vector<std::string> &column,
+writeColumndataEscapeString(const std::vector<std::string> &column,
                       std::string columnFilename,
                       unsigned int maxLength);
 
 
 void 
-writeRowdataNum(const std::vector<std::string> &column,
+writeColumndataNum(const std::vector<std::string> &column,
                       std::string columnFilename);
 
 
@@ -248,7 +248,4 @@ void loadFileEscapeLimitCount(std::string filename,
 void 
 loadFileNoEscapeLimitCount(std::string filename,
                  std::vector<std::string> &res,int limit);
-
-
-//Connect * initEmbeddedAndRemoteConnection(std::string ip,int port);
 
