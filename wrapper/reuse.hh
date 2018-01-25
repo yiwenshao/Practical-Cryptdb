@@ -149,6 +149,14 @@ rawMySQLReturnValue
 executeAndGetResultRemote(Connect * curConn,std::string query);
 
 
+
+rawMySQLReturnValue 
+executeAndGetResultRemoteWithOneVariableLen(Connect * curConn,
+                                           std::string query,
+                                           std::vector<int> &vlen,
+                                           std::vector<std::string> &vstr,
+std::string &vname);
+
 void
 write_row_data(rawMySQLReturnValue& resraw,std::string db,std::string table,std::string prefix="data/");
 

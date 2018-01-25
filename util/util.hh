@@ -573,3 +573,13 @@ destructThenFree(void *const p)
 }
 
 bool test64bitZZConversions();
+
+
+size_t 
+reverse_escape_string_for_mysql_modify(char *to,
+                               const char *from);
+
+
+size_t 
+escape_string_for_mysql_modify(char *to,
+                               const char *from, size_t length);

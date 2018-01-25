@@ -201,7 +201,7 @@ static ResType load_files(std::string db, std::string table){
 
 static
 void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
-                           List<Item> *const append_list){
+                           List<Item> *const append_list) {
     //append_list->push_back(&(const_cast<Item&>(i)));
     //do not use the plain strategy 
     std::vector<Item *> l;
@@ -280,7 +280,7 @@ main(int argc, char* argv[]){
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
 
     /*reencryption to get the encrypted insert!!!*/
-    for(auto &row:res.rows){
+    for(auto &row:res.rows) {
         List<List_item> newList;
         List<Item> *const newList0 = new List<Item>();
         for(auto i=0u;i<res.names.size();i++){

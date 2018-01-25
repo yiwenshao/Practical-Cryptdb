@@ -12,7 +12,10 @@ main(int argc,char ** argv) {
 
     std::vector<string> create{
         "use micro_db;",
-        "insert into str_table values('a'),('b'),('c'),('d'),('e');"
+//        "insert into str_table values('aaaaaaaa'),('bbbbbbbbaaa'),('ccccccccaaaa'),('ddddddddddddd'),('eeeeeeeedddddddddd');"
+        "insert into str_table values('ddddddddddddd'),('eeeeeeeedddddddddd');"
+    
+
     };
     big_proxy b("tdb",ip,"root","letmein",3306);
     for(auto item:create){

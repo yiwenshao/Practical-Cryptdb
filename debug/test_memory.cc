@@ -27,6 +27,7 @@ void initGfb(vector<string> field_names,
              vector<int>field_lengths,
                                      std::string db,std::string table){
     std::map<std::string,std::vector<std::string>> gfm;
+
     std::string prefix = std::string("data/")+db+"/"+table+"/";
     for(unsigned int i=0u; i<field_names.size(); i++) {
         std::string filename = prefix + field_names[i];
@@ -37,12 +38,17 @@ void initGfb(vector<string> field_names,
             load_string_file(filename,column,field_lengths[i]);
         }
         gfm[field_names[i]] = std::move(column);
+
 //        vector<string>().swap(gfm[field_names[i]]);
+
     }//get memory 31%
 
     for(unsigned int i=0u; i<field_names.size(); i++) {
         vector<string>().swap(gfm[field_names[i]]);
+        //gfm.erase(gfm[field_names[i]]);
     }
+
+
     return;
 }
 

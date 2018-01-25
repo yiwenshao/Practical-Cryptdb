@@ -580,3 +580,97 @@ test64bitZZConversions()
 
     return true;
 }
+
+
+
+
+size_t 
+escape_string_for_mysql_modify(char *to,
+                               const char *from, size_t length) {
+  const char *to_start= to;
+  const char *endD, *to_end=to_start + 2*length;
+  bool overflow= false;
+  for (endD= from + length; from < endD; from++){
+    char escape= 0;
+    switch (*from) {
+    case 0:                             /* Must be escaped for 'mysql' */
+      escape= '0';
+      break;
+    case '\n':                          /* Must be escaped for logs */
+      escape= 'n';
+      break;
+    case '\r':
+      escape= 'r';
+      break;
+    case '\\':
+      escape= '\\';
+      break;
+    case '\'':
+      escape= '\'';
+      break;
+    case '"':                           /* Better safe than sorry */
+      escape= '"';
+      break;
+    case '\032':                        /* This gives problems on Win32 */
+      escape= 'Z';
+      break;
+    }
+    if (escape)
+    {
+      if (to + 2 > to_end)
+      {
+        overflow= true;
+        break;
+      }
+      *to++= '\\';
+      *to++= escape;
+    }
+    else
+    {
+      if (to + 1 > to_end)
+      {
+        overflow= true;
+        break;
+      }
+      *to++= *from;
+    }
+  }
+  *to= 0;
+  return overflow ? (size_t) -1 : (size_t) (to - to_start);
+}
+
+
+size_t 
+reverse_escape_string_for_mysql_modify(char *to,
+                               const char *from) {
+    char * to_start = to;
+    size_t length = strlen(from);
+    for(size_t i=0u;i<length;){
+        if(from[i]=='\\') {
+            i++;
+            if(from[i]=='0'){
+                *to='\0';
+            }else if(from[i]=='n'){
+                *to='\n';
+            }else if(from[i]=='r'){
+                *to='\r';
+            }else if(from[i]=='\\'){
+                *to='\\';
+            }else if(from[i]=='\''){
+                *to='\'';
+            }else if(from[i]=='"'){
+                *to='"';
+            }else if(from[i]=='Z'){
+                 *to='\032';
+            }
+
+            i++;
+        }else{
+            *to=from[i];
+            i++;
+        }
+        to++;
+    }
+    *to='\0';
+    return to - to_start;
+}
