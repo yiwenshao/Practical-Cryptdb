@@ -77,6 +77,7 @@ $(OBJDIR)/%.o: $(OBJDIR)/%.cc
 	$(CXX) -MD $(CXXFLAGS) -c $< -o $@
 
 ##rules for .cc in debug directory
+
 mtl/%:$(OBJDIR)/debug/%.o $(OBJDIR)/libwrapper.so
 	@mkdir -p $(@D)
 	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
@@ -87,6 +88,10 @@ mtl/test_wrapper_exe/%:$(OBJDIR)/test_wrapper/%.o $(OBJDIR)/libwrapper.so
 	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
 
+mtl/test_util_exe/%:$(OBJDIR)/test_util/%.o
+	@mkdir -p $(@D)
+	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+
 
 include crypto/Makefrag
 include parser/Makefrag
@@ -96,6 +101,7 @@ include udf/Makefrag
 include mysqlproxy/Makefrag
 include debug/Makefrag
 include test_wrapper/Makefrag
+include test_util/Makefrag
 include wrapper/Makefrag
 
 

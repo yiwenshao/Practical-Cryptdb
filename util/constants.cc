@@ -22,13 +22,19 @@ globalConstants initGlobalConstants(){
         int index = line.find(":");
         std::string head = line.substr(0,index);
         if(head=="loadCount"){
-            res.loadCount=stoi(line.substr(index+1));          
+            res.loadCount = stoi(line.substr(index+1));          
+        }else if(head=="pipelineCount"){
+            res.pipelineCount = stoi(line.substr(index+1));
         }else if(head=="other"){
             ;
         }else{
             assert(0);
         }
     }
+
+    /* the following values need not be determined 
+       at runtime.*/
+    res.logFile="LOG.TXT";
     infile.close(); 
     return res;
 }
