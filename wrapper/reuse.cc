@@ -1,4 +1,5 @@
 #include "wrapper/reuse.hh"
+#include "util/util.hh"
 #include <map>
 using std::cout;
 using std::cin;
@@ -432,6 +433,45 @@ write_row_data(rawMySQLReturnValue& resraw,std::string db,std::string table,std:
     }
 }
 
+/* Write a column of data of the type string in mysql. one line per record. 
+   string should be escaped before being written into the file */
+void
+writeRowdataEscapeString(const std::vector<std::string> &column,
+                      std::string db,
+                      std::string table,
+                      std::string columnFilename,
+                      unsigned int maxLength) {
+    FILE* dataFileHandler = fopen(columnFilename.c_str(),"w");
+    char *buf = new char[2*maxLength+1u];
+    const std::string token = "\n";
+    for(auto &item:column){
+        size_t len = escape_string_for_mysql_modify(buf,item.c_str(),item.size());
+        fwrite(buf,1,len,dataFileHandler);
+        fwrite(token.c_str(),1,token.size(),dataFileHandler);
+    }
+    fclose(dataFileHandler);
+    delete [] buf;
+}
+
+/* write a column of data in type integer.
+   one record per line 
+*/
+void 
+writeRowdataNum(const std::vector<std::string> &column,
+                      std::string db,
+                      std::string table,
+                      std::string columnFilename) {
+    FILE* dataFileHandler = fopen(columnFilename.c_str(),"w");
+    const std::string token = "\n";
+    for(auto &item:column) {
+        fwrite(item.c_str(),1,item.size(),dataFileHandler);
+        fwrite(token.c_str(),1,token.size(),dataFileHandler);        
+    }
+    fclose(dataFileHandler);
+}
+
+
+
 
 STORE_STRATEGY currentStrategy = STORE_STRATEGY::ALL;
 
@@ -489,6 +529,17 @@ void load_num_file(std::string filename,std::vector<std::string> &res){
     infile.close();
 }
 
+void load_file_escape(std::string filename,
+                      std::vector<std::string> &res) {
+    std::ifstream infile(filename);
+    std::string line;
+    while(std::getline(infile,line)){
+        res.push_back(std::move(line));
+    }
+    infile.close();
+}
+
+
 void 
 load_num_file_count(std::string filename,
               std::vector<std::string> &res,
@@ -505,7 +556,9 @@ load_num_file_count(std::string filename,
     infile.close();
 }
 
-void load_string_file(std::string filename, std::vector<std::string> &res,unsigned long length){
+void load_string_file(std::string filename, 
+                      std::vector<std::string> &res, 
+                      unsigned long length) {
     char *buf = new char[length];
     int fd = open(filename.c_str(),O_RDONLY);
     if(fd==-1) assert(0);//reading from -1 may cause errors

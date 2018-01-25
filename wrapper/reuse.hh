@@ -207,4 +207,20 @@ load_string_file_count(std::string filename,
 
 
 
+void load_file_escape(std::string filename,
+                      std::vector<std::string> &res);
 
+
+void
+writeRowdataEscapeString(const std::vector<std::string> &column,
+                      std::string db,
+                      std::string table,
+                      std::string columnFilename,
+                      unsigned int maxLength);
+
+
+void 
+writeRowdataNum(const std::vector<std::string> &column,
+                      std::string db,
+                      std::string table,
+                      std::string columnFilename);

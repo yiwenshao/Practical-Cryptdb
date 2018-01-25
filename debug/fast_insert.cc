@@ -225,7 +225,7 @@ main(int argc,char**argv) {
     SharedProxyState *shared_ps = 
                      new SharedProxyState(ci, embeddedDir , master_key, determineSecurityRating());
     assert(shared_ps!=NULL);
-    std::string query1 = "insert into child values(1,\"ZHAOYUN\"),(2,'XC'),(3,'KK')";
+    std::string query1 = "insert into student values(1,\"ZHAOYUN\"),(2,'XC'),(3,'KK')";
     std::vector<std::string> querys{query1};
     for(auto item:querys){
         std::cout<<item<<std::endl;
