@@ -93,6 +93,7 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
         if(index==-1) assert(0);
 
         onion o = tfds[i].getChoosenOnionO()[index];
+
         glog<<"choosenDecryptionOnion: "<<TypeText<onion>::toText(o)<<"\n";
 
         SECLEVEL l = tfds[i].getOriginalFieldMeta()->getOnionMeta(o)->getSecLevel();
@@ -105,7 +106,7 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
 
         if(use_salt)
             addSaltToReturn(myReturnMeta.get(),pos++);
-
+        //used to record choosen field lengths, onion names , and field types
         ggbt.field_types.push_back(tfds[i].getChoosenFieldTypes()[index]);
         ggbt.field_names.push_back(tfds[i].getChoosenOnionName()[index]);
         ggbt.field_lengths.push_back(tfds[i].getChoosenFieldLengths()[index]);
@@ -258,7 +259,8 @@ static ResType load_files(std::string db, std::string table){
     return finalresults;
 }
 
-unsigned long gcount=0;
+std::map<onion,unsigned long> gcountMap;
+
 static
 void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
                            List<Item> * append_list) {
@@ -289,7 +291,7 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
             tempFileVector.pop_back();
         }else{
             l.push_back(my_encrypt_item_layers(i, o, *om, a, IV));
-            gcount++;
+            gcountMap[o]++;
         }
     }
     std::string saltName = fm.getSaltName();
@@ -397,9 +399,11 @@ main(int argc, char* argv[]){
         std::to_string(t_init.lap()/1000000u)<<
         "##"<<std::to_string(time(NULL))<<"\n";
 
-    glog<<std::string("gcount: ")<<
-          std::to_string(gcount)<<
-          "##"<<std::to_string(time(NULL))<<std::string("\n");
+    for(auto item:gcountMap){
+        glog<<"onionComputed: "<<
+              TypeText<onion>::toText(item.first)<<"::"<<
+              std::to_string(item.second)<<"\n";
+   }
     return 0;
 }
 
