@@ -167,6 +167,8 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
 
 /*load file, decrypt, and then return data plain fields in the type ResType*/
 static ResType load_files(std::string db, std::string table){
+    timer t_load_files;
+
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
@@ -175,10 +177,15 @@ static ResType load_files(std::string db, std::string table){
     for(unsigned int i=0;i<fms.size();i++){
         res[i].trans(fms[i]);
     }
+
+    glog<<"loadtablemeta: "<<std::to_string(t_load_files.lap()/1000000u)<<"\n";
     //then we should load all the fields available
-    initGfb(res,db,table);   
+    initGfb(res,db,table);
+    glog<<"initGfb: "<<std::to_string(t_load_files.lap()/1000000u)<<"\n";
 
     std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
+
+    glog<<"getReturnMeta: "<<std::to_string(t_load_files.lap()/1000000u)<<"\n";
 
     vector<string> field_names = ggbt.field_names;
     vector<int> field_types = ggbt.field_types;
@@ -209,7 +216,12 @@ static ResType load_files(std::string db, std::string table){
 	resraw.fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
     }
     ResType rawtorestype = rawMySQLReturnValue_to_ResType(false, &resraw);
+
+    glog<<"transform: "<<std::to_string(t_load_files.lap()/1000000u)<<"\n";
+
     auto finalresults = decryptResults(rawtorestype,*rm);
+
+    glog<<"descryption: "<<std::to_string(t_load_files.lap()/1000000u)<<"\n";
     return finalresults;
 }
 
