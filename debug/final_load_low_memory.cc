@@ -131,58 +131,31 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
     gfb.field_names = field_names;
     gfb.field_types = field_types;
     gfb.field_lengths = field_lengths;
+
     //then we should read the vector
     std::string prefix = std::string("data/")+db+"/"+table+"/";
-
-    unsigned long tupleNum=0;
     for(unsigned int i=0u; i<gfb.field_names.size(); i++) {
         std::string filename = prefix + gfb.field_names[i];
         std::vector<std::string> column;
         if(IS_NUM(gfb.field_types[i])){
-            load_num_file_count(filename,column,constGlobalConstants.loadCount);
+              loadFileNoEscapeLimitCount(filename,column,constGlobalConstants.loadCount);
         }else{
-            load_string_file_count(filename,column,gfb.field_lengths[i],constGlobalConstants.loadCount);
+              loadFileEscapeLimitCount(filename,column,gfb.field_lengths[i],constGlobalConstants.loadCount);
         }
-        tupleNum = column.size();
+        std::reverse(column.begin(),column.end());
         gfb.annoOnionNameToFileVector[gfb.field_names[i]] = std::move(column);
-    }//get memory 31%
-
+    }
     //init another map
     for(unsigned int i=0;i<gfb.field_names.size();i++){
         gfb.annoOnionNameToType[gfb.field_names[i]] = gfb.field_types[i];
     }
-    //extra transformation. transform rows to item*
-    for(unsigned int i=0;i<gfb.field_names.size();i++){
-        gfb.annoOnionNameToItemVector[gfb.field_names[i]] = std::move(itemNullVector(tupleNum));
-        auto &dest = gfb.annoOnionNameToItemVector[gfb.field_names[i]];
-        auto &src = gfb.annoOnionNameToFileVector[gfb.field_names[i]];
-        enum_field_types ct = static_cast<enum_field_types>(field_types[i]);
-        for(unsigned int j=0; j<tupleNum; j++){
-            if(IS_NUM(ct)){
-                unsigned int len = gfb.field_names[i].size();
-                if(len>4u&&gfb.field_names[i].substr(len-4)=="ASHE"){
-                    dest[j] = MySQLFieldTypeToItem(static_cast<enum_field_types>(gfb.field_types[i]),src[j]);
-                }else{//other fields should be unsigned
-                    dest[j] = new (current_thd->mem_root)
-                                Item_int(static_cast<ulonglong>(valFromStr(src[j])));
-                }
-            }else{
-                dest[j] = MySQLFieldTypeToItem(static_cast<enum_field_types>(gfb.field_types[i]),src[j]);
-            }
-        }
-        gfb.annoOnionNameToFileVector.erase(gfb.field_names[i]);
-    }//here we get memory 100% and segment fault
-}
-
-static
-ResType 
-tempfunction(std::vector<std::string> names,
-             std::vector<enum_field_types> types,std::vector<std::vector<Item*>> &rows){
-    return ResType(true,0,0,std::move(names),std::move(types),std::move(rows));
 }
 
 /*load file, decrypt, and then return data plain fields in the type ResType*/
-static ResType load_files_low_memory(std::string db, std::string table){
+static 
+ResType 
+load_files(std::string db, 
+           std::string table) {
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
@@ -191,7 +164,6 @@ static ResType load_files_low_memory(std::string db, std::string table){
     for(unsigned int i=0;i<fms.size();i++){
         res[i].trans(fms[i]);
     }
-    create_embedded_thd(0);
     //then we should load all the fields available
     initGfb(res,db,table);   
 
@@ -201,39 +173,42 @@ static ResType load_files_low_memory(std::string db, std::string table){
     vector<int> field_types = ggbt.field_types;
     vector<int> field_lengths = ggbt.field_lengths;
 
-    //why do we need this?? the error comes from itemNullVector
-//    create_embedded_thd(0);
-
-    vector<vector<Item*>> res_field_item;
+    //why do we need this??
+    create_embedded_thd(0);
+    rawMySQLReturnValue resraw;
+    vector<vector<string>> res_field;   
     for(auto item:field_names){
-        res_field_item.push_back(gfb.annoOnionNameToItemVector[item]);
+        res_field.push_back(gfb.annoOnionNameToFileVector[item]);
     }
-
     //then transform it to ress_fields
-    unsigned int length = res_field_item[0].size();
-    vector<vector<Item*>> ress_field_item;
+    unsigned int length = res_field[0].size();
+
+    vector<vector<string>> ress_field;
     for(unsigned int i=0u;i<length;i++){
-        vector<Item*> row= itemNullVector(res_field_item.size());
-        for(unsigned int j=0u;j<res_field_item.size();j++){
-            row[j] = res_field_item[j][i];
+        vector<string> row;
+        for(unsigned int j=0u;j<res_field.size();j++){
+            row.push_back(res_field[j][i]);
         }
-        ress_field_item.push_back(row);
+        ress_field.push_back(row);
     }
 
-    std::vector<enum_field_types> fieldTypes;
+    resraw.rowValues = ress_field;
+    resraw.fieldNames = field_names;
     for(unsigned int i=0;i<field_types.size();++i){
-	fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
+	resraw.fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
     }
-    ResType rawtorestype = tempfunction(field_names, 
-                           fieldTypes, ress_field_item);
 
+    ResType rawtorestype = rawMySQLReturnValue_to_ResType(false, &resraw);
     auto finalresults = decryptResults(rawtorestype,*rm);
-    return std::move(finalresults);
+    return finalresults;
 }
 
+unsigned long gcount=0;
 static
-void local_wrapper_low_memory_item(const Item &i, const FieldMeta &fm, Analysis &a,
-                           List<Item> *const append_list){
+void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
+                           List<Item> *const append_list) {
+    //append_list->push_back(&(const_cast<Item&>(i)));
+    //do not use the plain strategy 
     std::vector<Item *> l;
     const uint64_t salt = fm.getHasSalt() ? randomValue() : 0;
     uint64_t IV = salt;
@@ -242,21 +217,35 @@ void local_wrapper_low_memory_item(const Item &i, const FieldMeta &fm, Analysis 
         OnionMeta * const om = it.second;
         std::string annoOnionName = om->getAnonOnionName();
         if(gfb.annoOnionNameToFileVector.find(annoOnionName)!=gfb.annoOnionNameToFileVector.end()){
-            std::vector<Item*> &tempItemVector = gfb.annoOnionNameToItemVector[annoOnionName];
-            Item* in = tempItemVector.back();            
-            l.push_back(in);
-            tempItemVector.pop_back();
+            enum_field_types type = static_cast<enum_field_types>(gfb.annoOnionNameToType[annoOnionName]);
+            std::vector<std::string> &tempFileVector = gfb.annoOnionNameToFileVector[annoOnionName];
+            std::string in = tempFileVector.back();            
+            if(IS_NUM(type)){
+                unsigned int len = annoOnionName.size();
+                if(len>4u&&annoOnionName.substr(len-4)=="ASHE"){
+                    l.push_back(MySQLFieldTypeToItem(type,in));
+                }else{
+                    l.push_back( new (current_thd->mem_root)
+                                Item_int(static_cast<ulonglong>(valFromStr(in))) );
+                }
+            }else{
+                l.push_back(MySQLFieldTypeToItem(type,in));
+            }
+            tempFileVector.pop_back();
         }else{
             l.push_back(my_encrypt_item_layers(i, o, *om, a, IV));
+            gcount++;
         }
     }
     std::string saltName = fm.getSaltName();
     if (fm.getHasSalt()) {
         if(gfb.annoOnionNameToFileVector.find(saltName)!=gfb.annoOnionNameToFileVector.end()){
-            std::vector<Item*> &tempItemVector = gfb.annoOnionNameToItemVector[saltName];
-            Item* in = tempItemVector.back();
-            l.push_back(in);
-            tempItemVector.pop_back();
+            std::vector<std::string> &tempFileVector = gfb.annoOnionNameToFileVector[saltName];
+            std::string in = tempFileVector.back();
+            l.push_back( new (current_thd->mem_root)
+                                Item_int(static_cast<ulonglong>(valFromStr(in)))
+             );
+            tempFileVector.pop_back();
         }else{
             l.push_back(new Item_int(static_cast<ulonglong>(salt)));
         }
@@ -268,14 +257,12 @@ void local_wrapper_low_memory_item(const Item &i, const FieldMeta &fm, Analysis 
 }
 
 
-
 int
 main(int argc, char* argv[]){
     init();
     create_embedded_thd(0);
-    std::string ip = "localhost";
     std::string db="tdb",table="student";
-
+    std::string ip="localhost";
     if(argc==4){
         ip = std::string(argv[1]);
         db = std::string(argv[2]);
@@ -288,25 +275,27 @@ main(int argc, char* argv[]){
     Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);
 
     /*choose decryption onion, load and decrypt to plain text*/
-    ResType res =  load_files_low_memory(db,table);
+    ResType res =  load_files(db,table);
     std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
 
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
 
     /*reencryption to get the encrypted insert!!!*/
-    for(auto &row:res.rows){
+    for(auto &row:res.rows) {
         List<List_item> newList;
         List<Item> *const newList0 = new List<Item>();
         for(auto i=0u;i<res.names.size();i++){
             std::string field_name = res.names[i];
             FieldMeta & fm = analysis.getFieldMeta(db,table,field_name);
-            local_wrapper_low_memory_item(*row[i],fm,analysis,newList0);
+            local_wrapper(*row[i],fm,analysis,newList0);
         }
         newList.push_back(newList0);
         std::ostringstream o;
         insertManyValues(o,newList);
         std::cout<<(head+o.str())<<std::endl;
     }
+
+    std::cout<<"gcount<<"<<gcount<<std::endl;
     return 0;
 }
 

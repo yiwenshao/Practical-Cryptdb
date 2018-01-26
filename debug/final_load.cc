@@ -202,7 +202,7 @@ static ResType load_files(std::string db, std::string table){
 unsigned long gcount=0;
 static
 void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
-                           List<Item> *const append_list) {
+                           List<Item> * append_list) {
     //append_list->push_back(&(const_cast<Item&>(i)));
     //do not use the plain strategy 
     std::vector<Item *> l;
@@ -252,6 +252,21 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
     }
 }
 
+static
+List<Item> * processRow(const std::vector<Item *> &row,
+                        const std::vector<std::string> &names,
+                        Analysis &analysis,
+                        std::string db,
+                        std::string table) {
+    List<Item> *const newList0 = new List<Item>();
+    for(auto i=0u;i<names.size();i++){
+        std::string field_name = names[i];
+        FieldMeta & fm = analysis.getFieldMeta(db,table,field_name);
+        local_wrapper(*row[i],fm,analysis,newList0);
+    }
+    return newList0;
+}
+
 
 int
 main(int argc, char* argv[]){
@@ -277,21 +292,69 @@ main(int argc, char* argv[]){
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
 
     /*reencryption to get the encrypted insert!!!*/
+/*    int currentCount=0;
+    List<List_item> newList;
     for(auto &row:res.rows) {
-        List<List_item> newList;
-        List<Item> *const newList0 = new List<Item>();
-        for(auto i=0u;i<res.names.size();i++){
+        List<Item> * newList0 = new List<Item>();
+        for(auto i=0u;i<res.names.size();i++) {
             std::string field_name = res.names[i];
             FieldMeta & fm = analysis.getFieldMeta(db,table,field_name);
             local_wrapper(*row[i],fm,analysis,newList0);
         }
         newList.push_back(newList0);
+        currentCount++;
+        if(currentCount==constGlobalConstants.pipelineCount){
+            currentCount=0;
+            std::ostringstream o;
+            insertManyValues(o,newList);
+            std::cout<<(head+o.str())<<std::endl;
+            //newList = List<List_item>();
+        }
+    } */
+/*    if(currentCount!=0){
+        std::ostringstream o;
+        insertManyValues(o,newList);
+        std::cout<<(head+o.str())<<std::endl;
+    }*/
+
+    
+/*    for(auto &row:res.rows) {
+        List<List_item> newList;
+        List<Item> * newList0 = processRow(row,res.names,analysis,db,table);
+        newList.push_back(newList0);
         std::ostringstream o;
         insertManyValues(o,newList);
         std::cout<<(head+o.str())<<std::endl;
     }
-
-    std::cout<<"gcount<<"<<gcount<<std::endl;
+*/
+    unsigned int i=0u;
+    while(true){
+        List<List_item> newList;
+        int localCount=0;
+        for(;i<res.rows.size();i++){
+            List<Item> * newList0 = processRow(res.rows[i],
+                                               res.names,
+                                               analysis,db,table);
+            newList.push_back(newList0);
+            localCount++;
+            if(localCount==constGlobalConstants.pipelineCount){
+                std::ostringstream o;
+                insertManyValues(o,newList);
+                std::cout<<(head+o.str())<<std::endl;
+                i++;
+                break;
+            }
+        }
+        if(i>=res.rows.size()){
+            if(localCount!=constGlobalConstants.pipelineCount) {
+                std::ostringstream o;
+                insertManyValues(o,newList);
+                std::cout<<(head+o.str())<<std::endl;
+            }
+            break;
+        }
+    }
+//    std::cout<<"gcount<<"<<gcount<<std::endl;
     return 0;
 }
 
