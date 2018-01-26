@@ -284,7 +284,11 @@ List<Item> * processRow(const std::vector<Item *> &row,
 
 int
 main(int argc, char* argv[]){
+    timer t_init;
     init();
+
+    glog<<"init: "<<std::to_string(t_init.lap()/1000000u)<<"\n";
+
     create_embedded_thd(0);
     std::string db="tdb",table="student";
     std::string ip="localhost";
@@ -297,10 +301,18 @@ main(int argc, char* argv[]){
     schema.get();
     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
     Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);
+
+    glog<<"loadSchema: "<<std::to_string(t_init.lap()/1000000u)<<"\n";
+
     /*choose decryption onion, load and decrypt to plain text*/
     ResType res =  load_files(db,table);
+
+    glog<<"load_files: "<<std::to_string(t_init.lap()/1000000u)<<"\n";
+
     std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
+
+
     /*reencryption to get the encrypted insert!!!*/
     unsigned int i=0u;
     while(true){
@@ -329,7 +341,9 @@ main(int argc, char* argv[]){
             break;
         }
     }
-    glog<<std::string("gcount<<")<<std::to_string(gcount)<<std::string("\n");
+    glog<<"reencryptionAndInsert: "<<std::to_string(t_init.lap()/1000000u)<<"\n";
+
+    glog<<std::string("gcount: ")<<std::to_string(gcount)<<std::string("\n");
     return 0;
 }
 
