@@ -178,14 +178,20 @@ static ResType load_files(std::string db, std::string table){
         res[i].trans(fms[i]);
     }
 
-    glog<<"loadtablemeta: "<<std::to_string(t_load_files.lap()/1000000u)<<"\n";
+    glog<<"loadtablemeta: "<<
+          std::to_string(t_load_files.lap()/1000000u)<<
+          "##"<<std::to_string(time(NULL))<<"\n";
     //then we should load all the fields available
     initGfb(res,db,table);
-    glog<<"initGfb: "<<std::to_string(t_load_files.lap()/1000000u)<<"\n";
+    glog<<"initGfb: "<<
+          std::to_string(t_load_files.lap()/1000000u)<<
+          "##"<<std::to_string(time(NULL))<<"\n";
 
     std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
 
-    glog<<"getReturnMeta: "<<std::to_string(t_load_files.lap()/1000000u)<<"\n";
+    glog<<"getReturnMeta: "<<
+          std::to_string(t_load_files.lap()/1000000u)<<
+          "##"<<std::to_string(time(NULL))<<"\n";
 
     vector<string> field_names = ggbt.field_names;
     vector<int> field_types = ggbt.field_types;
@@ -217,11 +223,15 @@ static ResType load_files(std::string db, std::string table){
     }
     ResType rawtorestype = rawMySQLReturnValue_to_ResType(false, &resraw);
 
-    glog<<"transform: "<<std::to_string(t_load_files.lap()/1000000u)<<"\n";
+    glog<<"transform: "<<
+          std::to_string(t_load_files.lap()/1000000u)<<
+          "##"<<std::to_string(time(NULL))<<"\n";
 
     auto finalresults = decryptResults(rawtorestype,*rm);
 
-    glog<<"descryption: "<<std::to_string(t_load_files.lap()/1000000u)<<"\n";
+    glog<<"descryption: "<<
+           std::to_string(t_load_files.lap()/1000000u)<<
+           "##"<<std::to_string(time(NULL))<<"\n";
     return finalresults;
 }
 
@@ -299,7 +309,9 @@ main(int argc, char* argv[]){
     timer t_init;
     init();
 
-    glog<<"init: "<<std::to_string(t_init.lap()/1000000u)<<"\n";
+    glog<<"init: "<<
+          std::to_string(t_init.lap()/1000000u)<<
+          "##"<<std::to_string(time(NULL))<<"\n";
 
     create_embedded_thd(0);
     std::string db="tdb",table="student";
@@ -314,12 +326,16 @@ main(int argc, char* argv[]){
     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
     Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);
 
-    glog<<"loadSchema: "<<std::to_string(t_init.lap()/1000000u)<<"\n";
+    glog<<"loadSchema: "<<
+          std::to_string(t_init.lap()/1000000u)<<
+          "##"<<std::to_string(time(NULL))<<"\n";
 
     /*choose decryption onion, load and decrypt to plain text*/
     ResType res =  load_files(db,table);
 
-    glog<<"load_files: "<<std::to_string(t_init.lap()/1000000u)<<"\n";
+    glog<<"load_files: "<<
+          std::to_string(t_init.lap()/1000000u)<<
+          "##"<<std::to_string(time(NULL))<<"\n";
 
     std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
@@ -353,9 +369,13 @@ main(int argc, char* argv[]){
             break;
         }
     }
-    glog<<"reencryptionAndInsert: "<<std::to_string(t_init.lap()/1000000u)<<"\n";
+    glog<<"reencryptionAndInsert: "<<
+        std::to_string(t_init.lap()/1000000u)<<
+        "##"<<std::to_string(time(NULL))<<"\n";
 
-    glog<<std::string("gcount: ")<<std::to_string(gcount)<<std::string("\n");
+    glog<<std::string("gcount: ")<<
+          std::to_string(gcount)<<
+          "##"<<std::to_string(time(NULL))<<std::string("\n");
     return 0;
 }
 
