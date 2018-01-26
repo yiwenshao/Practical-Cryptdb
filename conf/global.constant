@@ -1,3 +1,8 @@
 loadCount:5
-pipelineCount:1000
+pipelineCount:2
+useASHE:true
+useHOM:false
+useOPE:false
+useSWP:true
+useDET:false
 other:1
