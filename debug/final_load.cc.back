@@ -15,9 +15,6 @@
 #include "wrapper/common.hh"
 #include "wrapper/insert_lib.hh"
 #include "util/constants.hh"
-#include "util/timer.hh"
-#include "util/log.hh"
-
 using std::cout;
 using std::cin;
 using std::endl;
@@ -29,17 +26,6 @@ char * globalEsp=NULL;
 int num_of_pipe = 4;
 //global map, for each client, we have one WrapperState which contains ProxyState.
 static std::map<std::string, WrapperState*> clients;
-
-static
-std::string logfilePrefix = "final_load";
-
-static
-std::string logfileName = logfilePrefix+constGlobalConstants.logFile+std::to_string(time(NULL));
-
-static
-logToFile glog(logfileName);
-
-
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
 /*for each field, convert the format to FieldMeta_Wrapper*/
@@ -293,15 +279,54 @@ main(int argc, char* argv[]){
         db = std::string(argv[2]);
         table = std::string(argv[3]);
     }
+
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
     schema.get();
     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
     Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);
+
     /*choose decryption onion, load and decrypt to plain text*/
     ResType res =  load_files(db,table);
     std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
+
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
+
     /*reencryption to get the encrypted insert!!!*/
+/*    int currentCount=0;
+    List<List_item> newList;
+    for(auto &row:res.rows) {
+        List<Item> * newList0 = new List<Item>();
+        for(auto i=0u;i<res.names.size();i++) {
+            std::string field_name = res.names[i];
+            FieldMeta & fm = analysis.getFieldMeta(db,table,field_name);
+            local_wrapper(*row[i],fm,analysis,newList0);
+        }
+        newList.push_back(newList0);
+        currentCount++;
+        if(currentCount==constGlobalConstants.pipelineCount){
+            currentCount=0;
+            std::ostringstream o;
+            insertManyValues(o,newList);
+            std::cout<<(head+o.str())<<std::endl;
+            //newList = List<List_item>();
+        }
+    } */
+/*    if(currentCount!=0){
+        std::ostringstream o;
+        insertManyValues(o,newList);
+        std::cout<<(head+o.str())<<std::endl;
+    }*/
+
+    
+/*    for(auto &row:res.rows) {
+        List<List_item> newList;
+        List<Item> * newList0 = processRow(row,res.names,analysis,db,table);
+        newList.push_back(newList0);
+        std::ostringstream o;
+        insertManyValues(o,newList);
+        std::cout<<(head+o.str())<<std::endl;
+    }
+*/
     unsigned int i=0u;
     while(true){
         List<List_item> newList;
@@ -329,7 +354,7 @@ main(int argc, char* argv[]){
             break;
         }
     }
-    glog<<std::string("gcount<<")<<std::to_string(gcount)<<std::string("\n");
+//    std::cout<<"gcount<<"<<gcount<<std::endl;
     return 0;
 }
 
