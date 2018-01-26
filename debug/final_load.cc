@@ -93,6 +93,8 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
         if(index==-1) assert(0);
 
         onion o = tfds[i].getChoosenOnionO()[index];
+        glog<<"choosenDecryptionOnion: "<<TypeText<onion>::toText(o)<<"\n";
+
         SECLEVEL l = tfds[i].getOriginalFieldMeta()->getOnionMeta(o)->getSecLevel();
         FieldMeta *k = tfds[i].getOriginalFieldMeta();
         OLK curOLK(o,l,k);
@@ -126,8 +128,10 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
     /*choosen onions should all be included in gfb. salt is also included
       it's hard to decide whether a FieldMetaTrans has salt because the senmantic is different from that of FieldMeta.
     */
+
     for(auto &item:res){
-        for(auto i:item.getChoosenOnionName()){
+
+/*        for(auto i:item.getChoosenOnionName()){
             field_names.push_back(i);
         }
         for(auto i:item.getChoosenFieldTypes()){
@@ -136,12 +140,31 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
         for(auto i:item.getChoosenFieldLengths()){
             field_lengths.push_back(i);
         }
+*/
+        //only choose onions that are used.
+        for(auto i=0u;i<item.getChoosenOnionName().size();i++){
+            onion o = item.getChoosenOnionO()[i];
+            if( ((o==oDET)&&(constGlobalConstants.useDET==true)) ||
+                ((o==oOPE)&&(constGlobalConstants.useOPE==true)) ||
+                ((o==oASHE)&&(constGlobalConstants.useASHE==true)) ||
+                ((o==oAGG)&&(constGlobalConstants.useHOM==true)) ||
+                ((o==oSWP)&&(constGlobalConstants.useSWP==true)) ) {
+                field_names.push_back(item.getChoosenOnionName()[i]);
+                field_types.push_back(item.getChoosenFieldTypes()[i]);
+                field_lengths.push_back(item.getChoosenFieldLengths()[i]);
+                glog<<"usedField: "<<item.getChoosenOnionName()[i]<<"\n";
+            }
+        }
         if(item.getHasSalt()){
             field_names.push_back(item.getSaltName());
             field_types.push_back(item.getSaltType());
             field_lengths.push_back(item.getSaltLength());
+            glog<<"useSalt: "<<item.getSaltName()<<"\n";
+        }else{
+            glog<<"do not use salt"<<"\n";
         }
     }
+
     gfb.field_names = field_names;
     gfb.field_types = field_types;
     gfb.field_lengths = field_lengths;
@@ -369,6 +392,7 @@ main(int argc, char* argv[]){
             break;
         }
     }
+
     glog<<"reencryptionAndInsert: "<<
         std::to_string(t_init.lap()/1000000u)<<
         "##"<<std::to_string(time(NULL))<<"\n";

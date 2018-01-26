@@ -1,5 +1,6 @@
 #include "wrapper/reuse.hh"
 #include "util/util.hh"
+#include "util/constants.hh"
 #include <map>
 using std::cout;
 using std::cin;
@@ -606,10 +607,17 @@ int getDecryptionOnionIndex(FieldMetaTrans& fdtrans) {
     }
     for(auto item:onion_order){
         if(onionIndexPair.find(item)!=onionIndexPair.end()){
-            res = onionIndexPair[item];
-            break;
+            if( ((item==oDET)&&(constGlobalConstants.useDET==true)) ||
+                ((item==oOPE)&&(constGlobalConstants.useOPE==true)) ||
+                ((item==oASHE)&&(constGlobalConstants.useASHE==true)) ||
+                ((item==oAGG)&&(constGlobalConstants.useHOM==true))
+              ){
+                res = onionIndexPair[item];
+                break;
+            }
         }
     }
+    assert(res!=-1);
     return res;
 }
 

@@ -18,14 +18,44 @@ globalConstants initGlobalConstants(){
 
     globalConstants res;
     std::string line;
-    while(std::getline(infile,line)){
+    while(std::getline(infile,line)) {
         int index = line.find(":");
         std::string head = line.substr(0,index);
-        if(head=="loadCount"){
+        if(head=="loadCount") {
             res.loadCount = stoi(line.substr(index+1));          
-        }else if(head=="pipelineCount"){
+        }else if(head=="pipelineCount") {
             res.pipelineCount = stoi(line.substr(index+1));
-        }else if(head=="other"){
+        }else if(head=="useASHE") {
+            if(line.substr(index+1)=="true" ){
+                res.useASHE = true;
+            }else{
+                res.useASHE = false;
+            }
+        }else if(head=="useHOM") {
+            if(line.substr(index+1)=="true"){
+                res.useHOM = true;
+            }else{
+                res.useHOM = false;
+            }
+        }else if(head=="useOPE") {
+            if(line.substr(index+1)=="true"){
+                res.useOPE = true;
+            }else{
+                res.useOPE = false;
+            }
+        }else if(head=="useSWP") {
+            if(line.substr(index+1)=="true"){
+                res.useSWP = true;
+            }else{
+                res.useSWP = false;
+            }
+        }else if(head=="useDET") {
+            if(line.substr(index+1)=="true"){
+                res.useDET = true;
+            }else{
+                res.useDET = false;
+            }
+        }else if(head=="other") {
             ;
         }else{
             assert(0);

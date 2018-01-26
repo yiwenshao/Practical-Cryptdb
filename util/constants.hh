@@ -12,6 +12,11 @@ added by et. all et related things.
 struct globalConstants{
     int loadCount;/*used to limit the number of final_load*/
     int pipelineCount;
+    bool useASHE;
+    bool useHOM;
+    bool useOPE;
+    bool useSWP;
+    bool useDET;
     std::string logFile;/*file name for log*/
 };
 
