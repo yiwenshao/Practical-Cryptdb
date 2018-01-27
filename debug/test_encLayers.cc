@@ -14,6 +14,7 @@
 #include "util/constants.hh"
 #include "util/timer.hh"
 #include "util/log.hh"
+#include "util/onions.hh"
 
 using std::cout;
 using std::cin;
@@ -61,6 +62,27 @@ main() {
     init();
     create_embedded_thd(0);
     Create_field *f = new Create_field;
+    f->sql_type = MYSQL_TYPE_LONG;
+
+    std::unique_ptr<EncLayer> el(EncLayerFactory::encLayer(oDET,SECLEVEL::RND,*f,"HEHE"));
+
+    auto levels = CURRENT_NUM_LAYOUT[oDET];
+
+    std::vector<std::unique_ptr<EncLayer> > layers;
+
+    const Create_field * newcf = f;
+    onion o = oDET;
+    for (auto l: levels) {
+        const std::string key = "plainkey";
+        std::unique_ptr<EncLayer>
+            el(EncLayerFactory::encLayer(o, l, *newcf, key));
+        const Create_field &oldcf = *newcf;
+        newcf = el->newCreateField(oldcf);
+        layers.push_back(std::move(el));
+    }
+    (void)el;
     (void)f;
     return 0;
 }
+
+//main/schema.cc:83 is use to create layers of encryption
