@@ -18,3 +18,4 @@ function generate_insert_int(){
 
 h="INSERT INTO str_table VALUES "
 generate_insert_int "$h" 3 100
+
