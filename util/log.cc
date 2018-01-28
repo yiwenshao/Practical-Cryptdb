@@ -10,6 +10,7 @@ logToFile::logToFile(std::string filename){
 logToFile&
 logToFile::operator<<(std::string record) {
     fwrite(record.c_str(),1,record.size(),logfileHandler);
+    fflush(logfileHandler);
     return *this;
 }
 

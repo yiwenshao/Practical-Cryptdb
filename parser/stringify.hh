@@ -162,6 +162,7 @@ operator<<(std::ostream &out, Create_field &f)
     case MYSQL_TYPE_INT24:
     case MYSQL_TYPE_LONG:
     case MYSQL_TYPE_LONGLONG:
+            break;//shaoyiwen omit length here
     case MYSQL_TYPE_STRING:
         if (f.length)
             out << "(" << f.length << ")";
