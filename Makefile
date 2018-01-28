@@ -85,7 +85,7 @@ mtl/%:$(OBJDIR)/debug/%.o token.o
 	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
 token.o:$(OBJDIR)/libwrapper.so
-	rm token.o
+	-rm token.o
 	$(CXX) -g -c token.cc
 
 
