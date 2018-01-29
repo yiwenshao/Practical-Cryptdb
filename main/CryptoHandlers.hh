@@ -20,6 +20,8 @@
 #include <sql_insert.h>
 #include <sql_update.h>
 
+#include "parser/mysql_type_metadata.hh"
+
 
 /* Class hierarchy:
  * EncLayer:
@@ -83,6 +85,65 @@ public:
 protected:
      friend class EncLayerFactory;
 };
+
+
+
+class DET_str : public EncLayer {
+public:
+    DET_str(const Create_field &cf, const std::string &seed_key);
+
+    // serialize and deserialize
+    std::string doSerialize() const {return rawkey;}
+    DET_str(unsigned int id, const std::string &serial);
+
+    virtual SECLEVEL level() const {return SECLEVEL::DET;}
+    std::string name() const {return "DET_str";}
+    Create_field * newCreateField(const Create_field &cf,
+                                  const std::string &anonname = "")
+        const;
+    Item *encrypt(const Item &ptext, uint64_t IV) const;
+    Item *decrypt(const Item &ctext, uint64_t IV) const;
+    Item * decryptUDF(Item * const col, Item * const ivcol = NULL) const;
+protected:
+    const std::string rawkey;
+    static const int key_bytes = 16;
+    static const bool do_pad   = true;
+    const std::unique_ptr<const AES_KEY> enckey;
+    const std::unique_ptr<const AES_KEY> deckey;
+};
+
+
+class RND_str : public EncLayer {
+public:
+    RND_str(const Create_field &cf, const std::string &seed_key);
+
+    // serialize and deserialize
+    std::string doSerialize() const {return rawkey;}
+    RND_str(unsigned int id, const std::string &serial);
+
+    SECLEVEL level() const {return SECLEVEL::RND;}
+    std::string name() const {return "RND_str";}
+    Create_field * newCreateField(const Create_field &cf,
+                                  const std::string &anonname = "")
+        const;
+
+    Item * encrypt(const Item &ptext, uint64_t IV) const;
+    Item * decrypt(const Item &ctext, uint64_t IV) const;
+    Item * decryptUDF(Item * const col, Item * const ivcol) const;
+
+private:
+    const std::string rawkey;
+    static const int key_bytes = 16;
+    static const bool do_pad   = true;
+    const std::unique_ptr<const AES_KEY> enckey;
+    const std::unique_ptr<const AES_KEY> deckey;
+
+};
+
+
+
+
+
 
 class HOM : public EncLayer {
 public:
@@ -204,10 +265,183 @@ public:
     std::string doSerialize() const;
 };
 
+class CryptedInteger {
+public:
+    CryptedInteger(const Create_field &cf, const std::string &key)
+        : key(key), field_type(cf.sql_type),
+          inclusiveRange(supportsRange(cf)) {}
+    static CryptedInteger
+        deserialize(const std::string &serial);
+    CryptedInteger(const std::string &key, enum enum_field_types type,
+                   std::pair<int64_t, uint64_t> range)
+        : key(key), field_type(type), inclusiveRange(range) {}
+    std::string serialize() const;
+
+    void checkValue(uint64_t value) const;
+    std::string getKey() const {return key;}
+    enum enum_field_types getFieldType() const {return field_type;}
+    std::pair<int64_t, uint64_t> getInclusiveRange() const
+        { return inclusiveRange; }
+
+private:
+    const std::string key;
+    const enum enum_field_types field_type;
+    const std::pair<int64_t, uint64_t> inclusiveRange;
+};
 
 
 
+CryptedInteger
+overrideCreateFieldCryptedIntegerFactory(const Create_field &cf,
+                                         const std::string &key,
+                                         signage s,
+                                         enum enum_field_types field_type);
 
 
+class DET_abstract_integer : public EncLayer {
+public:
+    DET_abstract_integer() : EncLayer() {}
+    DET_abstract_integer(unsigned int id)
+        : EncLayer(id) {}
+
+    virtual std::string name() const = 0;
+    virtual SECLEVEL level() const = 0;
+
+    std::string doSerialize() const;
+    template <typename Type>
+        static std::unique_ptr<Type>
+        deserialize(unsigned int id, const std::string &serial);
+
+    Create_field *newCreateField(const Create_field &cf,
+                                 const std::string &anonname = "")
+        const;
+
+    // FIXME: final
+    Item *encrypt(const Item &ptext, uint64_t IV) const;
+    Item *decrypt(const Item &ctext, uint64_t IV) const;
+    Item *decryptUDF(Item *const col, Item *const ivcol = NULL) const;
+
+protected:
+    static const int bf_key_size = 16;
+
+private:
+    std::string getKeyFromSerial(const std::string &serial);
+    virtual const CryptedInteger &getCInteger_() const = 0;
+    virtual const blowfish &getBlowfish_() const = 0;
+};
+
+
+std::string prng_expand(const std::string &seed_key, uint key_bytes);
+
+class DET_int : public DET_abstract_integer {
+public:
+    DET_int(const Create_field &cf, const std::string &seed_key)
+        : DET_abstract_integer(),
+          cinteger(overrideCreateFieldCryptedIntegerFactory(cf,
+                                       prng_expand(seed_key, bf_key_size),
+                                       signage::UNSIGNED,
+                                       MYSQL_TYPE_LONGLONG)),
+          bf(cinteger.getKey()) {}
+
+    // create object from serialized contents
+    DET_int(unsigned int id, const CryptedInteger &cinteger)
+        : DET_abstract_integer(id), cinteger(cinteger), bf(cinteger.getKey()) {}
+
+    virtual SECLEVEL level() const {return SECLEVEL::DET;}
+    std::string name() const {return "DET_int";}
+
+private:
+    const CryptedInteger cinteger;
+    const blowfish bf;
+
+    const CryptedInteger &getCInteger_() const {return cinteger;}
+    const blowfish &getBlowfish_() const {return bf;}
+};
+
+
+class OPE_str : public EncLayer {
+public:
+    OPE_str(const Create_field &cf, const std::string &seed_key);
+
+    // serialize and deserialize
+    std::string doSerialize() const {return key;}
+    OPE_str(unsigned int id, const std::string &serial);
+
+    SECLEVEL level() const {return SECLEVEL::OPE;}
+    std::string name() const {return "OPE_str";}
+    Create_field * newCreateField(const Create_field &cf,
+                                  const std::string &anonname = "")
+        const;
+
+    Item *encrypt(const Item &p, uint64_t IV) const;
+    Item *decrypt(const Item &c, uint64_t IV) const
+        __attribute__((noreturn));
+
+private:
+    const std::string key;
+    // HACK.
+    mutable OPE ope;
+    static const size_t key_bytes = 16;
+    static const size_t plain_size = 4;
+    static const size_t ciph_size = 8;
+};
+
+class OPE_int : public EncLayer {
+public:
+    OPE_int(const Create_field &cf, const std::string &seed_key);
+    OPE_int(unsigned int id, const CryptedInteger &cinteger,
+            size_t plain_size, size_t ciph_size);
+    CryptedInteger opeHelper(const Create_field &f,
+                             const std::string &key);
+
+    SECLEVEL level() const {return SECLEVEL::OPE;}
+    std::string name() const {return "OPE_int";}
+
+    std::string doSerialize() const;
+    static std::unique_ptr<OPE_int>
+        deserialize(unsigned int id, const std::string &serial);
+
+    Create_field * newCreateField(const Create_field &cf,
+                                  const std::string &anonname = "")
+        const;
+
+    Item *encrypt(const Item &p, uint64_t IV) const;
+    Item *decrypt(const Item &c, uint64_t IV) const;
+
+private:
+    const CryptedInteger cinteger;
+    static const size_t key_bytes = 16;
+    const size_t plain_size;
+    const size_t ciph_size;
+    mutable OPE ope;                      // HACK
+};
+
+
+
+class RND_int : public EncLayer {
+public:
+    RND_int(const Create_field &cf, const std::string &seed_key);
+    RND_int(unsigned int id, const CryptedInteger &cinteger);
+
+    std::string doSerialize() const;
+    static std::unique_ptr<RND_int>
+        deserialize(unsigned int id, const std::string &serial);
+
+    SECLEVEL level() const {return SECLEVEL::RND;}
+    std::string name() const {return "RND_int";}
+
+    Create_field * newCreateField(const Create_field &cf,
+                                  const std::string &anonname = "")
+        const;
+
+    Item *encrypt(const Item &ptext, uint64_t IV) const;
+    Item *decrypt(const Item &ctext, uint64_t IV) const;
+    Item * decryptUDF(Item * const col, Item * const ivcol) const;
+
+private:
+    const CryptedInteger cinteger;
+    blowfish const bf;
+    static int const key_bytes = 16;
+};
 
 
