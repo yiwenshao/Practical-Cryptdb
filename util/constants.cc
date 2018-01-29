@@ -55,13 +55,18 @@ globalConstants initGlobalConstants(){
             }else{
                 res.useDET = false;
             }
+        }else if(head=="useSalt"){
+            if(line.substr(index+1)=="true"){
+                res.useSalt = true;
+            }else{
+                res.useSalt = false;
+            }
         }else if(head=="other") {
             ;
         }else{
             assert(0);
         }
     }
-
     /* the following values need not be determined 
        at runtime.*/
     res.logFile="LOG.TXT";
