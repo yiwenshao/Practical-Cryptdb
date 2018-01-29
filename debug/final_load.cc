@@ -303,6 +303,7 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
                                 Item_int(static_cast<ulonglong>(valFromStr(in)))
              );
             tempFileVector.pop_back();
+            gcountMap[oINVALID]++;//use invalid to record the salt hit rate
         }else{
             l.push_back(new Item_int(static_cast<ulonglong>(salt)));
         }

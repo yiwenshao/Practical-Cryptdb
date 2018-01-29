@@ -5,4 +5,5 @@ useHOM:false
 useOPE:false
 useSWP:true
 useDET:false
+useSalt:true
 other:1
