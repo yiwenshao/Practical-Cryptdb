@@ -113,7 +113,8 @@ main(int argc,char**argv) {
     if(argc==2){
         num_of_tests = std::stoi(std::string(argv[1]));
     }else{
-        std::cout<<"num_of_tests:length"<<std::endl;
+        std::cout<<"num_of_tests"<<std::endl;
+        return 0;
     }
     Item * plain = getItemInt("123456789");
 
@@ -126,10 +127,12 @@ main(int argc,char**argv) {
     for(int i=0;i<num_of_tests;i++) {
         enc = ds->encrypt(*plain,0u);
     }
+
     std::cout<<"DEC_DET_int_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
     for(int i=0;i<num_of_tests;i++) {
         dec = ds->decrypt(*enc,0u);
     }
+
     std::cout<<"ENC_DET_int_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
     (void)dec;
 

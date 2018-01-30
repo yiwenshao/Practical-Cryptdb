@@ -102,6 +102,7 @@ main(int argc,char**argv) {
         num_of_tests = std::stoi(std::string(argv[1]));
     }else{
         std::cout<<"num_of_tests"<<std::endl;
+        return 0;
     }
     Item* plain = getItemInt("123456789");
     Item *enc = NULL;

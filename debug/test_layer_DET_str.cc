@@ -114,6 +114,7 @@ main(int argc,char**argv) {
         length = std::stoi(std::string(argv[2]));
     }else{
         std::cout<<"num_of_tests:length"<<std::endl;
+        return 0;
     }
 
     std::string input(length,'a');
@@ -123,16 +124,21 @@ main(int argc,char**argv) {
     Item* dec = NULL;
 
     std::cout<<"length: "<<length<<" ## "<<"num_of_tests: "<<num_of_tests<<std::endl;
+
     timer t;
     for(int i=0;i<num_of_tests;i++) {
         enc = ds->encrypt(*plain,0u);
     }
+
     std::cout<<"ENC_DET_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
 
     for(int i=0;i<num_of_tests;i++) {
         dec = ds->decrypt(*enc,0u);
     }
+
     std::cout<<"DEC_DET_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+
+    std::cout<<"enclen: "<<enc->str_value.length()<<"##"<<"declen: "<<dec->str_value.length() <<std::endl;
 
     (void)dec;
 

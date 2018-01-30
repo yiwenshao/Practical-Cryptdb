@@ -114,6 +114,7 @@ main(int argc,char**argv) {
         length = std::stoi(std::string(argv[2]));
     }else{
         std::cout<<"num_of_tests:length"<<std::endl;
+        return 0;
     }
 
     std::string input(length,'a');
@@ -132,6 +133,8 @@ main(int argc,char**argv) {
         dec = rs->decrypt(*enc,0u);
     }
     std::cout<<"DEC_RND_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+
+    std::cout<<"enclen: "<<enc->str_value.length()<<"##"<<"declen: "<<dec->str_value.length() <<std::endl;
     (void)dec;
     (void)enc;
     return 0;

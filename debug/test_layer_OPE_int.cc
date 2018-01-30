@@ -114,6 +114,7 @@ main(int argc,char** argv) {
         num_of_tests = std::stoi(std::string(argv[1]));
     }else{
         std::cout<<"num_of_tests:length"<<std::endl;
+        return 0;
     }
    
     std::cout<<"num_of_tests: "<<num_of_tests<<std::endl;
