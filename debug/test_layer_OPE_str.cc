@@ -97,7 +97,18 @@ Create_field* getUnsignedIntField(){
 }
 
 */
-
+static
+void control(OPE_str* ds, Item* plain, int num_of_tests,int length) {
+    Item* enc = NULL;
+    std::cout<<"length: "<<length<<std::endl;
+    std::cout<<"num_of_tests: "<<num_of_tests<<std::endl;
+    timer t;
+    for(int i=0;i<num_of_tests;i++) {
+        enc = ds->encrypt(*plain,0u);
+    }
+    std::cout<<"ENC_OPE_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+    std::cout<<"enclen: "<<enc->str_value.length()<<std::endl;
+}
 
 
 int
@@ -119,18 +130,12 @@ main(int argc,char** argv) {
         return 0;
     }
 
-    std::string input(length,'a');
-    Item* plain = getItemString(input);
-    std::cout<<"length: "<<length<<" ## "<<"num_of_tests: "<<num_of_tests<<std::endl;
-    timer t;
-    Item* enc = NULL;
-    for(int i=0;i<num_of_tests;i++) {
-        enc = op->encrypt(*plain,0u);
+    for(int i=1;i<=100;i++) {
+        std::string input(length*i,'a');
+        Item* plain = getItemString(input);
+        control(op, plain, num_of_tests, length*i);
     }
-    std::cout<<"ENC_OPE_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
 
-    std::cout<<"enclen: "<<enc->str_value.length()<<"##"<<"plainlen: "<<plain->str_value.length() <<std::endl;
-    (void)enc;
     return 0;
 }
 

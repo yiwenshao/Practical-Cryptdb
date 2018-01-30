@@ -127,6 +127,27 @@ Create_field* getUnsignedIntField(){
 
 */
 
+static
+void control(Search* sw, Item* plain, int num_of_tests,int length, int token_size) {
+    Item* enc = NULL;
+    std::cout<<"length: "<<length<<std::endl;
+    std::cout<<"num_of_tests: "<<num_of_tests<<std::endl;
+
+    timer t;
+    for(int i=0;i<num_of_tests;i++) {
+        enc = sw->encrypt(*plain,0u);
+    }
+
+    std::cout<<"ENC_SWP_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+    std::cout<<"tokennumber: "<<token_size<<std::endl;
+    std::cout<<"enclen: "<<enc->str_value.length()<<std::endl;
+    std::cout<<"plainlen: "<<plain->str_value.length()<<std::endl;
+
+}
+
+
+
+
 int
 main(int argc,char**argv) {
     init();
@@ -146,23 +167,12 @@ main(int argc,char**argv) {
         return 0;
     }
 
-    std::string input = getpRandomName(length);//(length,'a');
-
-    auto res = tokenize(input);
-
-    Item* plain = getItemString(input);
-
-    std::cout<<"length: "<<length<<" ## "<<"num_of_tests: "<<num_of_tests<<std::endl;
-    timer t;
-    Item* enc = NULL;
-    for(int i=0;i<num_of_tests;i++) {
-        enc = sw->encrypt(*plain,0u);
+    for(int i=1;i<=100;i++) {
+        std::string input = getpRandomName(length*i);
+        Item* plain = getItemString(input);
+        auto res = tokenize(input);
+        control(sw, plain, num_of_tests, length*i,res->size());
     }
-    std::cout<<"ENC_OPE_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
-
-    std::cout<<"enclen: "<<enc->str_value.length()<<"##"<<"plainlen: "<<plain->str_value.length() 
-    <<"tokennumber: "<<res->size()<<std::endl;
-    (void)enc;
     return 0;
 }
 

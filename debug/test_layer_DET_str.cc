@@ -98,6 +98,27 @@ Create_field* getUnsignedIntField(){
 
 */
 
+static
+void control(DET_str* ds, Item* plain, int num_of_tests,int length) {
+    Item* enc = NULL;
+    Item* dec = NULL;
+    std::cout<<"length: "<<length<<std::endl;
+    std::cout<<"num_of_tests: "<<num_of_tests<<std::endl;
+    timer t;
+    for(int i=0;i<num_of_tests;i++) {
+        enc = ds->encrypt(*plain,0u);
+    }
+    std::cout<<"ENC_DET_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+
+    for(int i=0;i<num_of_tests;i++) {
+        dec = ds->decrypt(*enc,0u);
+    }
+    std::cout<<"DEC_DET_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+    std::cout<<"enclen: "<<enc->str_value.length()<<std::endl;
+    std::cout<<"declen: "<<dec->str_value.length() <<std::endl;
+}
+
+
 int
 main(int argc,char**argv) {
     init();
@@ -116,32 +137,11 @@ main(int argc,char**argv) {
         std::cout<<"num_of_tests:length"<<std::endl;
         return 0;
     }
-
-    std::string input(length,'a');
-
-    Item* plain = getItemString(input);
-    Item* enc = NULL;
-    Item* dec = NULL;
-
-    std::cout<<"length: "<<length<<" ## "<<"num_of_tests: "<<num_of_tests<<std::endl;
-
-    timer t;
-    for(int i=0;i<num_of_tests;i++) {
-        enc = ds->encrypt(*plain,0u);
+    for(int i=1;i<=100;i++) {
+        std::string input(length*i,'a') ;
+        Item* plain = getItemString(input) ;
+        control(ds, plain, num_of_tests, length*i) ;
     }
-
-    std::cout<<"ENC_DET_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
-
-    for(int i=0;i<num_of_tests;i++) {
-        dec = ds->decrypt(*enc,0u);
-    }
-
-    std::cout<<"DEC_DET_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
-
-    std::cout<<"enclen: "<<enc->str_value.length()<<"##"<<"declen: "<<dec->str_value.length() <<std::endl;
-
-    (void)dec;
-
     return 0;
 }
 
