@@ -102,17 +102,37 @@ Create_field* getUnsignedIntField(){
 
 
 int
-main() {
+main(int argc,char** argv) {
     init();
     create_embedded_thd(0);
     std::string key = "key";
     Create_field *cf = getUnsignedIntField();
     OPE_int* op = new OPE_int(*cf, key);
 
-    Item* plain = getItemInt("123");  //getItemString("helloworld");
+    int num_of_tests = 10000;
+    if(argc==2){
+        num_of_tests = std::stoi(std::string(argv[1]));
+    }else{
+        std::cout<<"num_of_tests:length"<<std::endl;
+    }
    
-    Item* enc = op->encrypt(*plain,0u);
-    Item* dec = op->decrypt(*enc,0u);
+    std::cout<<"num_of_tests: "<<num_of_tests<<std::endl;
+    Item* plain = getItemInt("123456789");  //getItemString("helloworld");
+
+    Item* enc = NULL;
+    Item* dec = NULL;
+
+    timer t;
+    for(int i=0;i<num_of_tests;i++) {   
+        enc = op->encrypt(*plain,0u);
+    }
+    std::cout<<"ENC_OPE_int_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+
+    for(int i=0;i<num_of_tests;i++) {
+        dec = op->decrypt(*enc,0u);
+    }
+
+    std::cout<<"DEC_OPE_int_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
     (void)dec;
 
     return 0;

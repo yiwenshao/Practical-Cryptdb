@@ -58,22 +58,13 @@ static void init(){
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
 }
 
-
-static
-Item *
-getItemString(std::string input) {
-    return MySQLFieldTypeToItem(MYSQL_TYPE_STRING, input);
-}
-
-
-/*
 static
 Item *
 getItemInt(std::string input) {
     return  new (current_thd->mem_root)
                                 Item_int(static_cast<ulonglong>(valFromStr(input)));
 }
-
+/*
 static
 Item *
 getItemString(std::string input) {
@@ -99,18 +90,40 @@ Create_field* getUnsignedIntField(){
 */
 
 int
-main() {
+main(int argc,char**argv) {
     init();
     create_embedded_thd(0);
     std::string key = "key";
     Create_field *cf = NULL;
     HOM* hm = new HOM(*cf, key);
 
-    Item* plain = getItemString("helloworld");
-    Item* enc = hm->encrypt(*plain,0u);
-    Item* dec = hm->decrypt(*enc,0u);
-    (void)dec;
+    int num_of_tests = 10000;
+    if(argc==2){
+        num_of_tests = std::stoi(std::string(argv[1]));
+    }else{
+        std::cout<<"num_of_tests"<<std::endl;
+    }
+    Item* plain = getItemInt("123456789");
+    Item *enc = NULL;
+    Item *dec = NULL;
 
+    std::cout<<"num_of_tests: "<<num_of_tests <<std::endl;
+
+    timer t;
+    
+    for(int i=0;i<num_of_tests;i++) {
+        enc = hm->encrypt(*plain,0u);
+    }
+
+    std::cout<<"HOM_ENC_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+
+    for(int i=0;i<num_of_tests;i++) {
+        dec = hm->decrypt(*enc,0u);
+    }
+
+    std::cout<<"HOM_DEC_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+
+    (void)dec;
     return 0;
 }
 

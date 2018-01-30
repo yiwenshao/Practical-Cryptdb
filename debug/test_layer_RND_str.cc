@@ -99,18 +99,41 @@ Create_field* getUnsignedIntField(){
 */
 
 int
-main() {
+main(int argc,char**argv) {
     init();
     create_embedded_thd(0);
     std::string key = "key";
     Create_field *cf = NULL;
     RND_str* rs = new RND_str(*cf, key);
 
-    Item* plain = getItemString("helloworld");
-    Item* enc = rs->encrypt(*plain,0u);
-    Item* dec = rs->decrypt(*enc,0u);
-    (void)dec;
+    int num_of_tests = 10000;
+    int length = 16;
 
+    if(argc==3){
+        num_of_tests = std::stoi(std::string(argv[1]));
+        length = std::stoi(std::string(argv[2]));
+    }else{
+        std::cout<<"num_of_tests:length"<<std::endl;
+    }
+
+    std::string input(length,'a');
+
+    Item* plain = getItemString(input);
+    Item* enc = NULL;
+    Item* dec = NULL;
+    std::cout<<"length: "<<length<<" ## "<<"num_of_tests: "<<num_of_tests<<std::endl;
+
+    timer t;
+    for(int i=0;i<num_of_tests;i++){
+        enc = rs->encrypt(*plain,0u);
+    }
+    std::cout<<"ENC_RND_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+    for(int i=0;i<num_of_tests;i++){
+        dec = rs->decrypt(*enc,0u);
+    }
+    std::cout<<"DEC_RND_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+    (void)dec;
+    (void)enc;
     return 0;
 }
 

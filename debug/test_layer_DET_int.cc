@@ -101,7 +101,7 @@ Create_field* getUnsignedIntField(){
 
 
 int
-main() {
+main(int argc,char**argv) {
     init();
     create_embedded_thd(0);
     std::string key = "key";
@@ -109,9 +109,28 @@ main() {
 
     DET_int* ds = new DET_int(*cf, key);
 
-    Item* plain = getItemInt("123");
-    Item* enc = ds->encrypt(*plain,0u);
-    Item* dec = ds->decrypt(*enc,0u);
+    int num_of_tests = 10000;
+    if(argc==2){
+        num_of_tests = std::stoi(std::string(argv[1]));
+    }else{
+        std::cout<<"num_of_tests:length"<<std::endl;
+    }
+    Item * plain = getItemInt("123456789");
+
+    std::cout<<"num_of_tests: "<<num_of_tests<<std::endl;
+
+    Item * enc = NULL;
+    Item * dec = NULL;
+
+    timer t;
+    for(int i=0;i<num_of_tests;i++) {
+        enc = ds->encrypt(*plain,0u);
+    }
+    std::cout<<"DEC_DET_int_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+    for(int i=0;i<num_of_tests;i++) {
+        dec = ds->decrypt(*enc,0u);
+    }
+    std::cout<<"ENC_DET_int_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
     (void)dec;
 
     return 0;
