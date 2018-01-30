@@ -1479,7 +1479,7 @@ Search::encrypt(const Item &ptext, uint64_t IV) const
     //TODO: remove string, string serves this purpose now..
     const std::list<std::string> * const tokens = tokenize(plainstr);
     const std::string ciph = encryptSWP(key, *tokens);
-
+    delete tokens;
     LOG(encl) << "SEARCH encrypt " << plainstr << " --> " << ciph;
 
     return new Item_string(newmem(ciph), ciph.length(), &my_charset_bin);

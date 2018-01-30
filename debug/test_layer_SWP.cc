@@ -140,6 +140,7 @@ main(int argc,char**argv) {
         Item* plain = getItemString(input);
         auto res = tokenize(input);
         control(sw, plain, num_of_tests, length*i,res->size());
+        delete res;
     }
     return 0;
 }
