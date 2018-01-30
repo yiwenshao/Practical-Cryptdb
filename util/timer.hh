@@ -2,6 +2,8 @@
 
 #include <sys/time.h>
 #include <time.h>
+#include <stdint.h>
+#include <string>
 
 class timer {
  private:
@@ -26,3 +28,12 @@ class timer {
 
     unsigned long start;
 };
+
+
+uint64_t gcur_usec();
+std::string
+ggetpRandomName(int out_length = 10);
+
+
+
+

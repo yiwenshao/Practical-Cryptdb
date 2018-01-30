@@ -131,7 +131,7 @@ main(int argc,char** argv) {
     }
 
     for(int i=1;i<=100;i++) {
-        std::string input(length*i,'a');
+        std::string input = ggetpRandomName(length*i);
         Item* plain = getItemString(input);
         control(op, plain, num_of_tests, length*i);
     }

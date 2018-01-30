@@ -19,12 +19,6 @@
 #include "util/onions.hh"
 #include <sys/time.h>
 
-static
-uint64_t cur_usec() {
-    struct timeval tv;
-    gettimeofday(&tv, 0);
-    return ((uint64_t)tv.tv_sec) * 1000000 + tv.tv_usec;
-}
 using std::cout;
 using std::cin;
 using std::endl;
@@ -37,33 +31,7 @@ static std::map<std::string, WrapperState*> clients;
 
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
-
-
-
-
-static
-std::string
-getpRandomName(int out_length = 10){
-    static const char valids[] =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    char output[out_length + 1];
-//    std::function<bool()> wrap_srand =[](){srand(time(NULL)); return true;};
-    std::function<bool()> wrap_srand =[](){srand(cur_usec()); return true;};
-    std::function<void(bool)> do_nothing = [] (bool b) {return;};
-    static bool danger_will_robinson = wrap_srand();
-    do_nothing(danger_will_robinson);
-
-    for (int i = 0; i < out_length; ++i) {
-        output[i] = valids[rand() % strlen(valids)];
-    }
-    output[out_length] = 0;
-    return std::string(output);
-}
-
-
 /*for each field, convert the format to FieldMeta_Wrapper*/
-
-
 static void init(){
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
@@ -168,7 +136,7 @@ main(int argc,char**argv) {
     }
 
     for(int i=1;i<=100;i++) {
-        std::string input = getpRandomName(length*i);
+        std::string input = ggetpRandomName(length*i);
         Item* plain = getItemString(input);
         auto res = tokenize(input);
         control(sw, plain, num_of_tests, length*i,res->size());
