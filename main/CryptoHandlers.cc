@@ -1437,7 +1437,8 @@ token(const std::string &key, const std::string &word)
 //currently, we split by whitespaces
 // only consider words at least 3 chars in len
 // discard not unique objects
-static std::list<std::string> *
+
+std::list<std::string> *
 tokenize(const std::string &text)
 {
     std::list<std::string> tokens = split(text, " ,;:.");

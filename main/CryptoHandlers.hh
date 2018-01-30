@@ -445,3 +445,6 @@ private:
 };
 
 
+
+std::list<std::string> *
+tokenize(const std::string &text);

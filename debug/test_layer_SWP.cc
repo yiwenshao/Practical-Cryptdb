@@ -17,7 +17,14 @@
 #include "util/timer.hh"
 #include "util/log.hh"
 #include "util/onions.hh"
+#include <sys/time.h>
 
+static
+uint64_t cur_usec() {
+    struct timeval tv;
+    gettimeofday(&tv, 0);
+    return ((uint64_t)tv.tv_sec) * 1000000 + tv.tv_usec;
+}
 using std::cout;
 using std::cin;
 using std::endl;
@@ -30,6 +37,28 @@ static std::map<std::string, WrapperState*> clients;
 
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
+
+
+
+
+static
+std::string
+getpRandomName(int out_length = 10){
+    static const char valids[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+    char output[out_length + 1];
+//    std::function<bool()> wrap_srand =[](){srand(time(NULL)); return true;};
+    std::function<bool()> wrap_srand =[](){srand(cur_usec()); return true;};
+    std::function<void(bool)> do_nothing = [] (bool b) {return;};
+    static bool danger_will_robinson = wrap_srand();
+    do_nothing(danger_will_robinson);
+
+    for (int i = 0; i < out_length; ++i) {
+        output[i] = valids[rand() % strlen(valids)];
+    }
+    output[out_length] = 0;
+    return std::string(output);
+}
 
 
 /*for each field, convert the format to FieldMeta_Wrapper*/
@@ -117,7 +146,9 @@ main(int argc,char**argv) {
         return 0;
     }
 
-    std::string input(length,'a');
+    std::string input = getpRandomName(length);//(length,'a');
+
+    auto res = tokenize(input);
 
     Item* plain = getItemString(input);
 
@@ -129,7 +160,8 @@ main(int argc,char**argv) {
     }
     std::cout<<"ENC_OPE_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
 
-    std::cout<<"enclen: "<<enc->str_value.length()<<"##"<<"plainlen: "<<plain->str_value.length() <<std::endl;
+    std::cout<<"enclen: "<<enc->str_value.length()<<"##"<<"plainlen: "<<plain->str_value.length() 
+    <<"tokennumber: "<<res->size()<<std::endl;
     (void)enc;
     return 0;
 }

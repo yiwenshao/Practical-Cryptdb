@@ -14,6 +14,7 @@ uint64_t cur_usec() {
 }
 
 using namespace std;
+
 static
 std::string
 getpRandomName(int out_length = 10){
