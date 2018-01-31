@@ -89,17 +89,16 @@ static void store(std::string db, std::string table,std::string dir){
 
 int
 main(int argc, char* argv[]){    
-    std::string db="tdb",table="student";
+    std::string db="tdb";
     std::string ip="127.0.0.1";
     std::string dir="onlyfields";
     int port=3306;
     if(argc==5){
         ip = std::string(argv[1]);
         db = std::string(argv[2]);
-        table = std::string(argv[3]);
-        dir = std::string(argv[4]);
+        dir = std::string(argv[3]);
     }else{
-        std::cout<<"need ip, db, table"<<std::endl;
+        std::cout<<"need ip, db, dir"<<std::endl;
         return 0;
     }
     init(ip,port);
