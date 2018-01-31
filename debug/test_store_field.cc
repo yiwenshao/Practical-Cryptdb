@@ -71,6 +71,15 @@ void write_raw_data_to_files(MySQLColumnData& resraw,string db,string table,std:
     }
 }
 
+static
+std::vector<std::string>
+getTables(std::string db) {
+    std::string query = std::string("show tables in ")+db;
+    MySQLColumnData resraw =  executeAndGetColumnData(globalConn,query);
+    return resraw.columnData[0];
+}
+
+
 static void store(std::string db, std::string table,std::string dir){
     std::string backup_query = std::string("SELECT * FROM `")+db+"`.`"+table+"`";
     MySQLColumnData resraw =  executeAndGetColumnData(globalConn,backup_query);
@@ -94,6 +103,9 @@ main(int argc, char* argv[]){
         return 0;
     }
     init(ip,port);
-    store(db,table,dir);
+    auto tables = getTables(db);
+    for(auto table:tables){
+        store(db,table,dir);
+    }
     return 0;
 }
