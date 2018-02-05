@@ -400,7 +400,7 @@ main(int argc, char* argv[]){
         std::to_string(t_init.lap()/1000000u)<<
         "##"<<std::to_string(time(NULL))<<"\n";
 
-    for(auto item:gcountMap){
+    for(auto item:gcountMap) {
         glog<<"onionComputed: "<<
               TypeText<onion>::toText(item.first)<<"::"<<
               std::to_string(item.second)<<"\n";

@@ -79,7 +79,10 @@ static void processTableMeta(const TableMeta &table){
 static void processDatabaseMeta(const DatabaseMeta & db) {
     std::cout<<GREEN_BEGIN<<"PRINT DatabaseMeta"<<COLOR_END<<std::endl;
     for(const auto & table: db.getChildren()){
-        cout<<"tablemetaid: "<<table.second->getDatabaseID()<<" ### dbmeta name: "<<table.first.getValue()<<std::endl;
+        //cout<<"tablemetaid: "<<table.second->getDatabaseID()
+        //cout<<" ### tablemeta name: "<<table.first.getValue()<<
+        //"annotablename: "<<table.second->getAnonTableName()<<std::endl;
+        cout<<"tablemap: "<<table.second->getAnonTableName()<<" "<<table.first.getValue()<<std::endl;
         processTableMeta(*(table.second));
     }
 }
