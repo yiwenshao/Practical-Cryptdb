@@ -3,7 +3,10 @@
 Item *
 my_encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
                     const Analysis &a, uint64_t IV) {
-    assert(!RiboldMYSQL::is_null(i));
+//    assert(!RiboldMYSQL::is_null(i));
+    if(RiboldMYSQL::is_null(i)) {
+        return RiboldMYSQL::clone_item(i);
+    }
     const auto &enc_layers = a.getEncLayers(om);
     assert_s(enc_layers.size() > 0, "onion must have at least one layer");
     const Item *enc = &i;

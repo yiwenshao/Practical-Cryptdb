@@ -270,6 +270,10 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
     const uint64_t salt = fm.getHasSalt() ? randomValue() : 0;
     uint64_t IV = salt;
     for (auto it : fm.orderedOnionMetas()) {
+        if(RiboldMYSQL::is_null(i)){
+            l.push_back(RiboldMYSQL::clone_item(i));
+            continue;
+        }
         const onion o = it.first->getValue();
         OnionMeta * const om = it.second;
         std::string annoOnionName = om->getAnonOnionName();

@@ -1,9 +1,9 @@
-loadCount:5
-pipelineCount:2
+loadCount:1
+pipelineCount:1000
 useASHE:true
 useHOM:false
 useOPE:false
 useSWP:true
-useDET:false
+useDET:true
 useSalt:true
 other:1
