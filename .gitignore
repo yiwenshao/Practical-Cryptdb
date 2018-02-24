@@ -31,3 +31,4 @@ packages/tls/mysqlWrapper/main
 *allTables*
 *pipelinefile*
 *.conf
+input/sql
