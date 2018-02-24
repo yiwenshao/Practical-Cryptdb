@@ -6,18 +6,14 @@ int
 main(int argc,char ** argv) {
     big_proxy b("tdb","127.0.0.1","root","letmein",3306);
 
-    //std::string query;
-    //std::getline(std::cin,query);
-    
-    std::string filename = std::string(cryptdb_dir)+"/"+"sql";
-    std::cout<<filename<<std::endl;
-    
-    UNUSED(b);
-
-//    while(query != "quit"){
-//        b.go(query);
-//        std::getline(std::cin,query);
-//    }
+    std::string filename = std::string(cryptdb_dir)+"/input/"+"sql";
+    std::ifstream infile(filename);
+    std::string line;
+    while(std::getline(infile,line)) {
+        if(line.size()>1) {
+            b.go(line);
+        }
+    }
     return 0;
 }
 
