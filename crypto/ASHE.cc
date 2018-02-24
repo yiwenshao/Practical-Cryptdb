@@ -8,16 +8,18 @@ RAW_ASHE::RAW_ASHE(int i):IV(i){
 }
 
 std::pair<long,uint64_t> RAW_ASHE::encrypt(unsigned int plaintext){
-    uint64_t i = Fi(IV)%RAW_ASHE_MAX, i_1=Fi_1(IV)%RAW_ASHE_MAX;    
+    uint64_t i = Fi(IV)%RAW_ASHE_MAX, i_1=Fi_1(IV)%RAW_ASHE_MAX;
     long res = (long)i_1 - (long)i;
     ciphertext = ((long)plaintext + res)%RAW_ASHE_MAX;
     return std::make_pair(ciphertext,IV);
 }
 
 std::pair<long,uint64_t> RAW_ASHE::encrypt(unsigned int plaintext,uint64_t inIV){
-    uint64_t i = Fi(inIV)%RAW_ASHE_MAX, i_1=Fi_1(inIV)%RAW_ASHE_MAX;    
-    long res = (long)i_1 - (long)i;
-    ciphertext = ((long)plaintext + res)%RAW_ASHE_MAX;
+    uint64_t i = Fi(inIV)%RAW_ASHE_MAX, i_1=Fi_1(inIV)%RAW_ASHE_MAX;
+    long offset = (long)i_1 - (long)i;
+    ciphertext = ((long)plaintext + offset);
+//    std::cout<<"plain:offset:cipher"<<std::endl;
+//    std::cout<<plaintext<<":"<<offset<<":"<<ciphertext<<std::endl;
     return std::make_pair(ciphertext,inIV);
 }
 
@@ -32,8 +34,11 @@ unsigned int RAW_ASHE::decrypt(long ciphertext){
 
 unsigned int RAW_ASHE::decrypt(long ciphertext,uint64_t inIV){
     uint64_t i = Fi(inIV)%RAW_ASHE_MAX, i_1=Fi_1(inIV)%RAW_ASHE_MAX;
-    long res = (long)i - (long)i_1;
-    return (ciphertext + res)%RAW_ASHE_MAX;
+    long offset = (long)i - (long)i_1;
+    unsigned int res = (ciphertext + offset);
+//    std::cout<<"cipher:offset:plain"<<std::endl;
+//    std::cout<<ciphertext<<":"<<offset<<":"<<res<<std::endl;
+    return res;
 }
 
 

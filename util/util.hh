@@ -38,6 +38,8 @@
 #define RFIF RETURN_FALSE_IF_FALSE
 
 
+#define UNUSED(x) (void)(x)
+
 // ==== CONSTANTS ============== //
 
 #define SVAL2(s) #s
