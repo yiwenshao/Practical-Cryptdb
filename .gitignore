@@ -32,3 +32,4 @@ packages/tls/mysqlWrapper/main
 *pipelinefile*
 *.conf
 input/sql
+token.cc
