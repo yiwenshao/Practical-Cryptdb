@@ -14,38 +14,38 @@ end
 
 g=1
 
-queryType = {}
-queryType[proxy.COM_SLEEP] = "COM_SLEEP"
-queryType[proxy.COM_QUIT] = "COM_QUIT"
-queryType[proxy.COM_INIT_DB] = "COM_INIT_DB"
-queryType[proxy.COM_QUERY] = "COM_QUERY"
-queryType[proxy.COM_FIELD_LIST]= "COM_FIELD_LIST"
-queryType[proxy.COM_CREATE_DB]= "COM_CREATE_DB"
-queryType[proxy.COM_DROP_DB]= "COM_DROP_DB"
-queryType[proxy.COM_REFRESH]= "COM_REFRESH"
-queryType[proxy.COM_SHUTDOWN] = "COM_SHUTDOWN"
-queryType[proxy.COM_STATISTICS] = "COM_STATISTICS"
-queryType[proxy.COM_PROCESS_INFO] = "COM_PROCESS_INFO"
-queryType[proxy.COM_CONNECT] = "COM_CONNECT"
-queryType[proxy.COM_PROCESS_KILL] = "COM_PROCESS_KILL"
-queryType[proxy.COM_DEBUG] = "COM_DEBUG"
-queryType[proxy.COM_PING] = "COM_PING"
-queryType[proxy.COM_TIME] = "COM_TIME"
-queryType[proxy.COM_DELAYED_INSERT] = "COM_DELAYED_INSERT"
-queryType[proxy.COM_CHANGE_USER] = "COM_CHANGE_USER"
-queryType[proxy.COM_BINLOG_DUMP] = "COM_BINLOG_DUMP"
-queryType[proxy.COM_TABLE_DUMP] = "COM_TABLE_DUMP"
-queryType[proxy.COM_CONNECT_OUT] = "COM_CONNECT_OUT"
-queryType[proxy.COM_REGISTER_SLAVE] = "COM_REGISTER_SLAVE"
-queryType[proxy.COM_STMT_PREPARE] = "COM_STMT_PREPARE"
-queryType[proxy.COM_STMT_EXECUTE] = "COM_STMT_EXECUTE"
-queryType[proxy.COM_STMT_SEND_LONG_DATA] = "COM_STMT_SEND_LONG_DATA"
-queryType[proxy.COM_STMT_CLOSE] = "COM_STMT_CLOSE"
-queryType[proxy.COM_STMT_RESET] = "COM_STMT_RESET"
-queryType[proxy.COM_SET_OPTION] = "COM_SET_OPTION"
-queryType[proxy.COM_STMT_FETCH] = "COM_STMT_FETCH"
-queryType[proxy.COM_DAEMON] = "COM_DAEMON"
-
+queryType = {
+    [proxy.COM_SLEEP] = "COM_SLEEP",
+    [proxy.COM_QUIT] = "COM_QUIT",
+    [proxy.COM_INIT_DB] = "COM_INIT_DB",
+    [proxy.COM_QUERY] = "COM_QUERY",
+    [proxy.COM_FIELD_LIST]= "COM_FIELD_LIST",
+    [proxy.COM_CREATE_DB]= "COM_CREATE_DB",
+    [proxy.COM_DROP_DB]= "COM_DROP_DB",
+    [proxy.COM_REFRESH]= "COM_REFRESH",
+    [proxy.COM_SHUTDOWN] = "COM_SHUTDOWN",
+    [proxy.COM_STATISTICS] = "COM_STATISTICS",
+    [proxy.COM_PROCESS_INFO] = "COM_PROCESS_INFO",
+    [proxy.COM_CONNECT] = "COM_CONNECT",
+    [proxy.COM_PROCESS_KILL] = "COM_PROCESS_KILL",
+    [proxy.COM_DEBUG] = "COM_DEBUG",
+    [proxy.COM_PING] = "COM_PING",
+    [proxy.COM_TIME] = "COM_TIME",
+    [proxy.COM_DELAYED_INSERT] = "COM_DELAYED_INSERT",
+    [proxy.COM_CHANGE_USER] = "COM_CHANGE_USER",
+    [proxy.COM_BINLOG_DUMP] = "COM_BINLOG_DUMP",
+    [proxy.COM_TABLE_DUMP] = "COM_TABLE_DUMP",
+    [proxy.COM_CONNECT_OUT] = "COM_CONNECT_OUT",
+    [proxy.COM_REGISTER_SLAVE] = "COM_REGISTER_SLAVE",
+    [proxy.COM_STMT_PREPARE] = "COM_STMT_PREPARE",
+    [proxy.COM_STMT_EXECUTE] = "COM_STMT_EXECUTE",
+    [proxy.COM_STMT_SEND_LONG_DATA] = "COM_STMT_SEND_LONG_DATA",
+    [proxy.COM_STMT_CLOSE] = "COM_STMT_CLOSE",
+    [proxy.COM_STMT_RESET] = "COM_STMT_RESET",
+    [proxy.COM_SET_OPTION] = "COM_SET_OPTION",
+    [proxy.COM_STMT_FETCH] = "COM_STMT_FETCH",
+    [proxy.COM_DAEMON] = "COM_DAEMON"
+}
 
 
 

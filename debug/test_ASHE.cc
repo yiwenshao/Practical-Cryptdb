@@ -16,16 +16,11 @@ void test1() {
         ass.back().encrypt(seed,IV);
         unsigned int res = ass.back().decrypt(ass.back().get_ciphertext(),IV);
         if(res==seed) ;
-        else{
+        else {
             std::cout<<"not pass!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<seed<<std::endl;
-//            return 0;
         }
         seed++;
     }
-//    std::pair<long,std::vector<uint64_t>> enc_sum = RAW_ASHE::sum(ass);
-//    long res = RAW_ASHE::decrypt_sum(enc_sum);
-//    std::cout<<enc_sum.first<<"::"<<res<<std::endl;
-
 }
 
 static
@@ -40,7 +35,7 @@ void test2(){
         assert(enc.first == ashe.get_ciphertext());
         assert(enc.second == IV);
         unsigned int res = ashe.decrypt(enc.first,enc.second);
-        if(res==seed) ;
+        if(res==seed);
         else{
             std::cout<<"not pass!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<seed<<std::endl;
         }
