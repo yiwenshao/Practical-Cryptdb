@@ -54,6 +54,18 @@ std::pair<long,std::vector<uint64_t>> RAW_ASHE::sum(std::vector<RAW_ASHE> input)
     return std::make_pair(res,ivs);
 }
 
+
+std::pair<long,std::vector<uint64_t>> 
+RAW_ASHE::sum(std::pair<long,std::vector<uint64_t>> left,
+              std::pair<long,std::vector<uint64_t>> right) {
+    std::vector<uint64_t> vecsum;
+    for(auto item:left.second) vecsum.push_back(item);
+    for(auto item:right.second) vecsum.push_back(item);
+    return std::make_pair((left.first+right.first)%RAW_ASHE_MAX,vecsum);
+}
+
+
+
 uint64_t RAW_ASHE::decrypt_sum(std::pair<long,std::vector<uint64_t>> input){
     long res = input.first;
     for(auto item:input.second){

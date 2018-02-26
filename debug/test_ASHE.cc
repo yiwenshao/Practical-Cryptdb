@@ -43,11 +43,36 @@ void test2(){
     }
 }
 
+static 
+void test3() {
+    std::vector<uint64_t> ivs;
+    std::vector<long> cipher;
+    for(unsigned int i=1;i<=10;i++) {
+        uint64_t IV = randomValue();
+        if(IV==0) IV=1;
+        RAW_ASHE ashe(IV);
+        //cipher.push_back(ashe.encrypt(i,IV));    
+    }
+}
 
+static
+void test4() {
+    RAW_ASHE ashe1(1);
+    RAW_ASHE ashe2(2);
+    auto enc1 = ashe1.encrypt(1,1);
+    auto enc2 = ashe2.encrypt(2,2);
+    std::pair<long,std::vector<uint64_t>> enc1t = {enc1.first,{enc1.second}};
+    std::pair<long,std::vector<uint64_t>> enc2t = {enc2.first,{enc2.second}};
+
+    auto encsum = ashe1.sum(enc1t,enc2t);
+    std::cout<<ashe1.decrypt_sum(encsum)<<std::endl;
+}
 
 int main(){
     UNUSED(test1);
-    test2();
+    UNUSED(test2);
+    test3();
+    test4();
     return 0;
 }
 
