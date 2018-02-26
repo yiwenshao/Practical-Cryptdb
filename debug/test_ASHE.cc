@@ -47,12 +47,19 @@ static
 void test3() {
     std::vector<uint64_t> ivs;
     std::vector<long> cipher;
+    std::vector<std::pair<long,std::vector<uint64_t>> > agg;
     for(unsigned int i=1;i<=10;i++) {
         uint64_t IV = randomValue();
         if(IV==0) IV=1;
         RAW_ASHE ashe(IV);
-        //cipher.push_back(ashe.encrypt(i,IV));    
+        std::pair<long,std::vector<uint64_t>> data = {ashe.encrypt(i,IV).first, {IV}};
+        agg.push_back(data);
     }
+    auto b = agg[0];
+    for(unsigned int i=1;i<agg.size();i++) {
+        b=RAW_ASHE::sum(b,agg[i]);
+    }
+    std::cout<<RAW_ASHE::decrypt_sum(b)<<std::endl;
 }
 
 static
