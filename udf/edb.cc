@@ -27,6 +27,7 @@ typedef long long longlong;
 #include <mysql/mysql.h>
 #include <ctype.h>
 
+//SEM INT
 my_bool   cryptdb_decrypt_int_sem_init(UDF_INIT *const initid,
                                        UDF_ARGS *const args,
                                        char *const message);
@@ -34,12 +35,14 @@ ulonglong cryptdb_decrypt_int_sem(UDF_INIT *const initid,
                                   UDF_ARGS *const args,
                                   char *const is_null, char *const error);
 
+//DET INT
 my_bool   cryptdb_decrypt_int_det_init(UDF_INIT *const initid,
                                        UDF_ARGS *const args,
                                        char *const message);
 ulonglong cryptdb_decrypt_int_det(UDF_INIT *const initid, UDF_ARGS *const args,
                                   char *const is_null, char *const error);
 
+//SEM STR
 my_bool   cryptdb_decrypt_text_sem_init(UDF_INIT *const initid,
                                         UDF_ARGS *const args, char *const message);
 void      cryptdb_decrypt_text_sem_deinit(UDF_INIT *const initid);
@@ -47,6 +50,7 @@ char *    cryptdb_decrypt_text_sem(UDF_INIT *const initid, UDF_ARGS *const args,
                                    char *const result, unsigned long *const length,
                                    char *const is_null, char *const error);
 
+//DET STR
 my_bool   cryptdb_decrypt_text_det_init(UDF_INIT *const initid,
                                         UDF_ARGS *const args,
                                         char *const message);
@@ -55,12 +59,14 @@ char *    cryptdb_decrypt_text_det(UDF_INIT *const initid, UDF_ARGS *const args,
                                    char *const result, unsigned long *const length,
                                    char *const is_null, char *const error);
 
+//SWP
 my_bool   cryptdb_searchSWP_init(UDF_INIT *const initid, UDF_ARGS *const args,
                                  char *const message);
 void      cryptdb_searchSWP_deinit(UDF_INIT *const initid);
 ulonglong cryptdb_searchSWP(UDF_INIT *const initid, UDF_ARGS *const args,
                             char *const is_null, char *const error);
 
+//agg
 my_bool   cryptdb_agg_init(UDF_INIT *const initid, UDF_ARGS *const args,
                            char *const message);
 void      cryptdb_agg_deinit(UDF_INIT *const initid);
@@ -72,6 +78,19 @@ char *    cryptdb_agg(UDF_INIT *const initid, UDF_ARGS *const args,
                       char *const result, unsigned long *const length,
                       char *const is_null, char *const error);
 
+//ashe
+my_bool cryptdb_asheagg_init(UDF_INIT *const initid, UDF_ARGS *const args,
+                           char *const message);
+void cryptdb_asheagg_deinit(UDF_INIT *const initid);
+void cryptdb_asheagg_clear(UDF_INIT *const initid, char *const is_null,
+                            char *const error);
+my_bool cryptdb_asheagg_add(UDF_INIT *const initid, UDF_ARGS *const args,
+                          char *const is_null, char *const error);
+char* cryptdb_asheagg(UDF_INIT *const initid, UDF_ARGS *const args,
+                      char *const result, unsigned long *const length,
+                      char *const is_null, char *const error);
+
+//add_set
 my_bool   cryptdb_func_add_set_init(UDF_INIT *const initid, UDF_ARGS *const args,
                                     char *const message);
 void      cryptdb_func_add_set_deinit(UDF_INIT *const initid);
@@ -79,12 +98,18 @@ char *    cryptdb_func_add_set(UDF_INIT *const initid, UDF_ARGS *const args,
                                char *const result, unsigned long *const length,
                                char *const is_null, char *const error);
 
+//version
 my_bool   cryptdb_version_init(UDF_INIT *const initid, UDF_ARGS *const args,
                                char *const message);
 void      cryptdb_version_deinit(UDF_INIT *const initid);
 char *    cryptdb_version(UDF_INIT *const initid, UDF_ARGS *const args,
                           char *const result, unsigned long *const length,
                           char *const is_null, char *const error);
+//token
+//long long myadd(UDF_INIT *initid, UDF_ARGS *args,
+//                char *is_null, char *error);
+//my_bool myadd_init(UDF_INIT *initid, UDF_ARGS *args,
+//                  char *message);
 } /* extern "C" */
 
 
@@ -525,6 +550,41 @@ cryptdb_agg(UDF_INIT *const initid, UDF_ARGS *const args, char *const result,
 }
 
 
+
+//begin ashe sum
+my_bool cryptdb_asheagg_init(UDF_INIT *const initid, UDF_ARGS *const args,
+                           char *const message) {
+    long long * i = new long long;
+    initid->ptr = (char*)i;
+    return 0;
+}
+
+void cryptdb_asheagg_deinit(UDF_INIT *const initid) {
+    delete initid->ptr;
+}
+
+void cryptdb_asheagg_clear(UDF_INIT *const initid, char *const is_null,
+                            char *const error) {
+    *((long long *)(initid->ptr)) = 0;
+}
+
+my_bool cryptdb_asheagg_add(UDF_INIT *const initid, UDF_ARGS *const args,
+                          char *const is_null, char *const error) {
+    *((long long *)(initid->ptr)) =  *((long long *)(initid->ptr)) +
+                                    *((long long *)args->args[0]);
+    return 0;
+}
+
+char* cryptdb_asheagg(UDF_INIT *const initid, UDF_ARGS *const args,
+                      char *const result, unsigned long *const length,
+                      char *const is_null, char *const error) {
+
+    return NULL;
+}
+
+
+
+
 /*
 *****************************************************************************
 */
@@ -631,3 +691,24 @@ cryptdb_version(UDF_INIT *const initid, UDF_ARGS *const args,
 
     return static_cast<char*>(initid->ptr);
 }
+
+//token
+
+/*
+
+my_bool myadd_init(UDF_INIT *initid, UDF_ARGS *args,
+                  char *message){
+    return 0;
+}
+
+long long myadd(UDF_INIT *initid, UDF_ARGS *args,
+                char *is_null, char *error) {
+    int a = *((long long *)args->args[0]);
+    int b = *((long long *)args->args[1]);
+    return a + b;
+}
+
+
+*/
+
+

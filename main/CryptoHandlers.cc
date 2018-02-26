@@ -1334,6 +1334,20 @@ static udf_func u_sum_a = {
     NULL,
     0L,
 };
+static udf_func u_sumashe_a = {
+    LEXSTRING("cryptdb_asheagg"),
+    STRING_RESULT,
+    UDFTYPE_AGGREGATE,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    0L,
+};
+
 
 static udf_func u_sum_f = {
     LEXSTRING("cryptdb_func_add_set"),
@@ -1603,6 +1617,7 @@ const std::vector<udf_func*> udf_list = {
     &u_decDETStr,
     &u_sum_f,
     &u_sum_a,
+    &u_sumashe_a,
     &u_search,
     &u_cryptdb_version
 };
