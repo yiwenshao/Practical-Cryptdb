@@ -54,7 +54,10 @@ main() {
     assert(shared_ps!=NULL);
 
     std::string query1 = "SELECT * FROM student";
-    std::vector<std::string> querys{query1};
+    std::vector<std::string> querys{
+        query1,
+        "SELECT SUM(id) FROM student",
+    };
     for(auto item:querys){
         std::cout<<item<<std::endl;
         testSelectHandler(item);
