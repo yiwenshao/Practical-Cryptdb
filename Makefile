@@ -101,6 +101,13 @@ mtl/test_parser_exe/%:$(OBJDIR)/test_parser/%.o
 	@mkdir -p $(@D)
 	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
+mtl/test_main_exe/%:$(OBJDIR)/test_main/%.o
+	@mkdir -p $(@D)
+	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+
+
+
+
 include crypto/Makefrag
 include parser/Makefrag
 include main/Makefrag
@@ -111,6 +118,7 @@ include debug/Makefrag
 include test_wrapper/Makefrag
 include test_util/Makefrag
 include test_parser/Makefrag
+include test_main/Makefrag
 include wrapper/Makefrag
 
 

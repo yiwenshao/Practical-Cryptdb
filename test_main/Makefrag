@@ -1,0 +1,7 @@
+OBJDIRS	+= test_main
+##note that xx=*.cc will not expand. wildcard *.cc will include files from other directories.
+##%.o will include testall
+TESTALL_OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(wildcard test_main/*.cc))
+TESTALL_EXES := $(patsubst test_main/%.cc,mtl/test_main_exe/%,$(wildcard test_main/*.cc))
+
+all: $(TESTALL_OBJS) $(TESTALL_EXES)
