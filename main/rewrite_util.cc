@@ -634,14 +634,12 @@ Item *
 encrypt_item_layers(const Item &i, onion o, const OnionMeta &om,
                     const Analysis &a, uint64_t IV) {
     assert(!RiboldMYSQL::is_null(i));
-    //这里是onionMeta中的vector, enclayers.也就是洋葱不同层次的加解密通过Onionmeta以及
-    //encLary中的加解密算法来完成.
+    //enc_layers is stored in onionMeta actually.
     const auto &enc_layers = a.getEncLayers(om);
     assert_s(enc_layers.size() > 0, "onion must have at least one layer");
     const Item *enc = &i;
     Item *new_enc = NULL;
-    //这段代码体现了层次加密,也就是说, 通过IV,每个洋葱的层次通过enclayer来表示
-    //直接调用其加密和解密函数, 就可以完成加密工作. 加密以后获得的是Item,最后返回加密以后的结果
+    //This is layers of encryption
     for (const auto &it : enc_layers) {
         LOG(encl) << "encrypt layer "
                   << TypeText<SECLEVEL>::toText(it->level()) << "\n";
@@ -671,31 +669,25 @@ void
 encrypt_item_all_onions(const Item &i, const FieldMeta &fm,
                         uint64_t IV, Analysis &a, std::vector<Item*> *l)
 {
-    for (auto it : fm.orderedOnionMetas()) {
-       
+    //each fieldmeta represents a field, which contains many onions. The onions are stored as
+    //kv pairs in the form <onionmetekey,onoinmeta>. onionmetakey is the enum type of the onion,
+    //and the value is the onionmeta.
+    for (auto it : fm.orderedOnionMetas()) {      
         const onion o = it.first->getValue();
-
         OnionMeta * const om = it.second;
-            //一个fieldmeta表示一个field, 内部的不同洋葱表现在onionMeta,每个onionMeta的不同层次表现
-            //在enclyer. 而保持的时候, 是onometekey,onoinmeta这种pair来让我们知道这个onionMeta是哪种
-            //枚举的洋葱类型.
-        if(om!=NULL)//om could be NULL for backup workload
+        //om can be NULL for backup workload
+        if(om!=NULL)
             l->push_back(encrypt_item_layers(i, o, *om, a, IV));
         else l->push_back(NULL);
     }
 }
 
+//Called by do_rewrite_insert_type
 void
 typical_rewrite_insert_type(const Item &i, const FieldMeta &fm,
                             Analysis &a, std::vector<Item *> *l) {
-
-
     const uint64_t salt = fm.getHasSalt() ? randomValue() : 0;
-
     encrypt_item_all_onions(i, fm, salt, a, l);
-
-    //对于每种类型, 除了保存加密的洋葱, 还把fm中的salt也变成Int类型保存起来了, 所以会出现奇怪的多了一组数据的情况, 就看
-    //这个东西是什么时候应用.
     if (fm.getHasSalt()) {
         l->push_back(new Item_int(static_cast<ulonglong>(salt)));
     }

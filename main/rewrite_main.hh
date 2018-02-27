@@ -135,7 +135,7 @@ class CItemSubtype : public CItemType {
     {
         return do_rewrite_type(static_cast<const T &>(i), constr, rp, a);
     }
-
+    //Rewrite item. If the item is item_field, then rewrite the name and add salt if needed.
     virtual void do_rewrite_insert(const Item &i, const FieldMeta &fm,
                                    Analysis &a,
                                    std::vector<Item *> *l) const

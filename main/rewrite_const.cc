@@ -70,7 +70,7 @@ static class ANON : public CItemSubtypeIT<Item_string,
         LOG(cdb_v) << "do_rewrite_type String item " << i << std::endl;
         return encrypt_item(i, constr, a);
     }
-
+    //Rewrite item_string in insert query.
     virtual void
     do_rewrite_insert_type(const Item_string &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const
@@ -97,7 +97,7 @@ static class ANON : public CItemSubtypeIT<Item_float,
         LOG(cdb_v) << "do_rewrite_type Float item " << i << std::endl;
         return encrypt_item(i, constr, a);
     }
-
+    //Rewrite item_float in insert query.
     virtual void
     do_rewrite_insert_type(const Item_float &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const
@@ -132,6 +132,7 @@ static class ANON : public CItemSubtypeIT<Item_int, Item::Type::INT_ITEM> {
         return encrypt_item(i, constr, a);
     }
 
+    //Rewrite item_int in insert query.
     virtual void
     do_rewrite_insert_type(const Item_int &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const
@@ -166,7 +167,7 @@ static class ANON : public CItemSubtypeIT<Item_decimal,
 
         return encrypt_item(i, constr, a);
     }
-
+    //Rewrite item_decimal in insert query.
     virtual void
     do_rewrite_insert_type(const Item_decimal &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const

@@ -59,7 +59,7 @@ deductPlainTableName(const std::string &field_name,
     return deductPlainTableName(field_name, context->outer_context, a);
 }
 
-//对于select的选择域, 由于是FIELD_ITEM类型, 会使用到这个类的.
+//In 'select fields from table', fields has the type FIELD_ITEM, which can be rewritten by this class.
 class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
     virtual RewritePlan *
     do_gather_type(const Item_field &i, Analysis &a) const
@@ -79,7 +79,7 @@ class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
         return new RewritePlan(es, rsn);
     }
 
-    //select的选择域rewrite的时候会用到, 从全局的rewrite调用.
+    //'select fields from table.'; fields can be rewritten by this function.
     virtual Item *
     do_rewrite_type(const Item_field &i, const OLK &constr,
                     const RewritePlan &rp, Analysis &a)
@@ -137,6 +137,7 @@ class ANON : public CItemSubtypeIT<Item_field, Item::Type::FIELD_ITEM> {
         return res;
     }
 
+    //'insert into fields values xxx'; fields can be rewritten by this function.
     virtual void
     do_rewrite_insert_type(const Item_field &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const

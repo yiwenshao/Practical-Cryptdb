@@ -378,6 +378,7 @@ static class ANON : public CItemSubtypeIT<Item_null, Item::Type::NULL_ITEM> {
         return RiboldMYSQL::clone_item(i);
     }
 
+    //rewrite item null in insert query.
     virtual void
     do_rewrite_insert_type(const Item_null &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const

@@ -203,7 +203,7 @@ static class ANON : public CItemSubtypeFT<Item_func_neg, Item_func::Functype::NE
     {
         return do_optimize_type_self_and_args(i, a);
     }
-
+    //Rewrite item_func_neg in insert query.
     virtual void
     do_rewrite_insert_type(const Item_func_neg &i, const FieldMeta &fm,
                            Analysis &a, std::vector<Item *> *l) const
