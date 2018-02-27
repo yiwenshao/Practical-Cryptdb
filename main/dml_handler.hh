@@ -142,6 +142,10 @@ class InsertHandler : public DMLHandler {
 };
 
 
+class SelectHandler : public DMLHandler {
+    virtual void gather(Analysis &a, LEX *const lex)const;
+    virtual AbstractQueryExecutor *rewrite(Analysis &a, LEX *const lex)const;
+};
 
 SQLDispatcher *buildDMLDispatcher();
 

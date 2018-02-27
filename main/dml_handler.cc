@@ -403,29 +403,28 @@ class MultiDeleteHandler : public DMLHandler {
     }
 };
 
-class SelectHandler : public DMLHandler {
-    virtual void gather(Analysis &a, LEX *const lex)
-        const{
-        /*process the select field, that is the xxx in select xxx. also setup rewriteplain for fileds
-          like having. the rewriteplain are encset, which is used in decryption*/
-        process_select_lex(lex->select_lex, a);
-    }
+void 
+SelectHandler::gather(Analysis &a, LEX *const lex)
+    const{
+    /*process the select field, that is the xxx in select xxx. also setup rewriteplain for fileds
+      like having. the rewriteplain are encset, which is used in decryption*/
+    process_select_lex(lex->select_lex, a);
+}
 
-    virtual AbstractQueryExecutor *
-        rewrite(Analysis &a, LEX *lex)
-        const{
-        LEX *const new_lex = copyWithTHD(lex);
+AbstractQueryExecutor *
+SelectHandler::rewrite(Analysis &a, LEX *lex)
+    const{
+    LEX *const new_lex = copyWithTHD(lex);
 
-        //table list rewrite
-        new_lex->select_lex.top_join_list =
-            rewrite_table_list(lex->select_lex.top_join_list, a);
+    //table list rewrite
+    new_lex->select_lex.top_join_list =
+        rewrite_table_list(lex->select_lex.top_join_list, a);
 
-        SELECT_LEX *const select_lex_res = rewrite_select_lex(new_lex->select_lex, a);
-        set_select_lex(new_lex,select_lex_res);
+    SELECT_LEX *const select_lex_res = rewrite_select_lex(new_lex->select_lex, a);
+    set_select_lex(new_lex,select_lex_res);
 
-        return new DMLQueryExecutor(*new_lex, a.rmeta);
-    }
-};
+    return new DMLQueryExecutor(*new_lex, a.rmeta);
+}
 
 AbstractQueryExecutor *DMLHandler::
 transformLex(Analysis &analysis, LEX *lex) const {
