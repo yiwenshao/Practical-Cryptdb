@@ -13,9 +13,11 @@
 #include <crypto/blowfish.hh>
 #include <crypto/SWPSearch.hh>
 #include <crypto/paillier.hh>
+#include "crypto/ASHE.hh"
 #include <util/params.hh>
 #include <util/util.hh>
 #include <util/version.hh>
+#include <vector>
 
 using namespace NTL;
 
@@ -550,36 +552,65 @@ cryptdb_agg(UDF_INIT *const initid, UDF_ARGS *const args, char *const result,
 }
 
 
-
+struct ashesumdata {
+    long cipher;
+    std::vector<uint64_t> IVs;
+    char* aggres;
+};
 //begin ashe sum
 my_bool cryptdb_asheagg_init(UDF_INIT *const initid, UDF_ARGS *const args,
                            char *const message) {
-    long long * i = new long long;
+    ashesumdata * i = new ashesumdata;
     initid->ptr = (char*)i;
     return 0;
 }
-
 void cryptdb_asheagg_deinit(UDF_INIT *const initid) {
+    free( ((ashesumdata*)(initid->ptr))->aggres );
     delete initid->ptr;
 }
-
+//clear and add are used for each group
 void cryptdb_asheagg_clear(UDF_INIT *const initid, char *const is_null,
                             char *const error) {
-    *((long long *)(initid->ptr)) = 0;
+    ((ashesumdata*)(initid->ptr))->cipher = 0;
 }
 
 my_bool cryptdb_asheagg_add(UDF_INIT *const initid, UDF_ARGS *const args,
                           char *const is_null, char *const error) {
-    *((long long *)(initid->ptr)) =  *((long long *)(initid->ptr)) +
-                                    *((long long *)args->args[0]);
+    std::pair<long,std::vector<uint64_t>> already = {
+        ((ashesumdata*)(initid->ptr))->cipher,
+        {((ashesumdata*)(initid->ptr))->IVs},
+    };
+    std::pair<long,std::vector<uint64_t>> next = {
+        *((long*)args->args[0]),
+        {1},
+    };
+    already = RAW_ASHE::sum(already,next);
+    ((ashesumdata*)(initid->ptr))->cipher = already.first;
+    ((ashesumdata*)(initid->ptr))->IVs = already.second;
+    
     return 0;
 }
 
+//get the results for each group
 char* cryptdb_asheagg(UDF_INIT *const initid, UDF_ARGS *const args,
                       char *const result, unsigned long *const length,
                       char *const is_null, char *const error) {
+    std::string s;
+    ashesumdata* data = (ashesumdata*)(initid->ptr);
+    s+=std::to_string(data->cipher)+=std::string("<=cipher ivs=>");
 
-    return NULL;
+    for(auto item:data->IVs) {
+        (void)item;
+        s+=std::to_string(item)+=std::string(" ");
+    }
+    s+=std::string("iv size:")+=std::to_string(data->IVs.size());
+
+    unsigned int len = s.size();
+    *length = len+1;
+    data->aggres = (char*)malloc(sizeof(char)*len+1);
+    strcpy(data->aggres,s.c_str());
+
+    return data->aggres;
 }
 
 
@@ -688,7 +719,7 @@ cryptdb_version(UDF_INIT *const initid, UDF_ARGS *const args,
     initid->ptr = res;
     memcpy(res, value.data(), value.length());
     *length = value.length();
-
+    
     return static_cast<char*>(initid->ptr);
 }
 
