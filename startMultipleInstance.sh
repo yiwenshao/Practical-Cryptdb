@@ -20,4 +20,3 @@ for((i=1;i<=$numOfInstance;i++));do
     cd -
 done
 
-
