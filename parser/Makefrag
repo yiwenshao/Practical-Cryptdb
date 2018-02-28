@@ -1,7 +1,7 @@
 OBJDIRS	+= parser
 
 PARSERSRC	:= sql_utils.cc lex_util.cc embedmysql.cc \
-                   mysqld-filler.cc mysql_type_metadata.cc
+                   mysqld-filler.cc mysql_type_metadata.cc  showparser_helper.cc
 
 all:	$(OBJDIR)/libedbparser.so
 

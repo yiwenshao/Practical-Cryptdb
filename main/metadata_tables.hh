@@ -5,7 +5,7 @@
 
 #include <main/Connect.hh>
 
-//这个在embedded的表中也是定义好的query最大的长度, 在程序中检查不能超过这个长度.
+//MAX length of query
 #define STORED_QUERY_LENGTH 10000
 
 namespace MetaData {

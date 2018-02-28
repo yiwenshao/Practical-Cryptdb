@@ -13,6 +13,7 @@
 #include <main/CryptoHandlers.hh>
 #include "util/util.hh"
 #include "util/constants.hh"
+#include "parser/showparser_helper.hh"
 
 static std::string embeddedDir="/t/cryt/shadow";
 int main() {
@@ -22,7 +23,7 @@ int main() {
     }
     embeddedDir = std::string(buffer)+"/shadow";
     init_mysql(embeddedDir);
-    std::string filename = std::string(cryptdb_dir)+"/test_parser/"+"template";
+    std::string filename = std::string(cryptdb_dir)+"/test_parser/"+"select";
     std::string line;
     std::ifstream infile(filename);
     while(std::getline(infile,line)) {
@@ -31,6 +32,7 @@ int main() {
         p = std::unique_ptr<query_parse>(
                 new query_parse("tdb", line));
         LEX *const lex = p->lex();
+        std::cout<<SHOW::SQLCOM::trans[lex->sql_command]<<std::endl;
         UNUSED(lex);
     }
     return 0;

@@ -1,0 +1,2 @@
+select * from student;
+select sum(id) from student;
