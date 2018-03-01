@@ -1,0 +1,14 @@
+OBJDIRS	+= test_parser_helper
+
+TESTPARSERHELPERSRC	:= filter.cc showparser.cc
+
+all:	$(OBJDIR)/libedbtest_parser_helper.so
+
+EDBTESTPARSERHELPER_OBJS := $(patsubst %.cc,$(OBJDIR)/test_parser_helper/%.o,$(TESTPARSERHELPERSRC))
+
+$(OBJDIR)/libedbtest_parser_helper.so: $(EDBTESTPARSERHELPER_OBJS)
+	$(CXX) -shared -o $@ $(EDBTESTPARSERHELPER_OBJS) $(LDFLAGS) $(LDRPATH) \
+	       -Wl,--whole-archive -L$(MYBUILD)/libmysqld -lmysqld \
+	       -Wl,--no-whole-archive -laio -lz -ldl -lrt -lcrypt
+
+# vim: set noexpandtab:
