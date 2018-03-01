@@ -97,9 +97,9 @@ mtl/test_util_exe/%:$(OBJDIR)/test_util/%.o
 	@mkdir -p $(@D)
 	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
-mtl/test_parser_exe/%:$(OBJDIR)/test_parser/%.o
+mtl/test_parser_exe/%:$(OBJDIR)/test_parser/%.o $(OBJDIR)/libedbtest_parser_helper.so
 	@mkdir -p $(@D)
-	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+	$(CXX) -g -o $@ $< $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto -ledbtest_parser_helper
 
 mtl/test_main_exe/%:$(OBJDIR)/test_main/%.o
 	@mkdir -p $(@D)
