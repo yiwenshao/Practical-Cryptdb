@@ -120,7 +120,7 @@ include test_util/Makefrag
 include test_parser/Makefrag
 include test_main/Makefrag
 include wrapper/Makefrag
-
+include test_parser_helper/Makefrag
 
 $(OBJDIR)/.deps: $(foreach dir, $(OBJDIRS), $(wildcard $(OBJDIR)/$(dir)/*.d))
 	@mkdir -p $(@D)
