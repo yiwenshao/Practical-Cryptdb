@@ -11,22 +11,7 @@
 #include "test_parser_helper/showparser.hh"
 #include "test_parser_helper/showitem.hh"
 #include "test_parser_helper/showselect_lex.hh"
-/*
-static
-void
-show_select_lex(const st_select_lex &select_lex) {
-    show_table_list(select_lex.top_join_list);
-    auto item_it =
-        RiboldMYSQL::constList_iterator<Item>(select_lex.item_list);
-    for(;;) {
-        const Item *const item = item_it++;
-        if (!item)
-            break;
-        UNUSED(item);
-        std::cout<<SHOW::ITEM::trans[item->type()]<<std::endl;
-        show_item(item);
-    }
-}*/
+#include "test_parser_helper/showstring.hh"
 
 static std::string embeddedDir="/t/cryt/shadow";
 
@@ -49,7 +34,7 @@ int main() {
         LEX *const lex = p->lex();
         std::cout<<SHOW::SQLCOM::trans[lex->sql_command]<<std::endl;
         show_select_lex(lex->select_lex);
-        UNUSED(lex);
+        std::cout<<get_lex_string(*lex)<<std::endl;
     }
     return 0;
 }

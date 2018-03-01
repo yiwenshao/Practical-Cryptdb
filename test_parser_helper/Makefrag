@@ -1,6 +1,6 @@
 OBJDIRS	+= test_parser_helper
 
-TESTPARSERHELPERSRC	:= filter.cc showparser.cc showitem.cc showselect_lex.cc
+TESTPARSERHELPERSRC	:= filter.cc showparser.cc showitem.cc showselect_lex.cc showstring.cc
 
 all:	$(OBJDIR)/libedbtest_parser_helper.so
 
