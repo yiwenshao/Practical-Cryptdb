@@ -647,7 +647,7 @@ addSaltToReturn(ReturnMeta *const rm, int pos)
     rm->rfmeta.insert(pair);
 }
 
-//Item是当前需要加密的item, rp是gather阶段存入的RewritePlain,加密的结果放在newList中, Analysis用于辅助分析.
+//Item needs to be encrypted using the RewritePlain from the gather phase. The results will be put in newList, and Analysis is helper class.
 static void
 rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
              List<Item> *const newList) {
@@ -661,7 +661,7 @@ rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
             ir = cached_rewritten_i->second.first;
             olk = cached_rewritten_i->second.second;
         } else {
-            //对于select中的选择域来说,这里对应的是rewrite_field.cc中的83, do_rewrite_type
+            //rewrite=>do_rewrite_type for Item of type FIELD_ITEM
             ir = rewrite(i, rp.es_out, a);
             olk = rp.es_out.chooseOne();
         }
@@ -669,7 +669,8 @@ rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
         ir = rewrite(i, rp.es_out, a);
         olk = rp.es_out.chooseOne();
     }
-    //和insert不同, select的时候, 只要一个洋葱, 选取一个进行改写就可以了, 不需要扩展.
+
+    //Different form INSERT, SELECT needs only one onion.
     assert(ir.assigned() && ir.get());
     newList->push_back(ir.get());
     const bool use_salt = needsSalt(olk.get());

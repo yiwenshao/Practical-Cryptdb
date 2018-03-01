@@ -1334,20 +1334,6 @@ static udf_func u_sum_a = {
     NULL,
     0L,
 };
-static udf_func u_sumashe_a = {
-    LEXSTRING("cryptdb_asheagg"),
-    STRING_RESULT,
-    UDFTYPE_AGGREGATE,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    0L,
-};
-
 
 static udf_func u_sum_f = {
     LEXSTRING("cryptdb_func_add_set"),
@@ -1610,6 +1596,21 @@ static udf_func u_cryptdb_version = {
     0L,
 };
 
+static udf_func u_sumashe_a = {
+    LEXSTRING("cryptdb_asheagg"),
+    STRING_RESULT,
+    UDFTYPE_AGGREGATE,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    0L,
+};
+
+
 const std::vector<udf_func*> udf_list = {
     &u_decRNDInt,
     &u_decRNDString,
@@ -1624,6 +1625,8 @@ const std::vector<udf_func*> udf_list = {
 
 
 /************************************************ASHE********************************************/
+
+
 
 ASHE::ASHE(unsigned int id, const std::string &serial):ashe(1){}
 
@@ -1661,6 +1664,16 @@ ASHE::decrypt(const Item &ctext, uint64_t IV) const
     return new (current_thd->mem_root)
                Item_int(static_cast<ulonglong>(res));
 }
+
+Item *
+ASHE::sumUDA(Item *const expr) const
+{
+    List<Item> l;
+    l.push_back(expr);
+//    l.push_back(ZZToItemStr(sk->hompubkey()));
+    return new (current_thd->mem_root) Item_func_udf_str(&u_sumashe_a, l);
+}
+
 
 ASHE::~ASHE() {
 

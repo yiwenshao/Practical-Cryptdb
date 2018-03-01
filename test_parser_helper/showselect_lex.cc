@@ -2,6 +2,13 @@
 #include "test_parser_helper/showselect_lex.hh"
 #include "test_parser_helper/showparser.hh"
 #include "test_parser_helper/showitem.hh"
+
+static void
+show_order(const SQL_I_List<ORDER> &lst) {
+    for (const ORDER *o = lst.first; o; o = o->next) {
+    }
+}
+
 static void
 show_table_joins_and_derived(const List<TABLE_LIST> &tll) {
     List_iterator<TABLE_LIST> join_it =
@@ -63,5 +70,15 @@ show_select_lex(const st_select_lex &select_lex) {
         std::cout<<SHOW::ITEM::trans[item->type()]<<std::endl;
         show_item(item);
     }
+    //fielter 
+    if(select_lex.where) {
+
+    }
+    if(select_lex.having) {
+
+    }
+    show_order(select_lex.group_list);
+    show_order(select_lex.order_list);
 }
+
 
