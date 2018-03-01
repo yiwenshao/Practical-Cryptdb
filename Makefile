@@ -80,18 +80,13 @@ $(OBJDIR)/%.o: $(OBJDIR)/%.cc
 
 ##rules for .cc in debug directory
 
-mtl/%:$(OBJDIR)/debug/%.o token.o
+mtl/%:$(OBJDIR)/debug/%.o $(OBJDIR)/libwrapper.so
 	@mkdir -p $(@D)
-	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+	$(CXX) -g -o $@ $< $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
-token.o:$(OBJDIR)/libwrapper.so
-	-rm token.o
-	$(CXX) -g -c token.cc
-
-
-mtl/test_wrapper_exe/%:$(OBJDIR)/test_wrapper/%.o token.o
+mtl/test_wrapper_exe/%:$(OBJDIR)/test_wrapper/%.o $(OBJDIR)/libwrapper.so
 	@mkdir -p $(@D)
-	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+	$(CXX) -g -o $@ $< $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
 mtl/test_util_exe/%:$(OBJDIR)/test_util/%.o
 	@mkdir -p $(@D)
@@ -104,9 +99,6 @@ mtl/test_parser_exe/%:$(OBJDIR)/test_parser/%.o $(OBJDIR)/libedbtest_parser_help
 mtl/test_main_exe/%:$(OBJDIR)/test_main/%.o
 	@mkdir -p $(@D)
 	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
-
-
-
 
 include crypto/Makefrag
 include parser/Makefrag
