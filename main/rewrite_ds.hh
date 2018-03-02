@@ -147,6 +147,7 @@ const EncSet ADD_EncSet = {
     {
         {oPLAIN, LevelFieldPair(SECLEVEL::PLAINVAL, NULL)},
         {oAGG, LevelFieldPair(SECLEVEL::HOM, NULL)},
+        {oASHE,LevelFieldPair(SECLEVEL::ASHE,NULL )}
     }
 };
 

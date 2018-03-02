@@ -200,10 +200,17 @@ class CItemSum : public CItemSubtypeST<Item_sum_sum, SFT> {
             TEST_UnexpectedSecurityLevel(oAGG, SECLEVEL::HOM,
                                          el.level());
             return static_cast<const HOM &>(el).sumUDA(new_child);
+        }else if(oASHE == constr.o) {
+            OnionMeta *const om = constr.key->getOnionMeta(oASHE);
+            assert(om);
+            EncLayer const &el = a.getBackEncLayer(*om);
+            TEST_UnexpectedSecurityLevel(oASHE, SECLEVEL::ASHE,
+                                         el.level());
+            return static_cast<const ASHE &>(el).sumUDA(new_child);
+
         } else {
             TEST_UnexpectedSecurityLevel(constr.o, SECLEVEL::PLAINVAL,
                                          constr.l);
-
             // FIXME: we cannot blindly return Item_sum_sum because we may
             // have an AVG(...)
             // > account for ``Item_sum_avg''
@@ -238,7 +245,7 @@ class CItemAvg : public CItemSubtypeST<Item_sum_sum, SFT> {
         if (i.has_with_distinct()) {
             UNIMPLEMENTED;
         }
-
+        //agg or ashe
         const EncSet &my_es = ADD_EncSet;
         const EncSet &solution = my_es.intersect(childr_rp[0]->es_out);
         const std::string &why = "summation";
