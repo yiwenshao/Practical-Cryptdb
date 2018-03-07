@@ -33,3 +33,5 @@ packages/tls/mysqlWrapper/main
 *.conf
 input/sql
 token.cc
+html
+latex

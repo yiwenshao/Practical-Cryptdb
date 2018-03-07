@@ -1334,7 +1334,6 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
             return new OnionAdjustmentExecutor(std::move(deltas),
                                                adjust_queries);
         }
-        //为什么两种情况返回的executor是不一样的?一个用了get一个没有用?  
         return executor.get();
     } else if (ddl_dispatcher->canDo(lex)) {
         const SQLHandler &handler = ddl_dispatcher->dispatch(lex);
@@ -1364,7 +1363,6 @@ Rewriter::dispatchOnLex(Analysis &a, const std::string &query)
 QueryRewrite
 Rewriter::rewrite(const std::string &q, const SchemaInfo &schema,
                   const std::string &default_db, const ProxyState &ps){
-    //LOG(cdb_v) << "q " << q;
     assert(0 == mysql_thread_init());
     Analysis analysis(default_db, schema, ps.getMasterKey(),
                       ps.defaultSecurityRating());

@@ -187,36 +187,35 @@ rewrite(lua_State *const L) {
         strtoull(xlua_tolstring(L, 3).c_str(), NULL, 10);
 
     c_wrapper->last_query = query;
-    if (EXECUTE_QUERIES) {
-        try {
-            TEST_Text(retrieveDefaultDatabase(_thread_id, ps->getConn(),
-                                              &c_wrapper->default_db),
-                      "proxy failed to retrieve default database!");
-            // save a reference so a second thread won't eat objects
-            // that DeltaOuput wants later(a shared_ptr for the schemaInfo)
-            const std::shared_ptr<const SchemaInfo> &schema =
-                ps->getSchemaInfo();
-            c_wrapper->schema_info_refs.push_back(schema);
 
-            //parse, rewrite, delta, adjust, returnMeta, 
-            std::unique_ptr<QueryRewrite> qr =
-                std::unique_ptr<QueryRewrite>(new QueryRewrite(
-                    Rewriter::rewrite(query, 
-                                     *schema.get(),
-                                     c_wrapper->default_db, *ps)));
+    try {
+        TEST_Text(retrieveDefaultDatabase(_thread_id, ps->getConn(),
+                                          &c_wrapper->default_db),
+                  "proxy failed to retrieve default database!");
+        // save a reference so a second thread won't eat objects
+        // that DeltaOuput wants later(a shared_ptr for the schemaInfo)
+        const std::shared_ptr<const SchemaInfo> &schema =
+            ps->getSchemaInfo();
+        c_wrapper->schema_info_refs.push_back(schema);
 
-            assert(qr);
-            c_wrapper->setQueryRewrite(std::move(qr));
-        } catch (const AbstractException &e) {
-            lua_pushboolean(L, false);              // status
-            xlua_pushlstring(L, e.to_string());     // error message
-            return 2;
-        } catch (const CryptDBError &e) {
-            lua_pushboolean(L, false);              // status
-            xlua_pushlstring(L, e.msg);             // error message
-            return 2;
-        }
+        //parse, rewrite, delta, adjust, returnMeta, 
+        std::unique_ptr<QueryRewrite> qr =
+            std::unique_ptr<QueryRewrite>(new QueryRewrite(
+                Rewriter::rewrite(query, 
+                                 *schema.get(),
+                                 c_wrapper->default_db, *ps)));
+        assert(qr);
+        c_wrapper->setQueryRewrite(std::move(qr));
+    } catch (const AbstractException &e) {
+        lua_pushboolean(L, false);              // status
+        xlua_pushlstring(L, e.to_string());     // error message
+        return 2;
+    } catch (const CryptDBError &e) {
+        lua_pushboolean(L, false);              // status
+        xlua_pushlstring(L, e.msg);             // error message
+        return 2;
     }
+
     lua_pushboolean(L, true);                       // status
     lua_pushnil(L);                                 // error message
     return 2;

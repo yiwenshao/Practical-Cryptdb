@@ -16,8 +16,7 @@
 
 //################################################################Create table handler#########################################################################################
 AbstractQueryExecutor *
-        CreateTableHandler::rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &pre) const
-    {
+        CreateTableHandler::rewriteAndUpdate(Analysis &a, LEX *lex, const Preamble &pre) const {
         assert(a.deltas.size() == 0);
 
         TEST_DatabaseDiscrepancy(pre.dbname, a.getDatabaseName());
