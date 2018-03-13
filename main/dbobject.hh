@@ -166,10 +166,10 @@ public:
 
     // FIXME: Use rtti.
     virtual std::string typeName() const = 0;
-    /* */
+    /*fetch children from embedded db*/
     virtual std::vector<DBMeta *>
         fetchChildren(const std::unique_ptr<Connect> &e_conn) = 0;
-    /* */
+    /*apply function to each child*/
     virtual bool
         applyToChildren(std::function<bool(const DBMeta &)>) const = 0;
     /*traverse the map to get the key for the conresponding child(reference MappedDBMeta)*/
@@ -226,7 +226,7 @@ public:
     virtual ~MappedDBMeta() {}
 
     virtual bool addChild(KeyType key, std::unique_ptr<ChildType> meta);
-    virtual bool childExists(const KeyType &key) const;    
+    virtual bool childExists(const KeyType &key) const;
     virtual ChildType * getChild(const KeyType &key) const;
 
     /*the return type is different from that of DBMeta, what are the consequences?*/

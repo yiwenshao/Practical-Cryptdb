@@ -182,10 +182,8 @@ private:
 
 class ASHE : public EncLayer {
 public:
-    ASHE(const Create_field &cf, const std::string &seed_key):seed_key(seed_key),ashe(1){
-
-    }
-
+    ASHE(const Create_field &cf, const std::string &seed_key):
+                                   seed_key(seed_key),ashe(1){}
     // serialize and deserialize
     std::string doSerialize() const {return seed_key;}
     ASHE(unsigned int id, const std::string &serial);
@@ -199,8 +197,9 @@ public:
     //TODO needs multi encrypt and decrypt
     Item *encrypt(const Item &p, uint64_t IV) const;
     Item * decrypt(const Item &c, uint64_t IV) const;
+    Item * decrypt_sum(const Item &ctext);
     Item * sumUDA(Item *const expr) const;
-
+    
 protected:
     std::string const seed_key;
     mutable RAW_ASHE ashe;

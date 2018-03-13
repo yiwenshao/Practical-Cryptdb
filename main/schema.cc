@@ -13,8 +13,6 @@
 #include <main/macro_util.hh>
 
 #include "util/onions.hh"
-//对于schemaInfo而言, 先获得自己的id, 作为parent, 可以查找底下的databasemeta的serial,key以及id
-//然后通过lambda表达式,先把databasemeta加入到schemainfo的map中, 然后返回这写个databasemeta供后续使用. 
 
 /*
 *for example, we have schemaInfo, then in this function, it first fetch it's own id, and use it as parent
@@ -368,8 +366,6 @@ std::string FieldMeta::stringify() const
     return res;
 }
 
-//这里FieldMeta的getChildren是pair,OnionMetaKey,OnionMeta, 其中
-//onionMeta有根据Uniq排序输出为vector
 std::vector<std::pair<const OnionMetaKey *, OnionMeta *>>
 FieldMeta::orderedOnionMetas() const
 {
@@ -489,11 +485,10 @@ bool FieldMeta::hasOnion(onion o) const
 }
 
 std::unique_ptr<TableMeta>
-TableMeta::deserialize(unsigned int id, const std::string &serial)
-{
+TableMeta::deserialize(unsigned int id, const std::string &serial) {
     assert(id != 0);
     const auto vec = unserialize_string(serial);
-    //table 的解序列化有5个项目.
+    //five items to be deserialized
     assert(5 == vec.size());
 
     const std::string anon_table_name = vec[0];
@@ -507,10 +502,9 @@ TableMeta::deserialize(unsigned int id, const std::string &serial)
                        salt_name, counter));
 }
 
-//table有5个要素需要进行编码, 匿名的名字, sensitive的bool,salt的bool,salt的名字, 以及counter
-//为什么tableMeta和FieldMeta需要继承UniqueCounter
-std::string TableMeta::serialize(const DBObject &parent) const
-{
+//five items to be serialized
+std::string 
+TableMeta::serialize(const DBObject &parent) const {
     const std::string &serial = 
         serialize_string(getAnonTableName()) +
         serialize_string(bool_to_string(hasSensitive)) +

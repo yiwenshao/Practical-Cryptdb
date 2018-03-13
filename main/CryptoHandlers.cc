@@ -1657,8 +1657,7 @@ ASHE::encrypt(const Item &ptext, uint64_t IV) const{
 }
 
 Item *
-ASHE::decrypt(const Item &ctext, uint64_t IV) const
-{
+ASHE::decrypt(const Item &ctext, uint64_t IV) const {
     long long ct = const_cast<Item &>(ctext).val_uint();
     auto res = ashe.decrypt(ct,IV);
     return new (current_thd->mem_root)
@@ -1666,11 +1665,18 @@ ASHE::decrypt(const Item &ctext, uint64_t IV) const
 }
 
 Item *
+ASHE::decrypt_sum(const Item &ctext) {
+    const std::string plainstr = ItemToString(ctext);
+    std::cout<<"ctext: "<<plainstr<<std::endl;
+    return MySQLFieldTypeToItem(MYSQL_TYPE_STRING, plainstr);
+}
+
+
+Item *
 ASHE::sumUDA(Item *const expr) const
 {
     List<Item> l;
     l.push_back(expr);
-//    l.push_back(ZZToItemStr(sk->hompubkey()));
     return new (current_thd->mem_root) Item_func_udf_str(&u_sumashe_a, l);
 }
 

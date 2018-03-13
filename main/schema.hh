@@ -162,8 +162,6 @@ private:
                                              const Create_field &cf);
     uint64_t &getCounter_() {return counter;}
 };
-
-//salt只是一个IV, 为什么还需要随机的名字: 因为field 需要有名字, 不然没法查询.
 class TableMeta : public MappedDBMeta<FieldMeta, IdentityMetaKey>,
                   public UniqueCounter {
 public:
@@ -178,7 +176,6 @@ public:
     // Restore.
     static std::unique_ptr<TableMeta>
         deserialize(unsigned int id, const std::string &serial);
-
     TableMeta(unsigned int id, const std::string &anon_table_name,
               bool has_sensitive, bool has_salt,
               const std::string &salt_name, unsigned int counter)
@@ -186,9 +183,7 @@ public:
           has_salt(has_salt), salt_name(salt_name),
           anon_table_name(anon_table_name), counter(counter) {
           }
-
     ~TableMeta() {;}
-
     std::string serialize(const DBObject &parent) const;
     std::string getAnonTableName() const;
     std::vector<FieldMeta *> orderedFieldMetas() const;

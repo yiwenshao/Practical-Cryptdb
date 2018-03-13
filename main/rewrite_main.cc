@@ -1395,11 +1395,13 @@ std::string ReturnMeta::stringify() {
 }
 
 
-//有了准备好的合适的meta以后, 对于ResType类型进来的加密数据, 可以解密变成明文的resType
+/*Transform encrypted ResType into plaintext ResType
+ *ReturnMeta contains metadata form layers of decryption
+ *
+*/
 ResType
 Rewriter::decryptResults(const ResType &dbres, const ReturnMeta &rmeta)
 {
-    //这个success是构造的时候写入的.
     assert(dbres.success());
 
     const unsigned int rows = dbres.rows.size();
@@ -1410,20 +1412,17 @@ Rewriter::decryptResults(const ResType &dbres, const ReturnMeta &rmeta)
 
     for (auto it = dbres.names.begin();
         it != dbres.names.end(); it++) {
-        //返回的匿名的名字, 一列下标从0开始.
         const unsigned int index = it - dbres.names.begin();
-        //根据下标获得rfmeta
+        //use index to get either salt or metadata for encrypted field.
         const ReturnField &rf = rmeta.rfmeta.at(index);
         if (!rf.getIsSalt()) {
-            //need to return this field
-            //存的时候, 不是salt, 已经存储了明文的名字.
+            //plaintext column name
             dec_names.push_back(rf.fieldCalled());
         }
     }
 
     const unsigned int real_cols = dec_names.size();
 
-    //为每个数据行初始化指针空间
     std::vector<std::vector<Item *> > dec_rows(rows);
     for (unsigned int i = 0; i < rows; i++) {
         dec_rows[i] = std::vector<Item *>(real_cols);
@@ -1435,7 +1434,6 @@ Rewriter::decryptResults(const ResType &dbres, const ReturnMeta &rmeta)
         if (rf.getIsSalt()) {
             continue;
         }
-	//获得key, 存在fieldMeta中
         FieldMeta *const fm = rf.getOLK().key;
 
         for (unsigned int r = 0; r < rows; r++) {
@@ -1445,14 +1443,14 @@ Rewriter::decryptResults(const ResType &dbres, const ReturnMeta &rmeta)
             } else {
                 uint64_t salt = 0;
                 const int salt_pos = rf.getSaltPosition();
-                //如果存在salt, 则读取远端的salt值, 转化以后用于解密.
+                //use salt_pos to read the salt from remote results.
                 if (salt_pos >= 0) {
                     Item_int *const salt_item =
                         static_cast<Item_int *>(dbres.rows[r][salt_pos]);
                     assert_s(!salt_item->null_value, "salt item is null");
                     salt = salt_item->value;
                 }
-                //层次化的解密.
+                //layers of decryption.
                 dec_rows[r][col_index] = 
                     decrypt_item_layers(*dbres.rows[r][c],
                                         fm, rf.getOLK().o, salt);
