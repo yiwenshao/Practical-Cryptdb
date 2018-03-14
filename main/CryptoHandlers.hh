@@ -198,7 +198,7 @@ public:
     Item *encrypt(const Item &p, uint64_t IV) const;
     Item * decrypt(const Item &c, uint64_t IV) const;
     Item * decrypt_sum(const Item &ctext);
-    Item * sumUDA(Item *const expr) const;
+    Item * sumUDA(Item *const expr, Item *const saltname) const;
     
 protected:
     std::string const seed_key;

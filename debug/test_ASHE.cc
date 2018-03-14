@@ -75,11 +75,29 @@ void test4() {
     std::cout<<ashe1.decrypt_sum(encsum)<<std::endl;
 }
 
+static
+void test5(){
+    RAW_ASHE ashe1(1);
+    std::pair<long,std::vector<uint64_t>> enc1 = {-997019180l,{15834153223274321377UL}};
+    std::pair<long,std::vector<uint64_t>> enc2 = {873317538l,{4670737221960292774UL}};
+    auto encsum =  ashe1.sum(enc1,enc2);
+    encsum = ashe1.sum(encsum,{-2374120261L,{11932286636268610472UL}});
+    encsum = ashe1.sum(encsum,{3912122192L,{3375502011127705401UL}});
+    encsum = ashe1.sum(encsum,{-329683860,{1422696692650720651}});
+
+    UNUSED(encsum);
+    auto res =  RAW_ASHE::decrypt_sum(encsum);
+    std::cout<<res<<std::endl;
+
+}
+
+
 int main(){
     UNUSED(test1);
     UNUSED(test2);
     test3();
     test4();
+    test5();
     return 0;
 }
 

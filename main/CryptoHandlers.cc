@@ -13,6 +13,7 @@
 
 #include <cmath>
 #include <memory>
+#include <istream>
 
 #define LEXSTRING(cstr) { (char*) cstr, sizeof(cstr) }
 #define BITS_PER_BYTE 8
@@ -1664,19 +1665,51 @@ ASHE::decrypt(const Item &ctext, uint64_t IV) const {
                Item_int(static_cast<ulonglong>(res));
 }
 
+static
+std::vector<std::string>
+split_string(std::string s) {
+    std::vector<std::string> res;
+    int index = 0;
+    int next;
+    while((next=s.find(' ',index))!=-1){
+        res.push_back(s.substr(index,next-index));
+        index = next+1;
+    }
+    res.push_back(s.substr(index));
+    return res;
+}
+
 Item *
 ASHE::decrypt_sum(const Item &ctext) {
-    const std::string plainstr = ItemToString(ctext);
-    std::cout<<"ctext: "<<plainstr<<std::endl;
-    return MySQLFieldTypeToItem(MYSQL_TYPE_STRING, plainstr);
+    std::string plainstr = ItemToString(ctext);
+    while(!(plainstr.back()>='0'&&plainstr.back()<='9')) {
+        plainstr.pop_back();
+    }
+    assert(plainstr.back()!=' ');
+    std::vector<std::string> sum_ivs_vec = split_string(plainstr);
+    long cipher = std::stol(sum_ivs_vec[0]);
+    std::vector<uint64_t> vec;
+    for(unsigned int i = 1;i<sum_ivs_vec.size();i++) {
+        uint64_t value;
+        std::istringstream iss(sum_ivs_vec[i]);
+        iss>>value;
+        vec.push_back(value);
+    }
+    std::pair<long,std::vector<uint64_t>> in = std::make_pair(cipher,vec);
+    uint64_t res = RAW_ASHE::decrypt_sum(in);
+//    return MySQLFieldTypeToItem(MYSQL_TYPE_STRING, plainstr);
+    std::string str = std::to_string(res);
+    return  new (current_thd->mem_root)
+                                Item_int(static_cast<ulonglong>(valFromStr(str)));
 }
 
 
 Item *
-ASHE::sumUDA(Item *const expr) const
+ASHE::sumUDA(Item *const expr,Item *const saltname) const
 {
     List<Item> l;
     l.push_back(expr);
+    l.push_back(saltname);
     return new (current_thd->mem_root) Item_func_udf_str(&u_sumashe_a, l);
 }
 

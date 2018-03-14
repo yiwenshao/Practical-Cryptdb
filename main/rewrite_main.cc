@@ -919,6 +919,10 @@ decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
     //onionmeta的使用方法很简单, getlayers, 然后层层使用.
     const auto &enc_layers = om->getLayers();
     for (auto it = enc_layers.rbegin(); it != enc_layers.rend(); ++it) {
+        if(o==oASHE) {
+            out_i = ((ASHE&)(*it)).decrypt_sum(*dec);
+            break;
+        }
         out_i = (*it)->decrypt(*dec, IV);
         assert(out_i);
         dec = out_i;

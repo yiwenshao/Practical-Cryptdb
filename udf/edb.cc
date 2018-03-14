@@ -582,7 +582,7 @@ my_bool cryptdb_asheagg_add(UDF_INIT *const initid, UDF_ARGS *const args,
     };
     std::pair<long,std::vector<uint64_t>> next = {
         *((long*)args->args[0]),
-        {1},
+        {*((uint64_t*)args->args[1])},
     };
     already = RAW_ASHE::sum(already,next);
     ((ashesumdata*)(initid->ptr))->cipher = already.first;
@@ -597,13 +597,13 @@ char* cryptdb_asheagg(UDF_INIT *const initid, UDF_ARGS *const args,
                       char *const is_null, char *const error) {
     std::string s;
     ashesumdata* data = (ashesumdata*)(initid->ptr);
-    s+=std::to_string(data->cipher)+=std::string("<=cipher ivs=>");
+    s+=std::to_string(data->cipher)+=std::string(" ");
 
     for(auto item:data->IVs) {
         (void)item;
         s+=std::to_string(item)+=std::string(" ");
     }
-    s+=std::string("iv size:")+=std::to_string(data->IVs.size());
+//    s+=std::string("iv size:")+=std::to_string(data->IVs.size());
 
     unsigned int len = s.size();
     *length = len+1;

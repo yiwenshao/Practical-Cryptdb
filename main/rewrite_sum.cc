@@ -206,8 +206,13 @@ class CItemSum : public CItemSubtypeST<Item_sum_sum, SFT> {
             EncLayer const &el = a.getBackEncLayer(*om);
             TEST_UnexpectedSecurityLevel(oASHE, SECLEVEL::ASHE,
                                          el.level());
-            return static_cast<const ASHE &>(el).sumUDA(new_child);
+            const Item_field* old_child =  (Item_field const*)(RiboldMYSQL::get_arg(i, 0));
 
+            const std::string table_name = old_child->table_name;
+            const std::string anno_table_name = a.getTableMeta(a.getDatabaseName(),table_name).getAnonTableName();
+            Item_field * const salt_field = 
+                   make_item_field(*old_child,anno_table_name, constr.key->getSaltName());
+            return static_cast<const ASHE &>(el).sumUDA(new_child,salt_field);
         } else {
             TEST_UnexpectedSecurityLevel(constr.o, SECLEVEL::PLAINVAL,
                                          constr.l);
