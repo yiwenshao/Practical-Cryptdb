@@ -386,9 +386,9 @@ SharedProxyState::SharedProxyState(ConnectionInfo ci,
     const std::string prefix = 
         getenv("CRYPTDB_NAME") ? getenv("CRYPTDB_NAME")
                                : "generic_prefix_";
-    //初始化embedded的表
+    //init embedded mysql tables
     assert(MetaData::initialize(conn, init_e_conn, prefix));
-    //两头的defaultdb是一样的
+    //sychronize the default embedded db and remote db
     TEST_TextMessageError(synchronizeDatabases(conn, init_e_conn),
                           "Failed to synchronize embedded and remote"
                           " databases!");

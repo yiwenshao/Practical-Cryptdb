@@ -19,7 +19,11 @@
 *to fetch its children, the databasemeta. Then it adds those databasemeta as KV in the map, and return those
 *databasemeta as a vector for recursive processing.
 
-for this function, it only extract the dbmeta and 
+for this function, it only extract the dbmeta and.
+
+This function is called by fetchChildren in MappedDBMeta,LeafMeta, and OnionMeta. the parameter deserialHandler has
+three parameters: serial key, serial, and id, with those three parameters, the function is able to recover DBMeta from 
+one line of record in the embedded mysql
 */
 std::vector<DBMeta *>
 DBMeta::doFetchChildren(const std::unique_ptr<Connect> &e_conn,
@@ -32,7 +36,8 @@ DBMeta::doFetchChildren(const std::unique_ptr<Connect> &e_conn,
     // Now that we know the table exists, SELECT the data we want.
     std::vector<DBMeta *> out_vec;
     std::unique_ptr<DBResult> db_res;
-    //this is the id of the current class.
+    //this is the id of the current class.For SchemaInfo, the parentid is that of the schemainfo, and using this id,
+    //we are able to recover the underlying DatabaseMeta.
     const std::string parent_id = std::to_string(this->getDatabaseID());
     const std::string serials_query =
         " SELECT " + table_name + ".serial_object,"
@@ -608,17 +613,18 @@ SchemaCache::getSchema(const std::unique_ptr<Connect> &conn,
                        const std::unique_ptr<Connect> &e_conn) const
 {
     if (true == this->no_loads) {
-        //设置当前id对应的stale的值为true.        
+        //set staleness of current id to true.
         TEST_SchemaFailure(initialStaleness(e_conn));
         this->no_loads = false;
     }else{
+        ;
     }
-
-       //查询当前ID对应的Stale的值
+        //check the staleness of the current id
     if (true == lowLevelGetCurrentStaleness(e_conn, this->id)) {
         this->schema =
             std::shared_ptr<SchemaInfo>(loadSchemaInfo(conn, e_conn));
     }else{
+        ;
     }
 
     assert(this->schema);

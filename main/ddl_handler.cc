@@ -70,14 +70,14 @@ AbstractQueryExecutor *
             // layout we use
             const auto &key_data = collectKeyData(*lex);
 
-            //这里给出了create的获取. alter_info代码被摘出来了. 代表了要创建的一系列column以及index
+            // create_list is a set of columns and indecies to be created.
             auto it =
                 List_iterator<Create_field>(lex->alter_info.create_list);
 
-	    //对现有的每个field, 如id,name, 都在内部通过createAndRewriteField函数扩展成多个洋葱+salt.
-	    //其中洋葱有多个层, 其通过newCreateField函数, 决定了类型, 而新的field的名字, 就是洋葱的名字传过去的.
-            //扩展以后, 就是新的Create_field类型了, 这了返回的list是被继续传到引用参数里面的, 很奇怪的用法.
-            //key data在这里的作用是, 决定是不是unique, 从而选择和是的洋葱层次.
+            //1. we need key_data to determine whether the field is unique.
+            //2. each field, like id or name, is processed in the function createAndRewriteField to be expanded to 
+            //   multiple onions together with an optional salt column. Each onion has multiple layers. The function
+            //newCreateField determines the new datatype, and the new filed name is passed only once.
             new_lex->alter_info.create_list =
                 accumList<Create_field>(it,
                     [&a, &tm, &key_data] (List<Create_field> out_list,
@@ -93,7 +93,8 @@ AbstractQueryExecutor *
             // -----------------------------
             //         Update TABLE
             // -----------------------------
-            //建立了db=>table的关系, 作为delta实现. 然后delta会apply. 这里使用了createDelta
+
+            //add the db=>table relation through delta.
             a.deltas.push_back(std::unique_ptr<Delta>(
                             new CreateDelta(std::move(tm),
                                             a.getDatabaseMeta(pre.dbname),
@@ -106,14 +107,9 @@ AbstractQueryExecutor *
                                 "Table " + pre.table + " already exists!");
             //why still rewrite here???
         }
-	//在handler的第一阶段, 通过analysis搜集delta以及执行计划等内容, 然后在第二阶段, 实行delta以及
-        //执行计划, 新的lex里面包含了改写以后的语句, 直接转化成string就可以用了.
+        //first use analysis to collect delta, and then apply the delta to the embedded database.
         return new DDLQueryExecutor(*new_lex, std::move(a.deltas));
     }
-
-
-
-
 
 //################################################################Alter table handler#########################################################################################
 // mysql does not support indiscriminate add-drops
@@ -226,12 +222,11 @@ class CreateDBHandler : public DDLHandler {
             convert_lex_str(lex->name);
         if (false == a.databaseMetaExists(dbname)) {
             std::unique_ptr<DatabaseMeta> dm(new DatabaseMeta());
-            //可以看到, 建立数据库的时候,和建立表的时候类型, 使用了createdelta, 添加了从db到schema的映射过程.
+            //createdelta is used both for CREATE DB and CREATE TABLE.
             a.deltas.push_back(std::unique_ptr<Delta>(
                         new CreateDelta(std::move(dm), a.getSchema(),
                                         IdentityMetaKey(dbname))));
         } else {
-           
             const bool test =
                 lex->create_info.options & HA_LEX_CREATE_IF_NOT_EXISTS;
             TEST_TextMessageError(test,
@@ -240,7 +235,6 @@ class CreateDBHandler : public DDLHandler {
         return new DDLQueryExecutor(*copyWithTHD(lex), std::move(a.deltas));
     }
 };
-
 
 //################################################################change db handler#########################################################################################
 
@@ -294,8 +288,7 @@ class LockTablesHandler : public DDLHandler {
 class CreateIndexHandler : public DDLHandler {
     virtual AbstractQueryExecutor *
         rewriteAndUpdate(Analysis &a, LEX *const lex, const Preamble &pre)
-            const
-    {
+            const {
         assert(a.deltas.size() == 0);
 
         LEX *const new_lex = copyWithTHD(lex);

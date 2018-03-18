@@ -114,7 +114,7 @@ public:
     void safeCreateEmbeddedTHD();
     void dumpTHDs();
     const SchemaCache &getSchemaCache() const {return shared.cache;}
-    //conn 是大家共享, shared里面的, embedded是每个代理自己保持的,初始化的时候, 就存在了.
+    //conn is shared by all the clients and is stored in variable shared. embedded is stored in each proxy.
     std::shared_ptr<const SchemaInfo> getSchemaInfo() const
         {return shared.cache.getSchema(this->getConn(), this->getEConn());}
 
@@ -130,17 +130,14 @@ extern __thread ProxyState *thread_ps;
 class Delta {
 public:
     enum TableType {REGULAR_TABLE, BLEEDING_TABLE};
-
     Delta(const DBMeta &parent_meta) : parent_meta(parent_meta) {}
     virtual ~Delta() {}
-
     /*
      * Take the update action against the database. Contains high level
      * serialization semantics.
      */
     virtual bool apply(const std::unique_ptr<Connect> &e_conn,
                        TableType table_type) = 0;
-
 protected:
     const DBMeta &parent_meta;
 
@@ -211,7 +208,7 @@ class Rewriter;
 
 enum class CompletionType {DDL, Onion};
 
-//用于调用apply函数,写数据库
+//call the function apply and write data to embedded MySQL.
 bool
 writeDeltas(const std::unique_ptr<Connect> &e_conn,
             const std::vector<std::unique_ptr<Delta> > &deltas,
@@ -260,7 +257,6 @@ class RewritePlan;
 /*
 *1.A set of functions for manipulating metadata at high level.
 */
-
 class Analysis {
     Analysis() = delete;
     Analysis(Analysis &&a) = delete;
@@ -287,39 +283,30 @@ public:
     std::map<const Item *, std::unique_ptr<RewritePlan> > rewritePlans;
     std::map<std::string, std::map<const std::string, const std::string>> table_aliases;
     std::map<const Item_field *, std::pair<Item_field *, OLK>> item_cache;
-
     // information for decrypting results
     ReturnMeta rmeta;
-
     bool inject_alias;
     bool summation_hack;
     KillZone kill_zone;
-
     // These functions are prefered to their lower level counterparts.
     bool addAlias(const std::string &alias, const std::string &db,
                   const std::string &table);	
     OnionMeta &getOnionMeta(const std::string &db,
                             const std::string &table,
                             const std::string &field, onion o) const;
-
     OnionMeta* getOnionMeta2(const std::string &db,
                             const std::string &table,
                             const std::string &field, onion o) const;
-
     OnionMeta &getOnionMeta(const FieldMeta &fm, onion o) const;
     OnionMeta* getOnionMeta2(const FieldMeta &fm, onion o) const;
-
     FieldMeta &getFieldMeta(const std::string &db,
                             const std::string &table,
                             const std::string &field) const;
     FieldMeta &getFieldMeta(const TableMeta &tm,
                             const std::string &field) const;
-
     TableMeta &getTableMeta(const std::string &db,
                             const std::string &table) const;
-
     DatabaseMeta &getDatabaseMeta(const std::string &db) const;
-
     bool tableMetaExists(const std::string &db,
                          const std::string &table) const;
     bool nonAliasTableMetaExists(const std::string &db,
@@ -340,15 +327,11 @@ public:
     std::string getAnonIndexName(const TableMeta &tm,
                                  const std::string &index_name,
                                  onion o) const;
-
     static const EncLayer &getBackEncLayer(const OnionMeta &om);
-
     static SECLEVEL getOnionLevel(const OnionMeta &om);
     SECLEVEL getOnionLevel(const FieldMeta &fm, onion o);
-
     static const std::vector<std::unique_ptr<EncLayer> > &
         getEncLayers(const OnionMeta &om);
-
     const SchemaInfo &getSchema() const {return schema;}
     std::vector<std::unique_ptr<Delta> > deltas;
     std::string getDatabaseName() const {return db_name;}
@@ -357,7 +340,6 @@ public:
         {return default_sec_rating;}
     // access to isAlias(...)
     friend class MultiDeleteHandler;
-
 private:
     //name for the default db
     const std::string db_name;
@@ -383,4 +365,3 @@ getAllUDFs();
 
 std::string
 lexToQuery(const LEX &lex);
-

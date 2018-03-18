@@ -73,7 +73,9 @@ public:
 
     virtual std::pair<ResultType, AbstractAnything *>
         nextImpl(const ResType &res, const NextParams &nparams) = 0;
+    //true will set the staleness of the current cache id to true, which results in a reloading of schemaInfo
     virtual bool stales() const {return false;}
+    //if usesEmbedded is true, then the current db of the embedded MySQL is set to embedded_db
     virtual bool usesEmbedded() const {return false;}
 
 private:
