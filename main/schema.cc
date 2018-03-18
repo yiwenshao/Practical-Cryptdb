@@ -156,7 +156,7 @@ OnionMeta::fetchChildren(const std::unique_ptr<Connect> &e_conn)
 
     return DBMeta::doFetchChildren(e_conn, deserialHelper);
 }
-
+//this applyTochildren is different from that of MappedMetadata because Enclayer is stored as vector.
 bool
 OnionMeta::applyToChildren(std::function<bool(const DBMeta &)>
     fn) const

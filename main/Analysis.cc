@@ -546,7 +546,7 @@ bool create_delta_helper(CreateDelta* this_is, const std::unique_ptr<Connect> &e
 //   auto_increment on the BLEEDING and REGULAR tables
 bool CreateDelta::apply(const std::unique_ptr<Connect> &e_conn,
                         Delta::TableType table_type){
-    //第一次apply,先写bleeding table.这个时候,map里面没有内容.
+    //The first time we call this function, bleeding table will be written. nothing is stored in the map.
     if (BLEEDING_TABLE == table_type) {
         assert(0 == id_cache.size());
     }
@@ -622,8 +622,7 @@ bool DeleteDelta::apply(const std::unique_ptr<Connect> &e_conn,
 bool
 writeDeltas(const std::unique_ptr<Connect> &e_conn,
             const std::vector<std::unique_ptr<Delta> > &deltas,
-            Delta::TableType table_type)
-{
+            Delta::TableType table_type) {
     for (const auto &it : deltas) {
         RFIF(it->apply(e_conn, table_type));
     }
