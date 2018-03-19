@@ -554,21 +554,18 @@ do64Test(uint64_t n)
 
 // quick n dirty unit testing
 bool
-test64bitZZConversions()
-{
+test64bitZZConversions() {
     // there was a problem with numbers larger than 0x7FFFFFFFFFFFFFFF; they
     // were too small by 256 after conversions
     const uint64_t low_bad = 0x7FFFFFFFFFFFFFF0;
     for (uint64_t i = low_bad; i <= low_bad + 50; ++i) {
         RFIF(do64Test(i));
     }
-
     // try some other value
     const uint64_t other_start = 0x9ABCD00012340000;
     for (uint64_t i = other_start; i <= other_start + 50; ++i) {
         RFIF(do64Test(i));
     }
-
     // try the biggest values
     {
         const uint64_t high_bad = 0xFFFFFFFFFFFFFFC0;
@@ -577,7 +574,6 @@ test64bitZZConversions()
             RFIF(do64Test(i));
         } while (i++ < 0xFFFFFFFFFFFFFFFF);
     }
-
     return true;
 }
 

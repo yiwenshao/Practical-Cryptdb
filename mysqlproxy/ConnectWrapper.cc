@@ -71,7 +71,7 @@ static void
 returnResultSet(lua_State *L, const ResType &res);
 
 static Item_null *
-make_null(const std::string &name = ""){
+make_null(const std::string &name = "") {
     char *const n = current_thd->strdup(name.c_str());
     return new Item_null(n);
 }
@@ -279,7 +279,7 @@ getResTypeFromLuaTable(lua_State *const L, int fields_index,
     std::vector<std::vector<Item *> > rows;
     lua_pushnil(L);
 
-    //没有kv对了, 则退出.
+    //no kv pairs, then exit.
     while (lua_next(L, rows_index)) {
         if (!lua_istable(L, -1))
             LOG(warn) << "mismatch";

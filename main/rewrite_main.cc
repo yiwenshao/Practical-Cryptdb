@@ -904,19 +904,18 @@ do_optimize_const_item(T *i, Analysis &a) {
 
 }
 
-//层次化的解密
+//Layers of decryption
 static Item *
 decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
                     uint64_t IV)
 {
     assert(!RiboldMYSQL::is_null(i));
-
     const Item *dec = &i;
     Item *out_i = NULL;
-    //有fieldmeta但是不用全部, 只用其中的一个onionMeta, 这个根据OLK的o来选择.
+    //fieldmeta is used to fetch the onionmeta wanted. The onionmeta choosen is specified by OLK.
     const OnionMeta *const om = fm->getOnionMeta(o);
     assert(om);
-    //onionmeta的使用方法很简单, getlayers, 然后层层使用.
+    //once we have onionmeta,we can use getlayers to fetch the encryption layers for data decryption.
     const auto &enc_layers = om->getLayers();
     for (auto it = enc_layers.rbegin(); it != enc_layers.rend(); ++it) {
         if(o==oASHE) {
@@ -928,7 +927,6 @@ decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
         dec = out_i;
         LOG(cdb_v) << "dec okay";
     }
-
     assert(out_i && out_i != &i);
     return out_i;
 }
@@ -1462,8 +1460,7 @@ Rewriter::decryptResults(const ResType &dbres, const ReturnMeta &rmeta)
         }
         col_index++;
     }
-
-    //加密和解密之前之后, 用的都是ResType类型.通过这个解密函数的操作.
+    //ResType is used before encryption and after decryption.
     return ResType(dbres.ok, dbres.affected_rows, dbres.insert_id,
                    std::move(dec_names),
                    std::vector<enum_field_types>(dbres.types),

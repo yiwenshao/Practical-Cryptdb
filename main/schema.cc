@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
-
 #include <parser/lex_util.hh>
 #include <parser/stringify.hh>
 #include <parser/mysql_type_metadata.hh>
@@ -11,7 +10,6 @@
 #include <main/dbobject.hh>
 #include <main/metadata_tables.hh>
 #include <main/macro_util.hh>
-
 #include "util/onions.hh"
 
 /*
@@ -62,9 +60,6 @@ DBMeta::doFetchChildren(const std::unique_ptr<Connect> &e_conn,
     }
     return out_vec;
 }
-
-
-//new onion, 这里的uniq_count是通过fieldMeta获得的, 本身没有集成UniqueCounter.
 OnionMeta::OnionMeta(onion o, std::vector<SECLEVEL> levels,
                      const AES_KEY * const m_key,
                      const Create_field &cf, unsigned long uniq_count,
@@ -72,7 +67,6 @@ OnionMeta::OnionMeta(onion o, std::vector<SECLEVEL> levels,
     : onionname(getpRandomName() + TypeText<onion>::toText(o)),
       uniq_count(uniq_count), minimum_seclevel(minimum_seclevel) {
     assert(levels.size() >= 1);
-
     const Create_field * newcf = &cf;
     //generate enclayers for encrypted field
     const std::string uniqueFieldName = this->getAnonOnionName();
@@ -91,31 +85,19 @@ OnionMeta::OnionMeta(onion o, std::vector<SECLEVEL> levels,
     assert(this->layers.size() >= 1);
 }
 
-//onionmeta解序列化
 std::unique_ptr<OnionMeta>
-OnionMeta::deserialize(unsigned int id, const std::string &serial)
-{
+OnionMeta::deserialize(unsigned int id, const std::string &serial){
     assert(id != 0);
     const auto vec = unserialize_string(serial);
-    //OnionMeta序列化的结果有三个.
     assert(3 == vec.size());
-
-    //名字
     const std::string onionname = vec[0];
-    //count
     const unsigned int uniq_count = atoi(vec[1].c_str());
-    //level
     const SECLEVEL minimum_seclevel = TypeText<SECLEVEL>::toType(vec[2]);
-
-    //在什么位置调用的, id应该是查表获得的id, 为什么需要unique_count?
     return std::unique_ptr<OnionMeta>
         (new OnionMeta(id, onionname, uniq_count, minimum_seclevel));
 }
 
-//序列化的结果
-std::string OnionMeta::serialize(const DBObject &parent) const
-{
-    //就是名字,count,以及level分别转换成字符串, 然后用字符串序列化的方法来保存.对于onionmeta,注意name
+std::string OnionMeta::serialize(const DBObject &parent) const{
     const std::string &serial =
         serialize_string(this->onionname) +
         serialize_string(std::to_string(this->uniq_count)) +
@@ -123,14 +105,12 @@ std::string OnionMeta::serialize(const DBObject &parent) const
     return serial;
 }
 
-std::string OnionMeta::getAnonOnionName() const
-{
+std::string OnionMeta::getAnonOnionName() const{
     return onionname;
 }
 
 std::vector<DBMeta *>
-OnionMeta::fetchChildren(const std::unique_ptr<Connect> &e_conn)
-{
+OnionMeta::fetchChildren(const std::unique_ptr<Connect> &e_conn){
     std::function<DBMeta *(const std::string &,
                            const std::string &,
                            const std::string &)>
@@ -153,25 +133,21 @@ OnionMeta::fetchChildren(const std::unique_ptr<Connect> &e_conn)
         this->layers[index] = std::move(layer);
         return this->layers[index].get();
     };
-
     return DBMeta::doFetchChildren(e_conn, deserialHelper);
 }
 //this applyTochildren is different from that of MappedMetadata because Enclayer is stored as vector.
 bool
 OnionMeta::applyToChildren(std::function<bool(const DBMeta &)>
-    fn) const
-{
+    fn) const{
     for (const auto &it : layers) {
         if (false == fn(*it.get())) {
             return false;
         }
     }
-
     return true;
 }
 
-UIntMetaKey const &OnionMeta::getKey(const DBMeta &child) const
-{
+UIntMetaKey const &OnionMeta::getKey(const DBMeta &child) const{
     for (std::vector<EncLayer *>::size_type i = 0; i< layers.size(); ++i) {
         if (&child == layers[i].get()) {
             UIntMetaKey *const key = new UIntMetaKey(i);
@@ -181,41 +157,33 @@ UIntMetaKey const &OnionMeta::getKey(const DBMeta &child) const
             return *key;
         }
     }
-
     assert(false);
 }
 
-EncLayer *OnionMeta::getLayerBack() const
-{
+EncLayer *OnionMeta::getLayerBack() const{
     TEST_TextMessageError(layers.size() != 0,
                           "Tried getting EncLayer when there are none!");
-
     return layers.back().get();
 }
 
-bool OnionMeta::hasEncLayer(const SECLEVEL &sl) const
-{
+bool OnionMeta::hasEncLayer(const SECLEVEL &sl) const{
     for (const auto &it : layers) {
         if (it->level() == sl) {
             return true;
         }
     }
-
     return false;
 }
 
-EncLayer *OnionMeta::getLayer(const SECLEVEL &sl) const
-{
+EncLayer *OnionMeta::getLayer(const SECLEVEL &sl) const{
     TEST_TextMessageError(layers.size() != 0,
                           "Tried getting EncLayer when there are none!");
-
     AssignOnce<EncLayer *> out;
     for (const auto &it : layers) {
         if (it->level() == sl) {
             out = it.get();
         }
     }
-
     assert(out.assigned());
     return out.get();
 }
@@ -231,7 +199,6 @@ FieldMeta::deserialize(unsigned int id, const std::string &serial) {
     assert(id != 0);
     const auto vec = unserialize_string(serial);
     assert(10 == vec.size());//We add one item,so there are ten items now
-
     const std::string fname = vec[0];
     const bool has_salt = string_to_bool(vec[1]);
     const std::string salt_name = vec[2];
@@ -242,10 +209,7 @@ FieldMeta::deserialize(unsigned int id, const std::string &serial) {
     const unsigned int counter = atoi(vec[6].c_str());
     const bool has_default = string_to_bool(vec[7]);
     const std::string default_value = vec[8];
-    
     enum  enum_field_types sql_type = ((enum  enum_field_types)atoi(vec[9].c_str()));//new field added
-
-    
     return std::unique_ptr<FieldMeta>
         (new FieldMeta(id, fname, has_salt, salt_name, onion_layout,
                        sec_rating, uniq_count, counter, has_default,
@@ -255,12 +219,10 @@ FieldMeta::deserialize(unsigned int id, const std::string &serial) {
 // first element is the levels that the onionmeta should implement
 // second element is the minimum level that should be gone down too
 static std::pair<std::vector<SECLEVEL>, SECLEVEL>
-determineSecLevelData(onion o, std::vector<SECLEVEL> levels, bool unique)
-{
+determineSecLevelData(onion o, std::vector<SECLEVEL> levels, bool unique){
     if (false == unique) {
         return std::make_pair(levels, levels.front());
     }
-
     // the oDET onion should start at DET and stay at DET
     if (oDET == o) {
         assert(SECLEVEL::RND == levels.back());
@@ -268,7 +230,6 @@ determineSecLevelData(onion o, std::vector<SECLEVEL> levels, bool unique)
         assert(SECLEVEL::DET == levels.back());
         return std::make_pair(levels, levels.front());
     }
-
     // oPLAIN may be starting at PLAINVAL if we have an autoincrement column
     if (oPLAIN == o) {
         assert(SECLEVEL::PLAINVAL == levels.back()
@@ -290,27 +251,22 @@ determineSecLevelData(onion o, std::vector<SECLEVEL> levels, bool unique)
 // If mkey == NULL, the field is not encrypted
 static bool
 init_onions_layout(const AES_KEY *const m_key, FieldMeta *const fm,
-                   const Create_field &cf, bool unique)
-{
+                   const Create_field &cf, bool unique){
     const onionlayout onion_layout = fm->getOnionLayout();
     if (fm->getHasSalt() != (static_cast<bool>(m_key)
                              && PLAIN_ONION_LAYOUT != onion_layout)) {
         return false;
     }
-
     if (0 != fm->getChildren().size()) {
         return false;
     }
-
     for (auto it: onion_layout) {
         const onion o = it.first;
         const std::vector<SECLEVEL> &levels = it.second;
-
         assert(levels.size() >= 1);
         const std::pair<std::vector<SECLEVEL>, SECLEVEL> level_data =
             determineSecLevelData(o, levels, unique);
         assert(level_data.first.size() >= 1);
-
         // A new OnionMeta will only occur with a new FieldMeta so
         // we never have to build Deltaz for our OnionMetaz.
         std::unique_ptr<OnionMeta>
@@ -345,8 +301,7 @@ FieldMeta::FieldMeta(const Create_field &field,
                           "Failed to build onions for new FieldMeta!");
 }
 
-std::string FieldMeta::serialize(const DBObject &parent) const
-{
+std::string FieldMeta::serialize(const DBObject &parent) const{
     const std::string &serialized_salt_name =
         true == this->has_salt ? serialize_string(getSaltName())
                                : serialize_string("");
@@ -365,20 +320,17 @@ std::string FieldMeta::serialize(const DBObject &parent) const
    return serial;
 }
 
-std::string FieldMeta::stringify() const
-{
+std::string FieldMeta::stringify() const{
     const std::string res = " [FieldMeta " + fname + "]";
     return res;
 }
 
 std::vector<std::pair<const OnionMetaKey *, OnionMeta *>>
-FieldMeta::orderedOnionMetas() const
-{
+FieldMeta::orderedOnionMetas() const{
     std::vector<std::pair<const OnionMetaKey *, OnionMeta *>> v;
     for (const auto &it : this->getChildren()) {
         v.push_back(std::make_pair(&it.first, it.second.get()));
     }
-
     std::sort(v.begin(), v.end(),
               [] (std::pair<const OnionMetaKey *, OnionMeta *> a,
                   std::pair<const OnionMetaKey *, OnionMeta *> b) {
@@ -389,14 +341,12 @@ FieldMeta::orderedOnionMetas() const
     return v;
 }
 
-std::string FieldMeta::getSaltName() const
-{
+std::string FieldMeta::getSaltName() const{
     assert(has_salt);
     return salt_name;
 }
 
-SECLEVEL FieldMeta::getOnionLevel(onion o) const
-{
+SECLEVEL FieldMeta::getOnionLevel(onion o) const{
     const auto om = getChild(OnionMetaKey(o));
     if (om == NULL) {
         return SECLEVEL::INVALID;
@@ -405,8 +355,7 @@ SECLEVEL FieldMeta::getOnionLevel(onion o) const
     return om->getSecLevel();
 }
 
-OnionMeta *FieldMeta::getOnionMeta(onion o) const
-{
+OnionMeta *FieldMeta::getOnionMeta(onion o) const{
     return getChild(OnionMetaKey(o));
 }
 
@@ -423,12 +372,10 @@ onionlayout FieldMeta::determineOnionLayout(const AES_KEY *const m_key,
     if (false == encryptionSupported(f)) {
         return PLAIN_ONION_LAYOUT;//do not report error here
     }
-
     // Don't encrypt AUTO_INCREMENT.
     if (Field::NEXT_NUMBER == f.unireg_check) {
         return PLAIN_ONION_LAYOUT;
     }
-
     /*we only support sensitive rating here*/
     if (SECURITY_RATING::SENSITIVE == sec_rating) {
         if (true == isMySQLTypeNumeric(f)) {
@@ -463,8 +410,7 @@ bool FieldMeta::determineHasDefault(const Create_field &cf) {
 }
 
 std::string FieldMeta::determineDefaultValue(bool has_default,
-                                             const Create_field &cf)
-{
+                                             const Create_field &cf) {
     const static std::string zero_string = "'0'";
     const static std::string empty_string = "";
 
@@ -484,8 +430,7 @@ std::string FieldMeta::determineDefaultValue(bool has_default,
     }
 }
 
-bool FieldMeta::hasOnion(onion o) const
-{
+bool FieldMeta::hasOnion(onion o) const{
     return childExists(OnionMetaKey(o));
 }
 
@@ -521,15 +466,13 @@ TableMeta::serialize(const DBObject &parent) const {
 
 // FIXME: May run into problems where a plaintext table expects the regular
 // name, but it shouldn't get that name from 'getAnonTableName' anyways.
-std::string TableMeta::getAnonTableName() const
-{
+std::string TableMeta::getAnonTableName() const {
     return anon_table_name;
 }
 
 // FIXME: Slow.
 // > Code is also duplicated with FieldMeta::orderedOnionMetas.
-std::vector<FieldMeta *> TableMeta::orderedFieldMetas() const
-{
+std::vector<FieldMeta *> TableMeta::orderedFieldMetas() const {
     std::vector<FieldMeta *> v;
     for (const auto &it : this->getChildren()) {
         v.push_back(it.second.get());
@@ -544,8 +487,7 @@ std::vector<FieldMeta *> TableMeta::orderedFieldMetas() const
 }
 
 /*use fm->hasDefault() to test whether the filed has default value*/
-std::vector<FieldMeta *> TableMeta::defaultedFieldMetas() const
-{
+std::vector<FieldMeta *> TableMeta::defaultedFieldMetas() const {
     std::vector<FieldMeta *> v;
     for (const auto &it : this->getChildren()) {
         v.push_back(it.second.get());
@@ -563,37 +505,30 @@ std::vector<FieldMeta *> TableMeta::defaultedFieldMetas() const
 
 // TODO: Add salt.
 std::string TableMeta::getAnonIndexName(const std::string &index_name,
-                                        onion o) const
-{
+                                        onion o) const {
     const std::string hash_input =
         anon_table_name + index_name + TypeText<onion>::toText(o);
     const std::size_t hsh = std::hash<std::string>()(hash_input);
-
     return std::string("index_") + std::to_string(hsh);
 }
 
 std::unique_ptr<DatabaseMeta>
-DatabaseMeta::deserialize(unsigned int id, const std::string &serial)
-{
+DatabaseMeta::deserialize(unsigned int id, const std::string &serial) {
     assert(id != 0);
-
     return std::unique_ptr<DatabaseMeta>(new DatabaseMeta(id));
 }
 
 std::string
-DatabaseMeta::serialize(const DBObject &parent) const
-{
+DatabaseMeta::serialize(const DBObject &parent) const {
     const std::string &serial =
         "Serialize to associate database name with DatabaseMeta";
-
     return serial;
 }
 
-//查询Id对应的stale的值
+//check the staleness of the specified  random cache_id
 static bool
 lowLevelGetCurrentStaleness(const std::unique_ptr<Connect> &e_conn,
-                            unsigned int cache_id)
-{
+                            unsigned int cache_id) {
     const std::string &query =
         " SELECT stale FROM " + MetaData::Table::staleness() +
         "  WHERE cache_id = " + std::to_string(cache_id) + ";";
@@ -608,10 +543,10 @@ lowLevelGetCurrentStaleness(const std::unique_ptr<Connect> &e_conn,
     return string_to_bool(std::string(row[0], l[0]));
 }
 
+//read metadata from disk
 std::shared_ptr<const SchemaInfo>
 SchemaCache::getSchema(const std::unique_ptr<Connect> &conn,
-                       const std::unique_ptr<Connect> &e_conn) const
-{
+                       const std::unique_ptr<Connect> &e_conn) const {
     if (true == this->no_loads) {
         //set staleness of current id to true.
         TEST_SchemaFailure(initialStaleness(e_conn));
@@ -626,14 +561,12 @@ SchemaCache::getSchema(const std::unique_ptr<Connect> &conn,
     }else{
         ;
     }
-
     assert(this->schema);
     return this->schema;
 }
 
 static void
-lowLevelAllStale(const std::unique_ptr<Connect> &e_conn)
-{
+lowLevelAllStale(const std::unique_ptr<Connect> &e_conn) {
     const std::string &query =
         " UPDATE " + MetaData::Table::staleness() +
         "    SET stale = TRUE;";
@@ -643,8 +576,7 @@ lowLevelAllStale(const std::unique_ptr<Connect> &e_conn)
 
 void
 SchemaCache::updateStaleness(const std::unique_ptr<Connect> &e_conn,
-                             bool staleness) const
-{
+                             bool staleness) const {
     if (true == staleness) {
         // Make everyone stale.
         return lowLevelAllStale(e_conn);
@@ -655,8 +587,7 @@ SchemaCache::updateStaleness(const std::unique_ptr<Connect> &e_conn,
 }
 
 bool
-SchemaCache::initialStaleness(const std::unique_ptr<Connect> &e_conn) const
-{
+SchemaCache::initialStaleness(const std::unique_ptr<Connect> &e_conn) const {
     const std::string seed_staleness =
         " INSERT INTO " + MetaData::Table::staleness() +
         "   (cache_id, stale) VALUES " +
@@ -667,8 +598,7 @@ SchemaCache::initialStaleness(const std::unique_ptr<Connect> &e_conn) const
 }
 
 bool
-SchemaCache::cleanupStaleness(const std::unique_ptr<Connect> &e_conn) const
-{
+SchemaCache::cleanupStaleness(const std::unique_ptr<Connect> &e_conn) const {
     const std::string remove_staleness =
         " DELETE FROM " + MetaData::Table::staleness() +
         "       WHERE cache_id = " + std::to_string(this->id) + ";";
@@ -678,28 +608,23 @@ SchemaCache::cleanupStaleness(const std::unique_ptr<Connect> &e_conn) const
 }
 static bool
 lowLevelToggleCurrentStaleness(const std::unique_ptr<Connect> &e_conn,
-                               unsigned int cache_id, bool staleness)
-{
+                               unsigned int cache_id, bool staleness) {
     const std::string &query =
         " UPDATE " + MetaData::Table::staleness() +
         "    SET stale = " + bool_to_string(staleness) +
         "  WHERE cache_id = " + std::to_string(cache_id) + ";";
     RFIF(e_conn->execute(query));
-
     return true;
 }
 
 void
 SchemaCache::lowLevelCurrentStale(const std::unique_ptr<Connect> &e_conn)
-    const
-{
+    const{
     TEST_SchemaFailure(lowLevelToggleCurrentStaleness(e_conn, this->id, true));
 }
 
 void
 SchemaCache::lowLevelCurrentUnstale(const std::unique_ptr<Connect> &e_conn)
-    const
-{
+    const {
     TEST_SchemaFailure(lowLevelToggleCurrentStaleness(e_conn, this->id, false));
 }
-
