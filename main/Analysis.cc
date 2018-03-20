@@ -14,7 +14,7 @@ EncSet::EncSet(Analysis &a, FieldMeta * const fm) {
     for (const auto &pair : fm->getChildren()) {
         OnionMeta *const om = pair.second.get();
         OnionMetaKey const &key = pair.first;
-        //就是当前的onionmeta的back 对应的level
+        //the coresponding level of the back of the current onionmeta.
         osl[key.getValue()] = LevelFieldPair(a.getOnionLevel(*om), fm);
     }
 }
@@ -43,7 +43,6 @@ EncSet::intersect(const EncSet & es2) const
                 static_cast<SECLEVEL>(
                         min(static_cast<int>(it->second.first),
                             static_cast<int>(it2.second.first)));
-
             /*
              * FIXME: Each clause of this if statement should make sure
              * that it's OnionMeta actually has the SecLevel.

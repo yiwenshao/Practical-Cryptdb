@@ -44,13 +44,13 @@ handleUpdateType(SIMPLE_UPDATE_TYPE update_type, const EncSet &es,
                  List<Item> *const res_fields,
                  List<Item> *const res_values, Analysis &a);
 
+//expand the Item i to a set of encrypted onions and the salt.
 template <typename ContainerType>
 void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
-                         ContainerType *const append_list)
-{
+                         ContainerType *const append_list){
     std::vector<Item *> l;
     /*first look up the right class and then use the rewritting function of the specific data type
-    for table student, the function typical_rewrite_insert_type in ANON is used finally. */
+    for table student, the function typical_rewrite_insert_type in ANON is used finally.*/
     itemTypes.do_rewrite_insert(i, fm, a, &l);
     for (auto it : l) {
         append_list->push_back(it);
@@ -59,9 +59,8 @@ void rewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
 
 
 void InsertHandler::gather(Analysis &a, LEX *const lex) const {
-        //only select xxx etc?不是的!!!
+        //only select xxx etc? no!!
         process_select_lex(lex->select_lex, a);
-
         // -----------------------
         // ON DUPLICATE KEY UPDATE
         // -----------------------
@@ -69,11 +68,10 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
         auto val_it = List_iterator<Item>(lex->value_list);
         //find plain for field and value rewrite?
         process_field_value_pairs(fd_it, val_it, a);
-
         return;
     }
 
-    AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex)
+AbstractQueryExecutor * InsertHandler::rewrite(Analysis &a, LEX *const lex)
         const{
         LEX *const new_lex = copyWithTHD(lex);
         const std::string &table =
@@ -108,7 +106,6 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
                 if (!i) {
                     break;
                 }
-                //这下也就知道了field item是什么了
                 TEST_TextMessageError(i->type() == Item::FIELD_ITEM,
                                       "Expected field item!");
                 const Item_field *const ifd =
@@ -177,7 +174,6 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
                     //li pointer to items of lex->many_values 
                     auto it0 = List_iterator<Item>(*li);
                     auto fmVecIt = fmVec.begin();
-                   
                     for (;;) {
                         const Item *const i = it0++;
                         assert(!!i == (fmVec.end() != fmVecIt));
@@ -197,7 +193,6 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
             }
             new_lex->many_values = newList;
         }
-
         //for queries with ON DUPLICATE KEY UPDATE
         // -----------------------
         // ON DUPLICATE KEY UPDATE
@@ -216,9 +211,6 @@ void InsertHandler::gather(Analysis &a, LEX *const lex) const {
         }
         return new DMLQueryExecutor(*new_lex, a.rmeta);
     }
-
-
-
 
 class UpdateHandler : public DMLHandler {
     virtual void gather(Analysis &a, LEX *lex) const {
@@ -415,7 +407,6 @@ AbstractQueryExecutor *
 SelectHandler::rewrite(Analysis &a, LEX *lex)
     const{
     LEX *const new_lex = copyWithTHD(lex);
-
     //table list rewrite
     new_lex->select_lex.top_join_list =
         rewrite_table_list(lex->select_lex.top_join_list, a);
@@ -483,8 +474,8 @@ process_select_lex(const st_select_lex &select_lex, Analysis &a)
         numOfItem++;
         gatherAndAddAnalysisRewritePlan(*item, a);
     }
-
-    /*process select_lex.where and select_lex.having, all of which are of the type Item.
+    /*
+      process select_lex.where and select_lex.having, all of which are of the type Item.
       rewriteplain is added for those items. Also, process_order is used internally to process
       select_lex.group_list and select_lex.order_list
     */
@@ -647,13 +638,15 @@ addSaltToReturn(ReturnMeta *const rm, int pos)
     rm->rfmeta.insert(pair);
 }
 
-//Item needs to be encrypted using the RewritePlain from the gather phase. The results will be put in newList, and Analysis is helper class.
+/*Item needs to be encrypted using the RewritePlain from the gather phase. 
+ *The results will be put in newList, and Analysis is helper class.
+ *The rewriteplain contains encset and reason. reason itself also contains the encset.
+*/
 static void
 rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
              List<Item> *const newList) {
     AssignOnce<OLK> olk;
     AssignOnce<Item *> ir;
-
     if (i.type() == Item::Type::FIELD_ITEM) {
         const Item_field &field_i = static_cast<const Item_field &>(i);
         const auto &cached_rewritten_i = a.item_cache.find(&field_i);
@@ -678,7 +671,6 @@ rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
     // This line implicity handles field aliasing for at least some cases.
     // As i->name can/will be the alias.
     addToReturn(&a.rmeta, a.pos++, olk.get(), use_salt, i.name);
-
     if (use_salt) {
         TEST_TextMessageError(Item::Type::FIELD_ITEM == ir.get()->type(),
             "a projection requires a salt and is not a field; cryptdb"
@@ -695,13 +687,11 @@ rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
 }
 
 st_select_lex *
-rewrite_select_lex(const st_select_lex &select_lex, Analysis &a)
-{
+rewrite_select_lex(const st_select_lex &select_lex, Analysis &a) {
     // rewrite_filters_lex must be called before rewrite_proj because
     // it is responsible for filling Analysis::item_cache which
     // rewrite_proj uses.
     st_select_lex *const new_select_lex = rewrite_filters_lex(select_lex, a);
-
     LOG(cdb_v) << "rewrite select lex input is "
                << select_lex << std::endl;
     auto item_it =
@@ -709,9 +699,8 @@ rewrite_select_lex(const st_select_lex &select_lex, Analysis &a)
 
     List<Item> newList;
     int numOfItem=0;
-    //item的改写, 是写到newlist里面, 所以item本身不会有变化.
+    //Rewrite item to new list. and item does not change.
     for (;;) {
-
         const Item *const item = item_it++;
         if (!item)
             break;
@@ -720,19 +709,7 @@ rewrite_select_lex(const st_select_lex &select_lex, Analysis &a)
                      *constGetAssert(a.rewritePlans, item).get(),
                      a, &newList);
     }
-
-//    auto item_it_new =
-//        RiboldMYSQL::constList_iterator<Item>(newList);
-//    std::cout<<"rewrite#############" <<std::endl;
-//    for(;;){
-//        const Item *const item = item_it_new++;
-//        if(!item) break;
-//        std::cout<<"itemname: "<<item->name<<std::endl;
-//     }
-
-//    std::cout<<"num of item: "<<numOfItem<<std::endl;
     new_select_lex->item_list = newList;
-
     return new_select_lex;
 }
 

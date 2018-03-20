@@ -23,12 +23,13 @@ Item *
 rewrite(const Item &i, const EncSet &req_enc, Analysis &a) {
     const std::unique_ptr<RewritePlan> &rp =
         constGetAssert(a.rewritePlans, &i);
+
+    //req_enc can come from the rewriteplain.es_out or ???
     const EncSet solution = rp->es_out.intersect(req_enc);
     // FIXME: Use version that takes reason, expects 0 children,
     // and lets us indicate what our EncSet does have.
     TEST_NoAvailableEncSet(solution, i.type(), req_enc, rp->r.why,
                            std::vector<std::shared_ptr<RewritePlan> >());
-
     return itemTypes.do_rewrite(i, solution.chooseOne(), *rp.get(), a);
 }
 
@@ -141,7 +142,7 @@ rewrite_table_list(List<TABLE_LIST> tll, Analysis &a) {
 RewritePlan *
 gather(const Item &i, Analysis &a)
 {
-    return itemTypes.do_gather(i, a);
+    return itemTypes.do_gather(i,a);
 }
 
 void
@@ -582,7 +583,8 @@ encrypt_item_all_onions(const Item &i, const FieldMeta &fm,
     }
 }
 
-//Called by do_rewrite_insert_type
+//Called by do_rewrite_insert_type, the input Item i is either integer or string, and the returned vector l
+//is a set of encrypted onions and the salt.
 void
 typical_rewrite_insert_type(const Item &i, const FieldMeta &fm,
                             Analysis &a, std::vector<Item *> *l) {
