@@ -1,6 +1,6 @@
 OBJDIRS	+= redisbio
 
-REDISBIO_SRCS := token.cc
+REDISBIO_SRCS := token.cc adlist.cc bio.cc zmalloc.cc
 
 all: $(OBJDIR)/libredisbio.so
 
