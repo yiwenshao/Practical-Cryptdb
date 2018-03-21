@@ -1,0 +1,16 @@
+OBJDIRS	+= redisbio
+
+REDISBIO_SRCS := token.cc
+
+all: $(OBJDIR)/libredisbio.so
+
+REDISBIO_OBJS := $(patsubst %.cc,$(OBJDIR)/redisbio/%.o,$(REDISBIO_SRCS))
+
+$(OBJDIR)/libredisbio.so: $(REDISBIO_OBJS)
+	$(CXX) -shared -g -o $@ $(REDISBIO_OBJS) $(LDFLAGS) $(LDRPATH)
+
+install: install_redisbio
+
+.PHONY: install_redisbio
+install_redisbio: $(OBJDIR)/libredisbio.so
+	install -m 644 $(OBJDIR)/libredisbio.so /usr/lib

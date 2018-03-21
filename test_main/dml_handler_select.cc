@@ -57,6 +57,7 @@ main() {
     std::vector<std::string> querys{
         query1,
         "SELECT SUM(id) FROM student",
+        "SELECT name from student where name like 'stu%'"
     };
     for(auto item:querys){
         std::cout<<item<<std::endl;

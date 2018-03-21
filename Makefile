@@ -16,7 +16,7 @@ CXXFLAGS := -g -O0 -fno-strict-aliasing -fno-rtti -fwrapv -fPIC \
 	    -Wextra -Wmissing-noreturn -Wwrite-strings -Wno-unused-parameter \
 	    -Wno-deprecated \
 	    -Wmissing-declarations -Woverloaded-virtual  \
-	    -Wunreachable-code -D_GNU_SOURCE -std=c++0x -I$(TOP)
+	    -Wunreachable-code -D_GNU_SOURCE -std=c++11 -I$(TOP)
 LDFLAGS  := -L$(TOP)/$(OBJDIR) -Wl,--no-undefined
 
 
@@ -100,6 +100,10 @@ mtl/test_main_exe/%:$(OBJDIR)/test_main/%.o
 	@mkdir -p $(@D)
 	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
+mtl/test_redisbio_exe/%:$(OBJDIR)/test_redisbio/%.o $(OBJDIR)/libredisbio.so
+	@mkdir -p $(@D)
+	$(CXX) -g -o $@ $< $(CXXFLAGS) $(LDFLAGS) -lredisbio
+
 include crypto/Makefrag
 include parser/Makefrag
 include main/Makefrag
@@ -113,6 +117,8 @@ include test_parser/Makefrag
 include test_main/Makefrag
 include wrapper/Makefrag
 include test_parser_helper/Makefrag
+include redisbio/Makefrag
+include test_redisbio/Makefrag
 
 $(OBJDIR)/.deps: $(foreach dir, $(OBJDIRS), $(wildcard $(OBJDIR)/$(dir)/*.d))
 	@mkdir -p $(@D)

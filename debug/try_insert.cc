@@ -14,6 +14,7 @@
 
 extern CItemTypesDir itemTypes;
 static std::string embeddedDir="/t/cryt/shadow";
+//expand the item
 template <typename ContainerType>
 void myRewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
                          ContainerType *const append_list){
