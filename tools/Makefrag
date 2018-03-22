@@ -1,0 +1,8 @@
+OBJDIRS	+= tools
+
+##note that xx=*.cc will not expand. wildcard *.cc will include files from other directories.
+##%.o will include testall
+TESTTOOLS_OBJS := $(patsubst %.cc,$(OBJDIR)/%.o,$(wildcard tools/*.cc))
+TESTTOOLS_EXES := $(patsubst tools/%.cc,mtl/tools/%,$(wildcard tools/*.cc))
+
+all: $(TESTTOOLS_OBJS) $(TESTTOOLS_EXES)
