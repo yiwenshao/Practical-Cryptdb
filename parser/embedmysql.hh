@@ -15,7 +15,7 @@ class query_parse {
     LEX *lex();
  private:
     void cleanup();
-    THD *t;
-    Parser_state ps; /*这里包含了词法分析和语法分析时候, 使用的内部状态*/
+    THD *t; /*used to hold current_thd*/
+    Parser_state ps; /*the internal state used by parser*/
 };
 

@@ -34,21 +34,13 @@ static std::string getInsertResults(Analysis a,LEX* lex){
             lex->select_lex.table_list.first->db;
         //from databasemeta to tablemeta.
         const TableMeta &tm = a.getTableMeta(db_name, table);
-
         //rewrite table name
         new_lex->select_lex.table_list.first =
             rewrite_table_list(lex->select_lex.table_list.first, a);
-
         std::vector<FieldMeta *> fmVec;
-        std::vector<Item *> implicit_defaults;
-        
-        // No field list, use the table order.
-        assert(fmVec.empty());
         std::vector<FieldMeta *> fmetas = tm.orderedFieldMetas();
         fmVec.assign(fmetas.begin(), fmetas.end());
-
         if (lex->many_values.head()) {
-            //start processing many values
             auto it = List_iterator<List_item>(lex->many_values);
             List<List_item> newList;
             for (;;) {
@@ -58,27 +50,18 @@ static std::string getInsertResults(Analysis a,LEX* lex){
                 }
                 List<Item> *const newList0 = new List<Item>();
                 if (li->elements != fmVec.size()) {
-                    TEST_TextMessageError(0 == li->elements
-                                         && NULL == lex->field_list.head(),
-                                          "size mismatch between fields"
-                                          " and values!");
+                    exit(0);
                 } else {
                     auto it0 = List_iterator<Item>(*li);
                     auto fmVecIt = fmVec.begin();
-
                     for (;;) {
                         const Item *const i = it0++;
                         assert(!!i == (fmVec.end() != fmVecIt));
                         if (!i) {
                             break;
                         }
-                        //fetch values, and use fieldMeta to facilitate rewrite
-                        //every filed should be encrypted with onions of encryption
                         myRewriteInsertHelper(*i, **fmVecIt, a, newList0);
                         ++fmVecIt;
-                    }
-                    for (auto def_it : implicit_defaults) {
-                        newList0->push_back(def_it);
                     }
                 }
                 newList.push_back(newList0);
@@ -86,6 +69,8 @@ static std::string getInsertResults(Analysis a,LEX* lex){
             new_lex->many_values = newList;
         }
         return lexToQuery(*new_lex);
+       
+        return "aa";
 }
 
 
@@ -106,11 +91,14 @@ static void testInsertHandler(std::string query){
     //just like what we do in Rewrite::rewrite,dispatchOnLex
     Analysis analysis(std::string("tdb"),*schema,TK,
                         SECURITY_RATING::SENSITIVE);
+    (void)analysis;
+
     std::unique_ptr<query_parse> p;
     p = std::unique_ptr<query_parse>(
                 new query_parse("tdb", query));
     LEX *const lex = p->lex();
     std::cout<<getInsertResults(analysis,lex)<<std::endl;
+    (void)lex;
 }
 
 int
@@ -132,13 +120,14 @@ main() {
     assert(shared_ps!=NULL);
     UNUSED(testInsertHandler);
     UNUSED(getInsertResults);
-//    std::string query1 = "insert into student values(1,\"zhangfei\")";
-/*    std::vector<std::string> querys{query1};
-    for(auto item:querys){
-        std::cout<<item<<std::endl;
-        testInsertHandler(item);
-        std::cout<<std::endl;
+    std::string query1 = "insert into student values(1,\"zhangfei\")";
+    std::vector<std::string> queries{query1};
+    for(unsigned int i=0u;i<100u;i++){
+        //queries.push_back(query1);
     }
-*/
+    for(auto item:queries){
+        testInsertHandler(item);
+    }
+
     return 0;
 }

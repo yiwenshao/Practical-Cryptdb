@@ -79,7 +79,7 @@ getInnoDBPlugin()
 query_parse::query_parse(const std::string &db, const std::string &q)
 {
     assert(create_embedded_thd(0));
-    //类内自带的THD* t结构.
+    //THD* t.
     t = current_thd;
     assert(t != NULL);
 
