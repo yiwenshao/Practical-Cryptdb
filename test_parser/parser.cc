@@ -22,7 +22,7 @@ int main() {
     }
     embeddedDir = std::string(buffer)+"/shadow";
     free(buffer);
-//    init_mysql(embeddedDir);
+    init_mysql(embeddedDir);
     std::string filename = std::string(cryptdb_dir)+"/test_parser/"+"template";
     std::string line="show databases;";
     std::unique_ptr<query_parse> p;

@@ -109,6 +109,10 @@ std::string OnionMeta::getAnonOnionName() const{
     return onionname;
 }
 
+/*
+ *Called by loadchildren.The deserialHelper uses the deserializer of the Enclayers to recover them, and the
+ *DBMeta::doFetchChildren reads raw data from embedded MySQL.
+*/
 std::vector<DBMeta *>
 OnionMeta::fetchChildren(const std::unique_ptr<Connect> &e_conn){
     std::function<DBMeta *(const std::string &,

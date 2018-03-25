@@ -230,33 +230,24 @@ EncLayerFactory::deserializeLayer(unsigned int id,
                                   const std::string &serial){
     assert(id);
     const SerialLayer li = serial_unpack(serial);
-
     switch (li.l) {
         case SECLEVEL::RND:
             return RNDFactory::deserialize(id, li);
-
         case SECLEVEL::DET:
             return DETFactory::deserialize(id, li);
-
         case SECLEVEL::DETJOIN:
             return DETJOINFactory::deserialize(id, li);
-
         case SECLEVEL::OPEFOREIGN:
             return OPEFOREIGNFactory::deserialize(id,li);
-
         case SECLEVEL::OPE:
             return OPEFactory::deserialize(id, li);
-
         case SECLEVEL::HOM:
             return std::unique_ptr<EncLayer>(new HOM(id, serial));
         case SECLEVEL::ASHE: return std::unique_ptr<EncLayer>(new ASHE(id, serial));
-
         case SECLEVEL::SEARCH:
             return std::unique_ptr<EncLayer>(new Search(id, serial));
-
         case SECLEVEL::PLAINVAL:
             return std::unique_ptr<EncLayer>(new PlainText(id));
-
         default:{}
     }
     FAIL_TextMessageError("unknown or unimplemented security level");
@@ -286,7 +277,6 @@ lowLevelcreateFieldHelper(const Create_field &f,
                           const std::string &anonname = "",
                           CHARSET_INFO * const charset = NULL)
 {
-    //从内存分配新的Create_field
     const THD * const thd = current_thd;
     Create_field * const f0 = f.clone(thd->mem_root);
     f0->length = field_length;
