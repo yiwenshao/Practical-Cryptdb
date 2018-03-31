@@ -19,9 +19,7 @@ genericPreamble(const NextParams &nparams)
     // We handle before any queries because a failed query
     // may stale the database during recovery and then
     // we'd have to handle there as well.
-
-    //首先根据stales来设置这个executor会不会让当前在shared中的cache变成stale,对于simple来说, 继承的是默认的情况, 所以
-    //不会设置cache为stale, 也就是下次进入rewrite的时候, 不需要重新load.
+    //stales, if set true, will set the cache status to stale, which triggers the reloading of metadata. The default value of stale, which is from AbstractQueryExecutor, is false.
     try {
         nparams.ps.getSchemaCache().updateStaleness(
             nparams.ps.getEConn(), this->stales());

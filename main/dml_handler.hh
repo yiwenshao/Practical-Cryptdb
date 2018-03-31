@@ -27,14 +27,12 @@ class SpecialUpdateExecutor : public AbstractQueryExecutor {
     const std::string plain_table;
     const std::string crypted_table;
     const std::string where_clause;
-
     // coroutine state
     AssignOnce<ResType> dec_res;
     AssignOnce<DBResult *> original_query_dbres;
     AssignOnce<std::string> escaped_output_values;
     AssignOnce<ReturnMeta> select_rmeta;
     AssignOnce<bool> in_trx;
-
 public:
     SpecialUpdateExecutor(const std::string &plain_table,
                           const std::string &crypted_table,
@@ -154,7 +152,3 @@ rewrite_field_value_pairs(List_iterator<Item> fd_it,
                           List_iterator<Item> val_it, Analysis &a,
                           List<Item> *const res_fields,
                           List<Item> *const res_values);
-
-
-
-

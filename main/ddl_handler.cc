@@ -373,8 +373,7 @@ SQLDispatcher *buildDDLDispatcher()
 
 std::pair<AbstractQueryExecutor::ResultType, AbstractAnything *>
 DDLQueryExecutor::
-nextImpl(const ResType &res, const NextParams &nparams)
-{
+nextImpl(const ResType &res, const NextParams &nparams) {
     reenter(this->corot) {
         yield {
             {
@@ -393,7 +392,6 @@ nextImpl(const ResType &res, const NextParams &nparams)
         TEST_ErrPkt(res.success(), "DDL query failed");
         // save the results so we can return them to the client
         this->ddl_res = res;
-
         yield {
             return CR_QUERY_AGAIN(
                 " INSERT INTO " + MetaData::Table::remoteQueryCompletion() +
@@ -402,20 +400,17 @@ nextImpl(const ResType &res, const NextParams &nparams)
                 "    '"+TypeText<CompletionType>::toText(CompletionType::Onion)+"'"
                 "   );");
         }
-
         TEST_ErrPkt(res.success(), "failed issuing ddl completion");
-
         // execute the original query against the embedded database
         // > this is a ddl query so do not put it into a transaction
         TEST_ErrPkt(nparams.ps.getEConn()->execute(nparams.original_query),
                    "Failed to execute DDL query against embedded database!");
-
         TEST_ErrPkt(deltaOutputAfterQuery(nparams.ps.getEConn(), this->deltas,
                                           this->embedded_completion_id.get()),
                    "deltaOuputAfterQuery failed for DDL");
         yield return CR_RESULTS(this->ddl_res.get());
     }
-
     assert(false);
 }
+
 

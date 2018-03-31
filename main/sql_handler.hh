@@ -1,10 +1,7 @@
 #pragma once
-
 #include <main/Analysis.hh>
 #include <util/yield.hpp>
-
 #include <sql_lex.h>
-
 #include <map>
 
 #define CR_QUERY_AGAIN(query)                                               \
@@ -25,7 +22,6 @@ class Anything;
 class AbstractAnything {
 public:
     virtual ~AbstractAnything() = 0;
-
     template <typename Type>
     Type
     extract() const
@@ -62,22 +58,18 @@ struct NextParams {
 class AbstractQueryExecutor {
 protected:
     coroutine corot;
-
 public:
     enum class ResultType {RESULTS, QUERY_COME_AGAIN, QUERY_USE_RESULTS};
-
     AbstractQueryExecutor() {}
     virtual ~AbstractQueryExecutor();
     std::pair<ResultType, AbstractAnything *>
         next(const ResType &res, const NextParams &nparams);
-
     virtual std::pair<ResultType, AbstractAnything *>
         nextImpl(const ResType &res, const NextParams &nparams) = 0;
     //true will set the staleness of the current cache id to true, which results in a reloading of schemaInfo
     virtual bool stales() const {return false;}
     //if usesEmbedded is true, then the current db of the embedded MySQL is set to embedded_db
     virtual bool usesEmbedded() const {return false;}
-
 private:
     void genericPreamble(const NextParams &nparams);
 };
@@ -95,7 +87,6 @@ class NoOpExecutor : public AbstractQueryExecutor {
 public:
     NoOpExecutor() {}
     ~NoOpExecutor() {}
-
     std::pair<ResultType, AbstractAnything *>
         nextImpl(const ResType &res, const NextParams &nparams);
 };
