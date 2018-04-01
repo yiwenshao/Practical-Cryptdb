@@ -195,8 +195,8 @@ OLK EncSet::extract_singleton() const
 static bool
 needsSalt(SECLEVEL l)
 {
-//    return l == SECLEVEL::RND||l==SECLEVEL::ASHE;
-      return l == SECLEVEL::RND;
+    return l == SECLEVEL::RND||l==SECLEVEL::ASHE;
+//      return l == SECLEVEL::RND;
 }
 
 bool

@@ -907,8 +907,7 @@ do_optimize_const_item(T *i, Analysis &a) {
 //Layers of decryption
 static Item *
 decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
-                    uint64_t IV)
-{
+                    uint64_t IV) {
     assert(!RiboldMYSQL::is_null(i));
     const Item *dec = &i;
     Item *out_i = NULL;
@@ -919,8 +918,12 @@ decrypt_item_layers(const Item &i, const FieldMeta *const fm, onion o,
     const auto &enc_layers = om->getLayers();
     for (auto it = enc_layers.rbegin(); it != enc_layers.rend(); ++it) {
         if(o==oASHE) {
-            out_i = ((ASHE&)(*it)).decrypt_sum(*dec);
-            break;
+            if(dec->type()!=Item::INT_ITEM){
+                out_i = ((ASHE&)(*it)).decrypt_sum(*dec);
+                break;
+            }else{
+                out_i = (*it)->decrypt(*dec,IV);
+            }
         }
         out_i = (*it)->decrypt(*dec, IV);
         assert(out_i);
@@ -1402,16 +1405,12 @@ std::string ReturnMeta::stringify() {
  *
 */
 ResType
-Rewriter::decryptResults(const ResType &dbres, const ReturnMeta &rmeta)
-{
+Rewriter::decryptResults(const ResType &dbres, const ReturnMeta &rmeta) {
     assert(dbres.success());
-
     const unsigned int rows = dbres.rows.size();
     const unsigned int cols = dbres.names.size();
-
     // un-anonymize the names
     std::vector<std::string> dec_names;
-
     for (auto it = dbres.names.begin();
         it != dbres.names.end(); it++) {
         const unsigned int index = it - dbres.names.begin();
@@ -1422,14 +1421,12 @@ Rewriter::decryptResults(const ResType &dbres, const ReturnMeta &rmeta)
             dec_names.push_back(rf.fieldCalled());
         }
     }
-
     const unsigned int real_cols = dec_names.size();
-
     std::vector<std::vector<Item *> > dec_rows(rows);
     for (unsigned int i = 0; i < rows; i++) {
         dec_rows[i] = std::vector<Item *>(real_cols);
     }
-    //
+    //fields
     unsigned int col_index = 0;
     for (unsigned int c = 0; c < cols; c++) {
         const ReturnField &rf = rmeta.rfmeta.at(c);
@@ -1437,9 +1434,7 @@ Rewriter::decryptResults(const ResType &dbres, const ReturnMeta &rmeta)
             continue;
         }
         FieldMeta *const fm = rf.getOLK().key;
-
         for (unsigned int r = 0; r < rows; r++) {
-
             if (!fm || dbres.rows[r][c]->is_null()) {
                 dec_rows[r][col_index] = dbres.rows[r][c];
             } else {

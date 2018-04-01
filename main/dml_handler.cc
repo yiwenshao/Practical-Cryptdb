@@ -666,7 +666,8 @@ rewrite_proj(const Item &i, const RewritePlan &rp, Analysis &a,
     //Different form INSERT, SELECT needs only one onion.
     assert(ir.assigned() && ir.get());
     newList->push_back(ir.get());
-    const bool use_salt = needsSalt(olk.get());
+    bool use_salt = needsSalt(olk.get());
+    if(i.type()==Item::SUM_FUNC_ITEM) use_salt=false;
 
     // This line implicity handles field aliasing for at least some cases.
     // As i->name can/will be the alias.
@@ -1648,12 +1649,10 @@ nextImpl(const ResType &res, const NextParams &nparams)
 
 std::pair<AbstractQueryExecutor::ResultType, AbstractAnything *>
 ShowTablesExecutor::
-nextImpl(const ResType &res, const NextParams &nparams)
-{
+nextImpl(const ResType &res, const NextParams &nparams){
     reenter(this->corot) {
         yield return CR_QUERY_AGAIN(nparams.original_query);
         TEST_ErrPkt(res.success(), "show tables failed");
-
         yield {
             const std::shared_ptr<const SchemaInfo> &schema =
                 nparams.ps.getSchemaInfo();
@@ -1662,14 +1661,12 @@ nextImpl(const ResType &res, const NextParams &nparams)
             TEST_ErrPkt(dm, "failed to find the database '"
                             + nparams.default_db + "'");
             std::vector<std::vector<Item *> > new_rows;
-
             for (const auto &it : res.rows) {
                 assert(1 == it.size());
                 for (const auto &table : dm->getChildren()) {    
                     assert(table.second);
                     if (table.second->getAnonTableName()
                         == ItemToString(*it.front())) {
-
                         const IdentityMetaKey &plain_table_name
                             = dm->getKey(*table.second.get());
                         new_rows.push_back(std::vector<Item *>
