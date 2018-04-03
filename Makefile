@@ -108,6 +108,10 @@ mtl/tools/%:$(OBJDIR)/tools/%.o $(OBJDIR)/libredisbio.so $(OBJDIR)/libwrapper.so
 	@mkdir -p $(@D)
 	$(CXX) -g -o $@ $< $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper  -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto -lredisbio 
 
+mtl/test_crypto_exe/%:$(OBJDIR)/test_crypto/%.o
+	@mkdir -p $(@D)
+	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -ledbutil -lntl -ledbcrypto -lcrypto
+
 
 include crypto/Makefrag
 include parser/Makefrag
@@ -125,6 +129,7 @@ include test_parser_helper/Makefrag
 include redisbio/Makefrag
 include test_redisbio/Makefrag
 include tools/Makefrag
+include test_crypto/Makefrag
 
 $(OBJDIR)/.deps: $(foreach dir, $(OBJDIRS), $(wildcard $(OBJDIR)/$(dir)/*.d))
 	@mkdir -p $(@D)

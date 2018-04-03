@@ -3,7 +3,6 @@
 #include <iostream>
 #include <memory>
 #include <iomanip>
-
 #include <crypto/padding.hh>
 #include <crypto/prng.hh>
 #include <crypto/BasicCrypto.hh>
