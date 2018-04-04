@@ -3,6 +3,7 @@
 #include "zmalloc.h"
 
 
+
 list *listCreate(void){
     struct list *list;
     // 分配内存

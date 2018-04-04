@@ -1,0 +1,9 @@
+show databases;
+create database temp;
+use temp;
+create table student(id integer);
+show tables;
+insert into student values(1),(2),(3),(4),(5);
+select * from student;
+select sum(id) from student;
+drop database temp;
