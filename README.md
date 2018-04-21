@@ -22,6 +22,7 @@ If you meet any problems installing it, or if you meet bugs or need new features
 
 New features added
 
++ Configurable Onions
 + foreign key constraint
 
 ```
