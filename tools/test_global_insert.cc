@@ -21,6 +21,11 @@
 
 extern CItemTypesDir itemTypes;
 static std::string embeddedDir="/t/cryt/shadow";
+SchemaInfo *gschema;
+AES_KEY *gkey;
+std::string gdb="tdb";
+
+
 //expand the item
 template <typename ContainerType>
 void myRewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
@@ -31,7 +36,6 @@ void myRewriteInsertHelper(const Item &i, const FieldMeta &fm, Analysis &a,
         append_list->push_back(it);
     }
 }
-
 
 static std::string 
 getInsertResults(Analysis a,LEX* lex){
@@ -79,10 +83,6 @@ getInsertResults(Analysis a,LEX* lex){
         return lexToQuery(*new_lex);
         return "aa";
 }
-
-SchemaInfo *gschema;
-AES_KEY *gkey;
-std::string gdb="tdb";
 
 static
 int
@@ -141,7 +141,7 @@ main() {
     std::string query1 = "insert into student values(1,\"zhangfei\")";
     std::vector<std::string> queries{query1};
     for(unsigned int i=0u;i<100u;i++){
-        //queries.push_back(query1);
+        queries.push_back(query1);
     }
     for(auto item:queries){
         testInsertHandler();
