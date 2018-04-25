@@ -24,12 +24,9 @@ using std::endl;
 using std::vector;
 using std::string;
 using std::to_string;
-static std::string embeddedDir="/t/cryt/shadow";
 char * globalEsp=NULL;
 int num_of_pipe = 4;
 //global map, for each client, we have one WrapperState which contains ProxyState.
-static std::map<std::string, WrapperState*> clients;
-
 static
 std::string logfilePrefix = "final_load";
 
@@ -42,32 +39,6 @@ logToFile glog(logfileName);
 
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
-/*for each field, convert the format to FieldMeta_Wrapper*/
-static void init(){
-    std::string client="192.168.1.1:1234";
-    //one Wrapper per user.
-    clients[client] = new WrapperState();    
-    //Connect phase
-    ConnectionInfo ci("localhost", "root", "letmein",3306);
-    const std::string master_key = "113341234";
-    char *buffer;
-    if((buffer = getcwd(NULL, 0)) == NULL){  
-        perror("getcwd error");  
-    }
-    embeddedDir = std::string(buffer)+"/shadow";
-    SharedProxyState *shared_ps = 
-			new SharedProxyState(ci, embeddedDir , master_key, 
-                                            determineSecurityRating());
-    assert(0 == mysql_thread_init());
-    //we init embedded database here.
-    clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
-    clients[client]->ps->safeCreateEmbeddedTHD();
-    //Connect end!!
-    globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
-}
-
-//========================================================================================//
-
 
 fullBackUp gfb;
 
@@ -129,19 +100,7 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
     /*choosen onions should all be included in gfb. salt is also included
       it's hard to decide whether a FieldMetaTrans has salt because the senmantic is different from that of FieldMeta.
     */
-
     for(auto &item:res){
-
-/*        for(auto i:item.getChoosenOnionName()){
-            field_names.push_back(i);
-        }
-        for(auto i:item.getChoosenFieldTypes()){
-            field_types.push_back(i);
-        }
-        for(auto i:item.getChoosenFieldLengths()){
-            field_lengths.push_back(i);
-        }
-*/
         //only choose onions that are used.
         for(auto i=0u;i<item.getChoosenOnionName().size();i++){
             onion o = item.getChoosenOnionO()[i];
@@ -193,7 +152,7 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
 static ResType load_files(std::string db, std::string table){
     timer t_load_files;
 
-    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
+    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(gembeddedDir);
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
     TableMetaTrans res_meta = loadTableMetaTrans(db,table);
@@ -337,13 +296,13 @@ List<Item> * processRow(const std::vector<Item *> &row,
 int
 main(int argc, char* argv[]){
     timer t_init;
-    init();
+
 
     glog<<"init: "<<
           std::to_string(t_init.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
 
-    create_embedded_thd(0);
+
     std::string db="tdb",table="student";
     std::string ip="localhost";
     if(argc==4){
@@ -351,7 +310,11 @@ main(int argc, char* argv[]){
         db = std::string(argv[2]);
         table = std::string(argv[3]);
     }
-    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
+
+    globalConn = globalInit(ip,3306);
+    create_embedded_thd(0);
+
+    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(gembeddedDir);
     schema.get();
     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
     Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);

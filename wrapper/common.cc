@@ -5,6 +5,36 @@
 
 using std::ifstream;
 
+//used to init global and embedded db
+std::map<std::string, WrapperState*> gclients;
+std::string gembeddedDir;
+
+Connect  * globalInit(std::string ip,int port) {
+    std::string client="192.168.1.1:1234";
+    //one Wrapper per user.
+    gclients[client] = new WrapperState();    
+    //Connect phase
+    ConnectionInfo ci(ip, "root", "letmein",port);
+    const std::string master_key = "113341234";
+    char *buffer;
+    if((buffer = getcwd(NULL, 0)) == NULL){  
+        perror("getcwd error");  
+    }
+    gembeddedDir = std::string(buffer)+"/shadow";
+    SharedProxyState *shared_ps = 
+			new SharedProxyState(ci, gembeddedDir , master_key, 
+                                            determineSecurityRating());
+    assert(0 == mysql_thread_init());
+    //we init embedded database here.
+    gclients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
+    gclients[client]->ps->safeCreateEmbeddedTHD();
+    //Connect end!!
+    return new Connect(ip, ci.user, ci.passwd, port);
+}
+
+
+
+
 string metadata_files::serialize_vec_int(string s,vector<int> vec_int){
     s+=":";
     for(auto item:vec_int){

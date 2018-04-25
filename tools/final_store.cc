@@ -1,34 +1,7 @@
 #include "wrapper/common.hh"
 #include "wrapper/reuse.hh"
-static std::string embeddedDir="/t/cryt/shadow";
-//global map, for each client, we have one WrapperState which contains ProxyState.
-static std::map<std::string, WrapperState*> clients;
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
-
-static void init(std::string ip,int port){
-    std::string client="192.168.1.1:1234";
-    //one Wrapper per user.
-    clients[client] = new WrapperState();    
-    //Connect phase
-    ConnectionInfo ci("localhost", "root", "letmein",port);
-    const std::string master_key = "113341234";
-    char *buffer;
-    if((buffer = getcwd(NULL, 0)) == NULL){  
-        perror("getcwd error");  
-    }
-    embeddedDir = std::string(buffer)+"/shadow";
-    SharedProxyState *shared_ps = 
-			new SharedProxyState(ci, embeddedDir , master_key, 
-                                            determineSecurityRating());
-    assert(0 == mysql_thread_init());
-    //we init embedded database here.
-    clients[client]->ps = std::unique_ptr<ProxyState>(new ProxyState(*shared_ps));
-    clients[client]->ps->safeCreateEmbeddedTHD();
-    //Connect end!!
-    globalConn = new Connect(ip, ci.user, ci.passwd, port);
-}
-
 
 //query for testing purposes
 static
@@ -86,7 +59,7 @@ void write_raw_data_to_files(MySQLColumnData& resraw,std::vector<FieldMetaTrans>
 }
 
 static void store(std::string db, std::string table){
-    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
+    std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(gembeddedDir);
     //get all the fields in the tables
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
 
@@ -97,15 +70,11 @@ static void store(std::string db, std::string table){
         res.push_back(ft);
         res.back().trans(fms[i]);
     }
-
     /*this is our strategy, each field should be able to choose the selected onion*/
     storeStrategies(res);
-
     //generate the backup query and then fetch the tuples
     std::string backup_query = getTestQuery(*schema,res,db,table);
-
     MySQLColumnData resraw =  executeAndGetColumnData(globalConn,backup_query);
-
     //then we should set the type and length of FieldMetaTrans
     auto types = resraw.fieldTypes;
     auto lengths = resraw.maxLengths;
@@ -125,7 +94,6 @@ static void store(std::string db, std::string table){
             item.setSaltLength(lengths[base_lengths++]);
         }
     }
-
     //write the tuples into files
     write_raw_data_to_files(resraw,res,db,table);
 }
@@ -140,7 +108,7 @@ main(int argc, char* argv[]){
         db = std::string(argv[2]);
         table = std::string(argv[3]);
     }
-    init(ip,port);
+    globalConn = globalInit(ip,port);
     store(db,table);
     return 0;
 }

@@ -16,7 +16,11 @@ using std::vector;
 using std::string;
 using std::to_string;
 
-
+//used to init global and embedded db
+extern std::map<std::string, WrapperState*> gclients;
+Connect *
+globalInit(std::string ip,int port);
+extern std::string gembeddedDir;
 
 class metadata_files{
 public:
