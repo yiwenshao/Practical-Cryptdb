@@ -371,7 +371,7 @@ executeAndGetColumnData(Connect * curConn,std::string query){
     MySQLColumnData myRaw;
     
     if(dbres==nullptr||dbres->n==NULL){
-        std::cout<<"no results"<<std::endl;
+        //std::cout<<"no results"<<std::endl;
         return myRaw;
     }
 

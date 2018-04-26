@@ -1,4 +1,4 @@
-loadCount:1
+loadCount:10
 pipelineCount:1000
 useASHE:true
 useHOM:false
