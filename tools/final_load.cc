@@ -40,7 +40,7 @@ logToFile glog(logfileName);
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
 
-fullBackUp gfb;
+fullBackUp *gfb;
 
 struct batch{
     vector<string> field_names;
@@ -48,7 +48,20 @@ struct batch{
     vector<int> field_lengths;
 };
 
-batch ggbt;
+batch *ggbt;
+
+
+
+static
+std::vector<std::string>
+getDbTables(std::string db) {
+    executeAndGetColumnData(globalConn,std::string("use ")+db);
+    MySQLColumnData resraw = executeAndGetColumnData(globalConn,"show tables");
+    return resraw.columnData[0];
+}
+
+
+
 
 /*should choose the right decryption onion*/
 static
@@ -78,14 +91,14 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
         if(use_salt)
             addSaltToReturn(myReturnMeta.get(),pos++);
         //used to record choosen field lengths, onion names , and field types
-        ggbt.field_types.push_back(tfds[i].getChoosenFieldTypes()[index]);
-        ggbt.field_names.push_back(tfds[i].getChoosenOnionName()[index]);
-        ggbt.field_lengths.push_back(tfds[i].getChoosenFieldLengths()[index]);
+        ggbt->field_types.push_back(tfds[i].getChoosenFieldTypes()[index]);
+        ggbt->field_names.push_back(tfds[i].getChoosenOnionName()[index]);
+        ggbt->field_lengths.push_back(tfds[i].getChoosenFieldLengths()[index]);
 
         if(use_salt){
-            ggbt.field_types.push_back(tfds[i].getSaltType());
-            ggbt.field_names.push_back(tfds[i].getSaltName());
-            ggbt.field_lengths.push_back(tfds[i].getSaltLength());
+            ggbt->field_types.push_back(tfds[i].getSaltType());
+            ggbt->field_names.push_back(tfds[i].getSaltName());
+            ggbt->field_lengths.push_back(tfds[i].getSaltLength());
         }
     }
     return myReturnMeta;
@@ -97,7 +110,7 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
     vector<string> field_names;
     vector<int> field_types;
     vector<int> field_lengths;
-    /*choosen onions should all be included in gfb. salt is also included
+    /*choosen onions should all be included in gfb-> salt is also included
       it's hard to decide whether a FieldMetaTrans has salt because the senmantic is different from that of FieldMeta.
     */
     for(auto &item:res){
@@ -125,33 +138,32 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
         }
     }
 
-    gfb.field_names = field_names;
-    gfb.field_types = field_types;
-    gfb.field_lengths = field_lengths;
+    gfb->field_names = field_names;
+    gfb->field_types = field_types;
+    gfb->field_lengths = field_lengths;
 
     //then we should read the vector
     std::string prefix = std::string("data/")+db+"/"+table+"/";
-    for(unsigned int i=0u; i<gfb.field_names.size(); i++) {
-        std::string filename = prefix + gfb.field_names[i];
+    for(unsigned int i=0u; i<gfb->field_names.size(); i++) {
+        std::string filename = prefix + gfb->field_names[i];
         std::vector<std::string> column;
-        if(IS_NUM(gfb.field_types[i])){
+        if(IS_NUM(gfb->field_types[i])){
               loadFileNoEscapeLimitCount(filename,column,constGlobalConstants.loadCount);
         }else{
-              loadFileEscapeLimitCount(filename,column,gfb.field_lengths[i],constGlobalConstants.loadCount);
+              loadFileEscapeLimitCount(filename,column,gfb->field_lengths[i],constGlobalConstants.loadCount);
         }
         std::reverse(column.begin(),column.end());
-        gfb.annoOnionNameToFileVector[gfb.field_names[i]] = std::move(column);
+        gfb->annoOnionNameToFileVector[gfb->field_names[i]] = std::move(column);
     }
     //init another map
-    for(unsigned int i=0;i<gfb.field_names.size();i++){
-        gfb.annoOnionNameToType[gfb.field_names[i]] = gfb.field_types[i];
+    for(unsigned int i=0;i<gfb->field_names.size();i++){
+        gfb->annoOnionNameToType[gfb->field_names[i]] = gfb->field_types[i];
     }
 }
 
 /*load file, decrypt, and then return data plain fields in the type ResType*/
 static ResType load_files(std::string db, std::string table){
     timer t_load_files;
-
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(gembeddedDir);
     //get all the fields in the tables.
     std::vector<FieldMeta*> fms = getFieldMeta(*schema,db,table);
@@ -176,22 +188,28 @@ static ResType load_files(std::string db, std::string table){
           std::to_string(t_load_files.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
 
-    vector<string> field_names = ggbt.field_names;
-    vector<int> field_types = ggbt.field_types;
-    vector<int> field_lengths = ggbt.field_lengths;
+    vector<string> field_names = ggbt->field_names;
+    vector<int> field_types = ggbt->field_types;
+    vector<int> field_lengths = ggbt->field_lengths;
 
     //why do we need this??
     create_embedded_thd(0);
     rawMySQLReturnValue resraw;
     vector<vector<string>> res_field;   
     for(auto item:field_names){
-        res_field.push_back(gfb.annoOnionNameToFileVector[item]);
+        res_field.push_back(gfb->annoOnionNameToFileVector[item]);
+    }
+    //check here
+    for(auto item:res_field){
+        if(item.size()==0) {
+            return ResType(false, 0, 0);
+        }
     }
     //then transform it to ress_fields
     unsigned int length = res_field[0].size();
 
     vector<vector<string>> ress_field;
-    for(unsigned int i=0u;i<length;i++){
+    for(unsigned int i=0u;i<length;i++) {
         vector<string> row;
         for(unsigned int j=0u;j<res_field.size();j++){
             row.push_back(res_field[j][i]);
@@ -236,9 +254,9 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
         const onion o = it.first->getValue();
         OnionMeta * const om = it.second;
         std::string annoOnionName = om->getAnonOnionName();
-        if(gfb.annoOnionNameToFileVector.find(annoOnionName)!=gfb.annoOnionNameToFileVector.end()){
-            enum_field_types type = static_cast<enum_field_types>(gfb.annoOnionNameToType[annoOnionName]);
-            std::vector<std::string> &tempFileVector = gfb.annoOnionNameToFileVector[annoOnionName];
+        if(gfb->annoOnionNameToFileVector.find(annoOnionName)!=gfb->annoOnionNameToFileVector.end()){
+            enum_field_types type = static_cast<enum_field_types>(gfb->annoOnionNameToType[annoOnionName]);
+            std::vector<std::string> &tempFileVector = gfb->annoOnionNameToFileVector[annoOnionName];
             std::string in = tempFileVector.back();            
             if(IS_NUM(type)){
                 unsigned int len = annoOnionName.size();
@@ -259,8 +277,8 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
     }
     std::string saltName = fm.getSaltName();
     if (fm.getHasSalt()) {
-        if(gfb.annoOnionNameToFileVector.find(saltName)!=gfb.annoOnionNameToFileVector.end()){
-            std::vector<std::string> &tempFileVector = gfb.annoOnionNameToFileVector[saltName];
+        if(gfb->annoOnionNameToFileVector.find(saltName)!=gfb->annoOnionNameToFileVector.end()){
+            std::vector<std::string> &tempFileVector = gfb->annoOnionNameToFileVector[saltName];
             std::string in = tempFileVector.back();
             l.push_back( new (current_thd->mem_root)
                                 Item_int(static_cast<ulonglong>(valFromStr(in)))
@@ -296,14 +314,10 @@ List<Item> * processRow(const std::vector<Item *> &row,
 int
 main(int argc, char* argv[]){
     timer t_init;
-
-
     glog<<"init: "<<
           std::to_string(t_init.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
-
-
-    std::string db="tdb",table="student";
+    std::string db="tdb",table="-1";
     std::string ip="localhost";
     if(argc==4){
         ip = std::string(argv[1]);
@@ -323,55 +337,76 @@ main(int argc, char* argv[]){
           std::to_string(t_init.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
 
-    /*choose decryption onion, load and decrypt to plain text*/
-    ResType res =  load_files(db,table);
-
-    glog<<"load_files: "<<
-          std::to_string(t_init.lap()/1000000u)<<
-          "##"<<std::to_string(time(NULL))<<"\n";
-
-    std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
-    const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
-
-
-    /*reencryption to get the encrypted insert!!!*/
-    unsigned int i=0u;
-    while(true){
-        List<List_item> newList;
-        int localCount=0;
-        for(;i<res.rows.size();i++){
-            List<Item> * newList0 = processRow(res.rows[i],
-                                               res.names,
-                                               analysis,db,table);
-            newList.push_back(newList0);
-            localCount++;
-            if(localCount==constGlobalConstants.pipelineCount){
-                std::ostringstream o;
-                insertManyValues(o,newList);
-                std::cout<<(head+o.str())<<std::endl;
-                i++;
-                break;
-            }
+    std::vector<std::string> tables;
+    if(table==std::string("-1")){
+        tables = getDbTables(db);
+        std::map<std::string,int> annIndex;
+        for(unsigned int i=0u;i<tables.size();++i) {
+            annIndex[tables[i]]=i;
         }
-        if(i>=res.rows.size()){
-            if(localCount!=constGlobalConstants.pipelineCount) {
-                std::ostringstream o;
-                insertManyValues(o,newList);
-                std::cout<<(head+o.str())<<std::endl;
-            }
-            break;
+        const DatabaseMeta & dbm = analysis.getDatabaseMeta(db);
+        auto &tableMetas = dbm.getChildren();
+        for(auto & kvtable:tableMetas){
+            auto annoname = kvtable.second->getAnonTableName();
+            auto plainname = kvtable.first.getValue();
+            tables[annIndex[annoname]]=plainname;
         }
+    }else{
+        tables.push_back(table);
     }
-
-    glog<<"reencryptionAndInsert: "<<
-        std::to_string(t_init.lap()/1000000u)<<
-        "##"<<std::to_string(time(NULL))<<"\n";
-
-    for(auto item:gcountMap) {
-        glog<<"onionComputed: "<<
-              TypeText<onion>::toText(item.first)<<"::"<<
-              std::to_string(item.second)<<"\n";
-   }
+    for(auto &table:tables) {
+        gfb = new fullBackUp;
+        ggbt = new batch;
+        glog<<"====================start table: "<<table<<"============================"<<"\n";
+        /*choose decryption onion, load and decrypt to plain text*/
+        ResType res =  load_files(db,table);
+        if(res.success()) {   
+            glog<<"load_files: "<<
+                  std::to_string(t_init.lap()/1000000u)<<
+                  "##"<<std::to_string(time(NULL))<<"\n";    
+            std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
+            const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";    
+            /*reencryption to get the encrypted insert!!!*/
+            unsigned int i=0u;
+            while(true){
+                List<List_item> newList;
+                int localCount=0;
+                for(;i<res.rows.size();i++){
+                    List<Item> * newList0 = processRow(res.rows[i],
+                                                       res.names,
+                                                       analysis,db,table);
+                    newList.push_back(newList0);
+                    localCount++;
+                    if(localCount==constGlobalConstants.pipelineCount){
+                        std::ostringstream o;
+                        insertManyValues(o,newList);
+                        std::cout<<(head+o.str())<<std::endl;
+                        i++;
+                        break;
+                    }
+                }
+                if(i>=res.rows.size()){
+                    if(localCount!=constGlobalConstants.pipelineCount) {
+                        std::ostringstream o;
+                        insertManyValues(o,newList);
+                        std::cout<<(head+o.str())<<std::endl;
+                    }
+                    break;
+                }
+            }    
+            glog<<"reencryptionAndInsert: "<<
+                std::to_string(t_init.lap()/1000000u)<<
+                "##"<<std::to_string(time(NULL))<<"\n";    
+            for(auto item:gcountMap) {
+                glog<<"onionComputed: "<<
+                      TypeText<onion>::toText(item.first)<<"::"<<
+                      std::to_string(item.second)<<"\n";
+            }
+        }
+        glog<<"====================finish table: "<<table<<"============================"<<"\n";
+        gcountMap.clear();
+        delete gfb;
+        delete ggbt;
+    }
     return 0;
 }
-

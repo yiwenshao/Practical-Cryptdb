@@ -72,11 +72,21 @@ struct FieldMeta_Wrapper{
 
 /*Transformed version of FieldMeta*/
 class FieldMetaTrans{
+public://??
+    enum class FILEFORMAT{
+        ESP_STRING,
+        NUM_STRING,
+        NUM_BINARY
+    };
+
+private:
     FieldMeta *originalFm;
     bool hasSalt;
     std::string saltName;
     int saltType;
     int saltLength;
+
+    FILEFORMAT fieldStoreFormat;
 
     std::vector<OnionMeta*> onionsOm;
     std::vector<onion> onionsO;
@@ -89,6 +99,8 @@ class FieldMetaTrans{
     std::vector<int> choosenFieldTypes;
     std::vector<int> choosenFieldLengths;
 public:
+    FILEFORMAT getFeidlStoreFormat(){return fieldStoreFormat;}
+    bool setFieldStoreFormat(FILEFORMAT f){fieldStoreFormat = f;return true;}
     FieldMeta *getOriginalFieldMeta(){return originalFm;}
     void showChoosenOnionO(){std::cout<<"for field "<<originalFm->getFieldName()<<std::endl;
         for(auto item:choosenOnionO){
