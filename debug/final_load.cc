@@ -200,8 +200,7 @@ static ResType load_files(std::string db, std::string table){
     std::vector<FieldMetaTrans> res = res_meta.getFts();
     for(unsigned int i=0;i<fms.size();i++){
         res[i].trans(fms[i]);
-    }
-
+    }    
     glog<<"loadtablemeta: "<<
           std::to_string(t_load_files.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
@@ -228,6 +227,14 @@ static ResType load_files(std::string db, std::string table){
     for(auto item:field_names){
         res_field.push_back(gfb.annoOnionNameToFileVector[item]);
     }
+    //check here
+    for(auto item:res_field){
+        if(item.size()==0) {
+            return ResType(false, 0, 0);
+        }
+    }
+
+
     //then transform it to ress_fields
     unsigned int length = res_field[0].size();
 
@@ -362,7 +369,10 @@ main(int argc, char* argv[]){
 
     /*choose decryption onion, load and decrypt to plain text*/
     ResType res =  load_files(db,table);
-
+    if(!res.success()){
+        glog<<"empty table \n";
+        return 0;
+    }
     glog<<"load_files: "<<
           std::to_string(t_init.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
@@ -408,7 +418,7 @@ main(int argc, char* argv[]){
         glog<<"onionComputed: "<<
               TypeText<onion>::toText(item.first)<<"::"<<
               std::to_string(item.second)<<"\n";
-   }
+    }
     return 0;
 }
 
