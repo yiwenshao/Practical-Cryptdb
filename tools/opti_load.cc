@@ -18,12 +18,12 @@
 #include "util/timer.hh"
 #include "util/log.hh"
 
-using std::cout;
-using std::cin;
-using std::endl;
-using std::vector;
-using std::string;
-using std::to_string;
+struct batch{
+    vector<string> field_names;
+    vector<int> field_types;
+    vector<int> field_lengths;
+};
+
 char * globalEsp=NULL;
 int num_of_pipe = 4;
 //global map, for each client, we have one WrapperState which contains ProxyState.
@@ -36,21 +36,14 @@ std::string logfileName = logfilePrefix+constGlobalConstants.logFile+std::to_str
 static
 logToFile glog(logfileName);
 
-
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
 
 fullBackUp *gfb;
 
-struct batch{
-    vector<string> field_names;
-    vector<int> field_types;
-    vector<int> field_lengths;
-};
+std::map<onion,unsigned long> gcountMap;
 
 batch *ggbt;
-
-
 
 static
 std::vector<std::string>
@@ -61,7 +54,6 @@ getDbTables(std::string db) {
 }
 
 /*should choose the right decryption onion*/
-
 static
 std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
                                       std::vector<FieldMetaTrans> &tfds){
@@ -96,6 +88,8 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
     }
     return myReturnMeta;
 }
+
+
 /*init global full backup. */
 static
 void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
@@ -228,7 +222,7 @@ static ResType load_files(std::string db, std::string table){
     return finalresults;
 }
 
-std::map<onion,unsigned long> gcountMap;
+
 
 static
 void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
@@ -374,8 +368,8 @@ main(int argc, char* argv[]){
                     if(localCount==constGlobalConstants.pipelineCount){
                         std::ostringstream o;
                         insertManyValues(o,newList);
-                        globalConn->execute(head+o.str());
-//                        std::cout<<(head+o.str())<<std::endl;
+//                        globalConn->execute(head+o.str());
+                        std::cout<<(head+o.str())<<std::endl;
                         i++;
                         break;
                     }
@@ -384,8 +378,8 @@ main(int argc, char* argv[]){
                     if(localCount!=constGlobalConstants.pipelineCount) {
                         std::ostringstream o;
                         insertManyValues(o,newList);
-                        globalConn->execute(head+o.str());
-//                        std::cout<<(head+o.str())<<std::endl;
+//                        globalConn->execute(head+o.str());
+                        std::cout<<(head+o.str())<<std::endl;
                     }
                     break;
                 }

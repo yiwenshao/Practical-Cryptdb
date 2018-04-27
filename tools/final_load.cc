@@ -360,48 +360,50 @@ main(int argc, char* argv[]){
         glog<<"====================start table: "<<table<<"============================"<<"\n";
         /*choose decryption onion, load and decrypt to plain text*/
         ResType res =  load_files(db,table);
-        if(res.success()) {   
-            glog<<"load_files: "<<
-                  std::to_string(t_init.lap()/1000000u)<<
-                  "##"<<std::to_string(time(NULL))<<"\n";    
-            std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
-            const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";    
-            /*reencryption to get the encrypted insert!!!*/
-            unsigned int i=0u;
-            while(true){
-                List<List_item> newList;
-                int localCount=0;
-                for(;i<res.rows.size();i++){
-                    List<Item> * newList0 = processRow(res.rows[i],
-                                                       res.names,
-                                                       analysis,db,table);
-                    newList.push_back(newList0);
-                    localCount++;
-                    if(localCount==constGlobalConstants.pipelineCount){
-                        std::ostringstream o;
-                        insertManyValues(o,newList);
-                        std::cout<<(head+o.str())<<std::endl;
-                        i++;
-                        break;
-                    }
-                }
-                if(i>=res.rows.size()){
-                    if(localCount!=constGlobalConstants.pipelineCount) {
-                        std::ostringstream o;
-                        insertManyValues(o,newList);
-                        std::cout<<(head+o.str())<<std::endl;
-                    }
+        if(!res.success()){
+            glog<<"empty table\n";
+            continue;
+        }
+        glog<<"load_files: "<<
+              std::to_string(t_init.lap()/1000000u)<<
+              "##"<<std::to_string(time(NULL))<<"\n";    
+        std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
+        const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";    
+        /*reencryption to get the encrypted insert!!!*/
+        unsigned int i=0u;
+        while(true){
+            List<List_item> newList;
+            int localCount=0;
+            for(;i<res.rows.size();i++){
+                List<Item> * newList0 = processRow(res.rows[i],
+                                                   res.names,
+                                                   analysis,db,table);
+                newList.push_back(newList0);
+                localCount++;
+                if(localCount==constGlobalConstants.pipelineCount){
+                    std::ostringstream o;
+                    insertManyValues(o,newList);
+                    std::cout<<(head+o.str())<<std::endl;
+                    i++;
                     break;
                 }
-            }    
-            glog<<"reencryptionAndInsert: "<<
-                std::to_string(t_init.lap()/1000000u)<<
-                "##"<<std::to_string(time(NULL))<<"\n";    
-            for(auto item:gcountMap) {
-                glog<<"onionComputed: "<<
-                      TypeText<onion>::toText(item.first)<<"::"<<
-                      std::to_string(item.second)<<"\n";
             }
+            if(i>=res.rows.size()){
+                if(localCount!=constGlobalConstants.pipelineCount) {
+                    std::ostringstream o;
+                    insertManyValues(o,newList);
+                    std::cout<<(head+o.str())<<std::endl;
+                }
+                break;
+            }
+        }    
+        glog<<"reencryptionAndInsert: "<<
+            std::to_string(t_init.lap()/1000000u)<<
+            "##"<<std::to_string(time(NULL))<<"\n";    
+        for(auto item:gcountMap) {
+            glog<<"onionComputed: "<<
+                  TypeText<onion>::toText(item.first)<<"::"<<
+                  std::to_string(item.second)<<"\n";
         }
         glog<<"====================finish table: "<<table<<"============================"<<"\n";
         gcountMap.clear();
