@@ -594,9 +594,9 @@ void storeStrategies(std::vector<FieldMetaTrans>& res){
 
 
 static const std::vector<onion> onion_order = {
-        oASHE,
         oDET,
         oOPE,
+        oASHE,
         oAGG, 
 };
 

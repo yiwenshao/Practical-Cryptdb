@@ -348,7 +348,7 @@ main(int argc, char* argv[]){
         glog<<"====================start table: "<<table<<"============================"<<"\n";
         /*choose decryption onion, load and decrypt to plain text*/
         ResType res =  load_files(db,table);
-        if(res.success()) {   
+        if(res.success()) {
             glog<<"load_files: "<<
                   std::to_string(t_init.lap()/1000000u)<<
                   "##"<<std::to_string(time(NULL))<<"\n";    
