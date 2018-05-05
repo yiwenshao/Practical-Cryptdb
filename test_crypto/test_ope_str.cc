@@ -33,20 +33,15 @@ main(int argc,char**argv){
     const size_t plain_size = 4;
     const size_t ciph_size = 8;
     OPE ope(rawkey,8*plain_size,8*ciph_size);
-
-    uint64_t plaintext = 123456789;
-    NTL::ZZ enc,dec;
-    uint64_t enc64;
-
-    timer t;
+    std::string ps = "1234567890";
+    timer t;   
     for(int i=0;i<num_of_tests;i++) {
-        enc = ope.encrypt(ZZFromUint64(plaintext));
+        uint32_t pv = 0;
+        for (uint i = 0; i < plain_size; i++) {
+            pv = pv * 256 + static_cast<int>(ps[i]);
+        }
+        ope.encrypt(to_ZZ(pv));
     }
-    std::cout<<"enc_ope_int_in_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
-    enc64 = uint64FromZZ(enc);
-    for(int i=0;i<num_of_tests;i++) {
-        dec = ope.decrypt(ZZFromUint64(enc64));
-    }
-    std::cout<<"dec_ope_int_in_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+    std::cout<<"enc_ope_str_in_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
     return 0;
 }
