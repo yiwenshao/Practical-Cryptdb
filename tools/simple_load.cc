@@ -36,9 +36,7 @@ std::string logfilePrefix = "final_load";
 static
 std::string logfileName = logfilePrefix+constGlobalConstants.logFile+std::to_string(time(NULL));
 
-static
-logToFile glog(logfileName);
-
+logToFile *glog;
 
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
@@ -94,7 +92,7 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
 
         onion o = tfds[i].getChoosenOnionO()[index];
 
-        glog<<"choosenDecryptionOnion: "<<TypeText<onion>::toText(o)<<"\n";
+        *glog<<"choosenDecryptionOnion: "<<TypeText<onion>::toText(o)<<"\n";
 
         SECLEVEL l = tfds[i].getOriginalFieldMeta()->getOnionMeta(o)->getSecLevel();
         FieldMeta *k = tfds[i].getOriginalFieldMeta();
@@ -153,16 +151,16 @@ void initGfb(std::vector<FieldMetaTrans> &res,std::string db,std::string table){
                 field_names.push_back(item.getChoosenOnionName()[i]);
                 field_types.push_back(item.getChoosenFieldTypes()[i]);
                 field_lengths.push_back(item.getChoosenFieldLengths()[i]);
-                glog<<"usedField: "<<item.getChoosenOnionName()[i]<<"\n";
+                *glog<<"usedField: "<<item.getChoosenOnionName()[i]<<"\n";
             }
         }
         if(item.getHasSalt()){
             field_names.push_back(item.getSaltName());
             field_types.push_back(item.getSaltType());
             field_lengths.push_back(item.getSaltLength());
-            glog<<"useSalt: "<<item.getSaltName()<<"\n";
+            *glog<<"useSalt: "<<item.getSaltName()<<"\n";
         }else{
-            glog<<"do not use salt"<<"\n";
+            *glog<<"do not use salt"<<"\n";
         }
     }
 
@@ -201,18 +199,18 @@ static ResType load_files(std::string db, std::string table){
     for(unsigned int i=0;i<fms.size();i++){
         res[i].trans(fms[i]);
     }    
-    glog<<"loadtablemeta: "<<
+    *glog<<"loadtablemeta: "<<
           std::to_string(t_load_files.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
     //then we should load all the fields available
     initGfb(res,db,table);
-    glog<<"initGfb: "<<
+    *glog<<"initGfb: "<<
           std::to_string(t_load_files.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
 
     std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
 
-    glog<<"getReturnMeta: "<<
+    *glog<<"getReturnMeta: "<<
           std::to_string(t_load_files.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
 
@@ -254,13 +252,13 @@ static ResType load_files(std::string db, std::string table){
     }
     ResType rawtorestype = rawMySQLReturnValue_to_ResType(false, &resraw);
 
-    glog<<"transform: "<<
+    *glog<<"transform: "<<
           std::to_string(t_load_files.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
 
     auto finalresults = decryptResults(rawtorestype,*rm);
 
-    glog<<"descryption: "<<
+    *glog<<"descryption: "<<
            std::to_string(t_load_files.lap()/1000000u)<<
            "##"<<std::to_string(time(NULL))<<"\n";
     return finalresults;
@@ -345,11 +343,6 @@ int
 main(int argc, char* argv[]){
     timer t_init;
     init();
-
-    glog<<"init: "<<
-          std::to_string(t_init.lap()/1000000u)<<
-          "##"<<std::to_string(time(NULL))<<"\n";
-
     create_embedded_thd(0);
     std::string db="tdb",table="student";
     std::string ip="localhost";
@@ -363,17 +356,20 @@ main(int argc, char* argv[]){
     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
     Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);
 
-    glog<<"loadSchema: "<<
+    logToFile ll(table+logfileName);
+    glog = &ll;
+
+    *glog<<"loadSchema: "<<
           std::to_string(t_init.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
 
     /*choose decryption onion, load and decrypt to plain text*/
     ResType res =  load_files(db,table);
     if(!res.success()){
-        glog<<"empty table \n";
+        *glog<<"empty table \n";
         return 0;
     }
-    glog<<"load_files: "<<
+    *glog<<"load_files: "<<
           std::to_string(t_init.lap()/1000000u)<<
           "##"<<std::to_string(time(NULL))<<"\n";
 
@@ -410,12 +406,12 @@ main(int argc, char* argv[]){
         }
     }
 
-    glog<<"reencryptionAndInsert: "<<
+    *glog<<"reencryptionAndInsert: "<<
         std::to_string(t_init.lap()/1000000u)<<
         "##"<<std::to_string(time(NULL))<<"\n";
 
     for(auto item:gcountMap) {
-        glog<<"onionComputed: "<<
+        *glog<<"onionComputed: "<<
               TypeText<onion>::toText(item.first)<<"::"<<
               std::to_string(item.second)<<"\n";
     }

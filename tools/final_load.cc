@@ -34,7 +34,7 @@ static
 std::string logfileName = logfilePrefix+constGlobalConstants.logFile+std::to_string(time(NULL));
 
 static
-logToFile glog(logfileName);
+logToFile glog;
 
 
 //This connection mimics the behaviour of MySQL-Proxy
@@ -352,6 +352,7 @@ main(int argc, char* argv[]){
             tables[annIndex[annoname]]=plainname;
         }
     }else{
+        glog = logToFile(table+logfileName);
         tables.push_back(table);
     }
     for(auto &table:tables) {
@@ -381,18 +382,18 @@ main(int argc, char* argv[]){
                 newList.push_back(newList0);
                 localCount++;
                 if(localCount==constGlobalConstants.pipelineCount){
-                    std::ostringstream o;
-                    insertManyValues(o,newList);
-                    std::cout<<(head+o.str())<<std::endl;
+                    //std::ostringstream o;
+                    //insertManyValues(o,newList);
+                    //std::cout<<(head+o.str())<<std::endl;
                     i++;
                     break;
                 }
             }
             if(i>=res.rows.size()){
                 if(localCount!=constGlobalConstants.pipelineCount) {
-                    std::ostringstream o;
-                    insertManyValues(o,newList);
-                    std::cout<<(head+o.str())<<std::endl;
+                    //std::ostringstream o;
+                    //insertManyValues(o,newList);
+                    //std::cout<<(head+o.str())<<std::endl;
                 }
                 break;
             }
