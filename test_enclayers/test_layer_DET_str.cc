@@ -66,38 +66,6 @@ getItemString(std::string input) {
 }
 
 
-/*
-static
-Item *
-getItemInt(std::string input) {
-    return  new (current_thd->mem_root)
-                                Item_int(static_cast<ulonglong>(valFromStr(input)));
-}
-
-static
-Item *
-getItemString(std::string input) {
-    return MySQLFieldTypeToItem(MYSQL_TYPE_STRING, input);
-}
-
-static
-Create_field* getStringField(int length) {
-    Create_field *f = new Create_field;
-    f->sql_type = MYSQL_TYPE_VARCHAR;
-    f->length = length;
-    return f;
-}
-
-static 
-Create_field* getUnsignedIntField(){
-    Create_field *f = new Create_field;
-    f->sql_type = MYSQL_TYPE_LONG;
-    f->flags |= UNSIGNED_FLAG;
-    return f;
-}
-
-*/
-
 static
 void control(DET_str* ds, Item* plain, int num_of_tests,int length) {
     Item* enc = NULL;
@@ -123,7 +91,7 @@ int
 main(int argc,char**argv) {
     init();
     create_embedded_thd(0);
-    std::string key = "key";
+    std::string key(16,'a');
     Create_field *cf = NULL;
     DET_str* ds = new DET_str(*cf, key);
 
@@ -138,7 +106,7 @@ main(int argc,char**argv) {
         return 0;
     }
     for(int i=1;i<=100;i++) {
-        std::string input = ggetpRandomName(length*i);
+        std::string input ="abc";//= ggetpRandomName(length*i);
         Item* plain = getItemString(input) ;
         control(ds, plain, num_of_tests, length*i) ;
     }
