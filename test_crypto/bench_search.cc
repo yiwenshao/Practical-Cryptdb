@@ -5,7 +5,7 @@ static void
 test_search(int num_of_tests,int len){
     search_priv s("my key");
     std::string input = std::string(len,'a');
-    auto cl = s.transform({"hexxxxxxxxxxxxxxxxxxxllo", "world", input});
+    auto cl = s.transform({"world",input});
     std::cout<<cl.size()<<std::endl;
 }
 int main(){
