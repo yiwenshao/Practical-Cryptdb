@@ -100,6 +100,10 @@ mtl/test_main_exe/%:$(OBJDIR)/test_main/%.o
 	@mkdir -p $(@D)
 	$(CXX) -g -o $@ $^ $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
 
+mtl/test_enclayers_exe/%:$(OBJDIR)/test_enclayers/%.o $(OBJDIR)/libwrapper.so
+	@mkdir -p $(@D)
+	$(CXX) -g -o $@ $< $(CXXFLAGS) $(LDFLAGS)  -L/$(MYBUILD)/libmysqld -lmysqld -laio -lz -ldl -lm -lcrypt -lpthread -lwrapper -lcryptdb -ledbcrypto -ledbutil -ledbparser -lntl -lcrypto
+
 mtl/test_redisbio_exe/%:$(OBJDIR)/test_redisbio/%.o $(OBJDIR)/libredisbio.so
 	@mkdir -p $(@D)
 	$(CXX) -g -o $@ $< $(CXXFLAGS) $(LDFLAGS) -lredisbio
@@ -124,6 +128,7 @@ include test_wrapper/Makefrag
 include test_util/Makefrag
 include test_parser/Makefrag
 include test_main/Makefrag
+include test_enclayers/Makefrag
 include wrapper/Makefrag
 include test_parser_helper/Makefrag
 include redisbio/Makefrag

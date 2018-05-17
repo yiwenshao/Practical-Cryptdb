@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <string>
 
 #include <util/util.hh>
 #include <crypto/prng.hh>
@@ -449,3 +450,14 @@ private:
 
 std::list<std::string> *
 tokenize(const std::string &text);
+
+std::string
+decrypt_AES_CBC(const std::string &ctext, const AES_KEY * deckey, std::string salt, bool dounpad);
+
+std::string
+encrypt_AES_CBC(const std::string &ptext, const AES_KEY * enckey, std::string salt, bool dopad);
+
+std::string
+encrypt_AES_CMC(const std::string &ptext, const AES_KEY * enckey, bool dopad);
+std::string
+decrypt_AES_CMC(const std::string &ctext, const AES_KEY * deckey, bool dopad);
