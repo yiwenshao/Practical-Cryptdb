@@ -14,7 +14,6 @@
 
 int
 main(int argc,char**argv){
-
     RAW_ASHE ashe(1);
     int num_of_tests = 10000;
     if(argc==2){
@@ -23,21 +22,16 @@ main(int argc,char**argv){
         std::cout<<"num_of_tests"<<std::endl;
         return 0;
     }
-
-    unsigned int pt = 1u;
-    
+    unsigned int pt = 1u;    
     timer t;
     std::pair<long,uint64_t> res;
     for(int i=0;i<num_of_tests;i++) {
         res = ashe.encrypt(pt,0);
     }
-
     std::cout<<"enc_ashe_in_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
-
     for(int i=0;i<num_of_tests;i++) {
         ashe.decrypt(res.first,0);
     }
-
     std::cout<<"dec_ashe_in_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
     return 0;
 }
