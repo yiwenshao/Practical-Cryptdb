@@ -66,34 +66,58 @@ getItemString(std::string input) {
 }
 
 
+/*
 static
-void control(DET_str* ds, Item* plain, int num_of_tests,int length) {
+Item *
+getItemInt(std::string input) {
+    return  new (current_thd->mem_root)
+                                Item_int(static_cast<ulonglong>(valFromStr(input)));
+}
+
+static
+Item *
+getItemString(std::string input) {
+    return MySQLFieldTypeToItem(MYSQL_TYPE_STRING, input);
+}
+
+static
+Create_field* getStringField(int length) {
+    Create_field *f = new Create_field;
+    f->sql_type = MYSQL_TYPE_VARCHAR;
+    f->length = length;
+    return f;
+}
+
+static 
+Create_field* getUnsignedIntField(){
+    Create_field *f = new Create_field;
+    f->sql_type = MYSQL_TYPE_LONG;
+    f->flags |= UNSIGNED_FLAG;
+    return f;
+}
+
+*/
+static
+void control(OPE_str* ds, Item* plain, int num_of_tests,int length) {
     Item* enc = NULL;
-    Item* dec = NULL;
     std::cout<<"length: "<<length<<std::endl;
     std::cout<<"num_of_tests: "<<num_of_tests<<std::endl;
     timer t;
     for(int i=0;i<num_of_tests;i++) {
         enc = ds->encrypt(*plain,0u);
     }
-    std::cout<<"ENC_DET_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
-
-    for(int i=0;i<num_of_tests;i++) {
-        dec = ds->decrypt(*enc,0u);
-    }
-    std::cout<<"DEC_DET_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
+    std::cout<<"ENC_OPE_STR_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
     std::cout<<"enclen: "<<enc->str_value.length()<<std::endl;
-    std::cout<<"declen: "<<dec->str_value.length() <<std::endl;
 }
 
 
 int
-main(int argc,char**argv) {
+main(int argc,char** argv) {
     init();
     create_embedded_thd(0);
-    std::string key(16,'a');
+    std::string key = "key";
     Create_field *cf = NULL;
-    DET_str* ds = new DET_str(*cf, key);
+    OPE_str* op = new OPE_str(*cf, key);
 
     int num_of_tests = 10000;
     int length = 16;
@@ -105,11 +129,13 @@ main(int argc,char**argv) {
         std::cout<<"num_of_tests:length"<<std::endl;
         return 0;
     }
+
     for(int i=1;i<=100;i++) {
-        std::string input ="abc";//= ggetpRandomName(length*i);
-        Item* plain = getItemString(input) ;
-        control(ds, plain, num_of_tests, length*i) ;
+        std::string input = ggetpRandomName(length*i);
+        Item* plain = getItemString(input);
+        control(op, plain, num_of_tests, length*i);
     }
+
     return 0;
 }
 
