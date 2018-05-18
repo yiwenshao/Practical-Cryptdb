@@ -147,7 +147,7 @@ private:
     const bool has_default;
     const std::string default_value;
 
-    //added
+    //added by yiwen shao
     enum  enum_field_types sql_type;
 
     SECLEVEL getOnionLevel(onion o) const;
