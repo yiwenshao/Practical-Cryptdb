@@ -96,9 +96,7 @@ main(int argc,char** argv) {
     std::string key = "key";
     Create_field *cf = NULL;
     ASHE* as = new ASHE(*cf, key);
-
     int num_of_tests = 10000;
-
     if(argc==2){
         num_of_tests = std::stoi(std::string(argv[1]));
     }else{
@@ -106,27 +104,19 @@ main(int argc,char** argv) {
         return 0;
     }
     Item * plain = getItemInt("123456789");
-
-    std::cout<<"num_of_tests: "<<num_of_tests<<std::endl;
-    
+    std::cout<<"num_of_tests: "<<num_of_tests<<std::endl;    
     Item* enc = NULL;
     Item* dec = NULL;
-
     timer t;
     for(int i=0;i<num_of_tests;i++) {
         enc = as->encrypt(*plain,0u);
     }
-
     std::cout<<"ENC_ASHE_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
-
     for(int i=0;i<num_of_tests;i++) {
         dec = as->decrypt(*enc,0u);
     }
-
     std::cout<<"DEC_ASHE_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
     (void)dec;
-
     return 0;
 }
 
-//main/schema.cc:83 is use to create layers of encryption

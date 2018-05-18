@@ -113,7 +113,7 @@ main(int argc,char** argv) {
     if(argc==2){
         num_of_tests = std::stoi(std::string(argv[1]));
     }else{
-        std::cout<<"num_of_tests:length"<<std::endl;
+        std::cout<<"num_of_tests"<<std::endl;
         return 0;
     }
    

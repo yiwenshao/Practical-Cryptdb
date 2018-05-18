@@ -25,16 +25,10 @@ using std::vector;
 using std::string;
 using std::to_string;
 static std::string embeddedDir="/t/cryt/shadow";
-
 static std::map<std::string, WrapperState*> clients;
-
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
-
-
 /*for each field, convert the format to FieldMeta_Wrapper*/
-
-
 static void init(){
     std::string client="192.168.1.1:1234";
     //one Wrapper per user.
@@ -57,37 +51,12 @@ static void init(){
     //Connect end!!
     globalConn = new Connect(ci.server, ci.user, ci.passwd, ci.port);
 }
-
 static
 Item *
 getItemInt(std::string input) {
     return  new (current_thd->mem_root)
                                 Item_int(static_cast<ulonglong>(valFromStr(input)));
 }
-/*
-static
-Item *
-getItemString(std::string input) {
-    return MySQLFieldTypeToItem(MYSQL_TYPE_STRING, input);
-}
-
-static
-Create_field* getStringField(int length) {
-    Create_field *f = new Create_field;
-    f->sql_type = MYSQL_TYPE_VARCHAR;
-    f->length = length;
-    return f;
-}
-
-static 
-Create_field* getUnsignedIntField(){
-    Create_field *f = new Create_field;
-    f->sql_type = MYSQL_TYPE_LONG;
-    f->flags |= UNSIGNED_FLAG;
-    return f;
-}
-
-*/
 
 int
 main(int argc,char**argv) {
@@ -96,7 +65,6 @@ main(int argc,char**argv) {
     std::string key = "key";
     Create_field *cf = NULL;
     HOM* hm = new HOM(*cf, key);
-
     int num_of_tests = 10000;
     if(argc==2){
         num_of_tests = std::stoi(std::string(argv[1]));
@@ -107,25 +75,16 @@ main(int argc,char**argv) {
     Item* plain = getItemInt("123456789");
     Item *enc = NULL;
     Item *dec = NULL;
-
     std::cout<<"num_of_tests: "<<num_of_tests <<std::endl;
-
     timer t;
-    
     for(int i=0;i<num_of_tests;i++) {
         enc = hm->encrypt(*plain,0u);
     }
-
     std::cout<<"HOM_ENC_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
-
     for(int i=0;i<num_of_tests;i++) {
         dec = hm->decrypt(*enc,0u);
     }
-
     std::cout<<"HOM_DEC_IN_us: "<<t.lap()*1.0/num_of_tests<<std::endl;
-
     (void)dec;
     return 0;
 }
-
-//main/schema.cc:83 is use to create layers of encryption

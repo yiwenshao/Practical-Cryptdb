@@ -31,9 +31,7 @@ static std::map<std::string, WrapperState*> clients;
 //This connection mimics the behaviour of MySQL-Proxy
 Connect  *globalConn;
 
-
 /*for each field, convert the format to FieldMeta_Wrapper*/
-
 
 static void init(){
     std::string client="192.168.1.1:1234";
@@ -65,38 +63,6 @@ getItemString(std::string input) {
     return MySQLFieldTypeToItem(MYSQL_TYPE_STRING, input);
 }
 
-
-/*
-static
-Item *
-getItemInt(std::string input) {
-    return  new (current_thd->mem_root)
-                                Item_int(static_cast<ulonglong>(valFromStr(input)));
-}
-
-static
-Item *
-getItemString(std::string input) {
-    return MySQLFieldTypeToItem(MYSQL_TYPE_STRING, input);
-}
-
-static
-Create_field* getStringField(int length) {
-    Create_field *f = new Create_field;
-    f->sql_type = MYSQL_TYPE_VARCHAR;
-    f->length = length;
-    return f;
-}
-
-static 
-Create_field* getUnsignedIntField(){
-    Create_field *f = new Create_field;
-    f->sql_type = MYSQL_TYPE_LONG;
-    f->flags |= UNSIGNED_FLAG;
-    return f;
-}
-
-*/
 
 static
 void control(DET_str* ds, Item* plain, int num_of_tests,int length) {
@@ -137,6 +103,7 @@ main(int argc,char**argv) {
         std::cout<<"num_of_tests:length"<<std::endl;
         return 0;
     }
+
     for(int i=1;i<=100;i++) {
         std::string input = ggetpRandomName(length*i);
         Item* plain = getItemString(input) ;

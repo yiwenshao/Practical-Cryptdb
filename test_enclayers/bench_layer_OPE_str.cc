@@ -118,10 +118,8 @@ main(int argc,char** argv) {
     std::string key = "key";
     Create_field *cf = NULL;
     OPE_str* op = new OPE_str(*cf, key);
-
     int num_of_tests = 10000;
     int length = 16;
-
     if(argc==3){
         num_of_tests = std::stoi(std::string(argv[1]));
         length = std::stoi(std::string(argv[2]));
@@ -135,8 +133,6 @@ main(int argc,char** argv) {
         Item* plain = getItemString(input);
         control(op, plain, num_of_tests, length*i);
     }
-
     return 0;
 }
 
-//main/schema.cc:83 is use to create layers of encryption
