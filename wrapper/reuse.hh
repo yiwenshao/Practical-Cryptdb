@@ -188,8 +188,15 @@ write_row_data(rawMySQLReturnValue& resraw,std::string db,std::string table,std:
 
 void storeStrategies(std::vector<FieldMetaTrans>& res);
 
+void
+storeStrategyNew(std::vector<FieldMetaTrans>& res);
+
 enum class STORE_STRATEGY{
+    INVALID,
     FIRST,
+    MIN,
+    MEDIAN,
+    FULL,
     ALL
 };
 

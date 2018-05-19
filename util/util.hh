@@ -28,6 +28,8 @@
 #include <util/errstream.hh>
 #include <util/params.hh>
 
+#define POINT printf("LINE %d IN FILE %s",__LINE__,__FILE__);
+
 #define RETURN_FALSE_IF_FALSE(status)       \
 {                                           \
     if (!(status)) {                        \
@@ -585,3 +587,5 @@ reverse_escape_string_for_mysql_modify(char *to,
 size_t 
 escape_string_for_mysql_modify(char *to,
                                const char *from, size_t length);
+
+bool g_make_path(std::string directory);

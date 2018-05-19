@@ -67,7 +67,11 @@ void FieldMetaTrans::trans(FieldMeta *fm) {
 
 
 void FieldMetaTrans::choose(std::vector<onion> onionSet){
-    choosenOnionO = onionSet;
+    for(auto o:onionsO){
+        if(std::find(onionSet.begin(),onionSet.end(),o)!=onionSet.end()){
+            choosenOnionO.push_back(o);
+        }
+    }
     for(auto &o:onionSet){
             choosenOnionName.push_back(originalFm->getOnionMeta(o)->getAnonOnionName()
         );
@@ -589,6 +593,80 @@ void storeStrategies(std::vector<FieldMetaTrans>& res){
     //Stored onions should be showed here
     for(auto &item:res){
         item.showChoosenOnionO();
+    }
+}
+
+
+
+STORE_STRATEGY INT_ASHE_STRATEGY = STORE_STRATEGY::MIN;
+STORE_STRATEGY INT_HOM_STRATEGY = STORE_STRATEGY::INVALID;
+
+static
+void
+integerStrategy(FieldMetaTrans &item){
+    std::vector<onion> select;
+    if(INT_HOM_STRATEGY == STORE_STRATEGY::INVALID){//ashe
+        if(INT_ASHE_STRATEGY == STORE_STRATEGY::MIN){
+            select.push_back(oDET);
+        }else if(INT_ASHE_STRATEGY == STORE_STRATEGY::MEDIAN){
+            select.push_back(oDET);
+            select.push_back(oOPE);
+        }else if(INT_ASHE_STRATEGY == STORE_STRATEGY::FULL){
+            select.push_back(oDET);
+            select.push_back(oOPE);
+            select.push_back(oASHE);
+        }else{
+            POINT
+            assert(0);
+        }
+    }else{//hom
+        if(INT_HOM_STRATEGY == STORE_STRATEGY::MIN){
+            select.push_back(oDET);
+        }else if(INT_HOM_STRATEGY == STORE_STRATEGY::MEDIAN){
+            select.push_back(oDET);
+            select.push_back(oAGG);
+        }else if(INT_HOM_STRATEGY == STORE_STRATEGY::FULL){
+            select.push_back(oDET);
+            select.push_back(oAGG);
+            select.push_back(oOPE);
+        }else{
+            POINT
+            assert(0);
+        }
+    }
+    item.choose(select);
+}
+
+
+STORE_STRATEGY STR_STRATEGY = STORE_STRATEGY::MIN;
+static
+void
+stringStrategy(FieldMetaTrans &item){
+    std::vector<onion> select;
+    if(STR_STRATEGY == STORE_STRATEGY::MIN){
+        select.push_back(oDET);
+    }else if(STR_STRATEGY == STORE_STRATEGY::MEDIAN){
+        select.push_back(oDET);
+        select.push_back(oOPE);
+    }else if(STR_STRATEGY == STORE_STRATEGY::FULL){
+        select.push_back(oDET);
+        select.push_back(oOPE);
+        select.push_back(oSWP);
+    }else{
+        POINT
+        assert(0);
+    }
+    item.choose(select);
+}
+
+void
+storeStrategyNew(std::vector<FieldMetaTrans>& res){
+    for(auto &item:res){
+        if(IS_NUM(item.getOriginalFieldMeta()->getSqlType())){//integer field
+            integerStrategy(item);            
+        }else{//string field
+            stringStrategy(item);
+        }
     }
 }
 

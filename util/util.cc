@@ -4,6 +4,8 @@
 #include <stdexcept>
 #include <assert.h>
 #include <memory>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <gmp.h>
 
@@ -670,3 +672,29 @@ reverse_escape_string_for_mysql_modify(char *to,
     *to='\0';
     return to - to_start;
 }
+
+
+
+
+bool g_make_path(std::string directory){
+    struct stat st;
+    if(directory.size()==0||directory[0]=='/') return false;
+    if(directory.back()=='/') directory.pop_back();
+    int start = 0,next=0;
+    while(stat(directory.c_str(),&st)==-1&&next!=-1){
+        next = directory.find('/',start);
+        if(next!=-1){
+            std::string sub = directory.substr(0,next);
+            if(stat(sub.c_str(),&st)==-1)
+                mkdir(sub.c_str(),0700);
+            start =  next + 1;
+        }else{
+            mkdir(directory.c_str(),0700);
+        }
+    }
+    return true;
+}
+
+
+
+
