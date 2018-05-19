@@ -196,7 +196,6 @@ string TableMetaTrans::serialize_vec_str(string s,vector<string> vec_str){
     return s;
 }
 
-
 vector<string> TableMetaTrans::string_to_vec_str(string line){
     int start=0,next=0;
     vector<string> tmp;
@@ -244,6 +243,65 @@ bool TableMetaTrans::make_path(string directory){
     return true;
 }
 
+void
+TableMetaTrans::serializeNew(std::string fullpath){
+    FILE * localmeta = NULL;
+    localmeta = fopen((fullpath).c_str(),"w");
+    string s = string("database:")+db;
+    s+="\n";
+    fwrite(s.c_str(),1,s.size(),localmeta);
+    s = string("table:")+table;
+    s+="\n";
+    fwrite(s.c_str(),1,s.size(),localmeta);
+    for(unsigned int i=0u;i<fts.size();i++) {//serilize every field
+        s=string("INDEX:")+fts[i].getFieldPlainName()+"\n";
+        fwrite(s.c_str(),1,s.size(),localmeta);
+        //then for each index, that is, for each plain field
+
+        s = serialize_vec_str("ChoosenOnionName",fts[i].getChoosenOnionName());
+        fwrite(s.c_str(),1,s.size(),localmeta);
+
+        std::vector<int> tmp;
+        for(auto item:fts[i].getChoosenOnionO()){
+            tmp.push_back(static_cast<int>(item));
+        }
+        s = serialize_vec_int("choosenOnionO",tmp);
+        fwrite(s.c_str(),1,s.size(),localmeta);
+        if(fts[i].getHasSalt()){
+            s = std::string("hasSalt:true\n");
+            fwrite(s.c_str(),1,s.size(),localmeta);
+            s = std::string("saltName:")+fts[i].getSaltName()+"\n";
+            fwrite(s.c_str(),1,s.size(),localmeta);
+            s = std::string("saltType:")+std::to_string(fts[i].getSaltType())+"\n";
+            fwrite(s.c_str(),1,s.size(),localmeta);
+            s = std::string("saltLength:")+std::to_string(fts[i].getSaltLength())+"\n";
+            fwrite(s.c_str(),1,s.size(),localmeta);
+        }else{
+            s = std::string("hasSalt:false\n");
+            fwrite(s.c_str(),1,s.size(),localmeta);
+        }
+
+        s = serialize_vec_int("choosenFieldTypes",fts[i].getChoosenFieldTypes());
+        fwrite(s.c_str(),1,s.size(),localmeta);
+
+        s = serialize_vec_int("choosenFieldLengths",fts[i].getChoosenFieldLengths());
+        FieldMetaTrans::FILEFORMAT fmf = fts[i].getFeidlStoreFormat();
+        if(fmf == FieldMetaTrans::FILEFORMAT::ESP_STRING){
+            s+="fieldFileFormat:ESP_STRING\n";
+        }else if(fmf == FieldMetaTrans::FILEFORMAT::NUM_STRING){
+            s+="fieldFileFormat:NUM_STRING\n";
+        }else if(fmf == FieldMetaTrans::FILEFORMAT::NUM_BINARY){
+            s+="fieldFileFormat:NUM_BINARY\n";
+        }else{
+            s+="fieldFileFormat:NA\n";
+        }
+        s+="\n";
+        fwrite(s.c_str(),1,s.size(),localmeta);
+    }
+    fwrite("**********************************************************************\n",1,71,localmeta);
+
+    fclose(localmeta);
+}
 
 void TableMetaTrans::serialize(std::string filename,std::string prefix){
     FILE * localmeta = NULL;

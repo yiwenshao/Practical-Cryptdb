@@ -85,6 +85,15 @@ void write_raw_data_to_files(MySQLColumnData& resraw,std::vector<FieldMetaTrans>
         }
     }
 }
+
+static void 
+write_meta_new(std::vector<FieldMetaTrans> &res,string db,string table){
+    std::string filename = std::string("data/") +db+"/"+table+"/metadata.data";
+    TableMetaTrans mf(db,table,res);
+    mf.set_db_table(db,table);
+    mf.serializeNew(filename);
+}
+
 static
 std::string
 getSelectField(SchemaInfo &schema, FieldMetaTrans &tf,std::string db,std::string table){
@@ -161,11 +170,10 @@ static void store(std::string db, std::string table){
         tf.setSaltLength(slength);
         write_field_data_to_files(resraw,tf,db,table,tf.getOriginalFieldMeta()->getFieldName());
     }
-
+    write_meta_new(res,db,table);
     //generate the backup query and then fetch the tuples
     (void)getSelectQuery;
     (void)getSelectField;
-
 /*
     write_raw_data_to_files(resraw,res,db,table);
 */

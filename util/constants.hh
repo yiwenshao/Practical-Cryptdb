@@ -18,6 +18,9 @@ struct globalConstants{
     bool useSWP;
     bool useDET;
     bool useSalt;
+    int BS_STR;
+    int BS_IA;
+    int BS_IH;
     std::string logFile;/*file name for log*/
 };
 

@@ -6,4 +6,8 @@ useOPE:false
 useSWP:true
 useDET:true
 useSalt:true
+#NA,MIN,MIDEAN,FULL
+BS_STR:MIN
+BS_IA:MIN
+BS_IH:MIN
 other:1

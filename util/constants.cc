@@ -1,4 +1,5 @@
 #include "util/constants.hh"
+#include "util/util.hh"
 #include <string>
 #include <fstream>
 
@@ -19,6 +20,8 @@ globalConstants initGlobalConstants(){
     globalConstants res;
     std::string line;
     while(std::getline(infile,line)) {
+        if(line.size()==0) continue;
+        if(line[0]=='#') continue;
         int index = line.find(":");
         std::string head = line.substr(0,index);
         if(head=="loadCount") {
@@ -63,7 +66,50 @@ globalConstants initGlobalConstants(){
             }
         }else if(head=="other") {
             ;
-        }else{
+        }else if(head == "BS_STR"){
+            std::string sub = line.substr(index+1);
+            if(sub=="NA"){
+                res.BS_STR = 0;
+            }else if(sub=="MIN"){
+                res.BS_STR = 1;
+            }else if(sub=="MIDEAN"){
+                res.BS_STR = 2;
+            }else if(sub=="FULL"){
+                res.BS_STR = 3;
+            }else{
+                POINT
+                assert(0);
+            }
+        }else if(head == "BS_IA"){
+            std::string sub = line.substr(index+1);
+            if(sub=="NA"){
+                res.BS_IA = 0;
+            }else if(sub=="MIN"){
+                res.BS_IA = 1;
+            }else if(sub=="MIDEAN"){
+                res.BS_IA = 2;
+            }else if(sub=="FULL"){
+                res.BS_IA = 3;
+            }else{
+                POINT
+                assert(0);
+            }
+        }else if(head == "BS_IH"){
+            std::string sub = line.substr(index+1);
+            if(sub=="NA"){
+                res.BS_IH = 0;
+            }else if(sub=="MIN"){
+                res.BS_IH = 1;
+            }else if(sub=="MIDEAN"){
+                res.BS_IH = 2;
+            }else if(sub=="FULL"){
+                res.BS_IH = 3;
+            }else{
+                POINT
+                assert(0);
+            }
+        }else{ 
+            POINT
             assert(0);
         }
     }

@@ -87,6 +87,7 @@ public:
 
     void set_db_table(string idb,string itable){db=idb;table=itable;}
     void serialize(std::string filename="metadata.data", std::string prefix="data/");
+    void serializeNew(std::string fullpath);
     void deserialize(std::string filename="metadata.data", std::string prefix="data/");
 };
 
