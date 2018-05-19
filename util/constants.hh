@@ -21,6 +21,7 @@ struct globalConstants{
     int BS_STR;
     int BS_IA;
     int BS_IH;
+    bool USE_ASHE;
     std::string logFile;/*file name for log*/
 };
 

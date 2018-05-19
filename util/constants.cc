@@ -108,7 +108,17 @@ globalConstants initGlobalConstants(){
                 POINT
                 assert(0);
             }
-        }else{ 
+        }else if(head == "USE_ASHE") {
+            std::string sub = line.substr(index+1);
+            if(sub=="true"){
+                res.USE_ASHE = true;
+            }else if(sub=="false"){
+                res.USE_ASHE = false;
+            }else{
+                POINT
+                assert(0);
+            }
+        }else {
             POINT
             assert(0);
         }
