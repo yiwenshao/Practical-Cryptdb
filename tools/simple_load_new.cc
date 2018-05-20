@@ -98,6 +98,56 @@ load_columns(std::vector<FieldMetaTrans> &fmts,std::string db,std::string table)
     }
 }
 
+struct batch{
+    vector<string> field_names;
+    vector<int> field_types;
+    vector<int> field_lengths;
+};
+
+batch ggbt;
+
+/*should choose the right decryption onion*/
+static
+std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
+                                      std::vector<FieldMetaTrans> &tfds){
+    assert(fms.size()==tfds.size());
+    std::shared_ptr<ReturnMeta> myReturnMeta = std::make_shared<ReturnMeta>();
+    int pos=0;
+    //construct OLK
+    for(auto i=0u;i<tfds.size();i++){
+        //the order is DET,OPE,ASHE,AGG. other onions are not decryptable!!
+        int index = getDecryptionOnionIndex(tfds[i]);
+        if(index==-1) assert(0);
+
+        onion o = tfds[i].getChoosenOnionO()[index];
+
+        *glog<<"choosenDecryptionOnion: "<<TypeText<onion>::toText(o)<<"\n";
+
+        SECLEVEL l = tfds[i].getOriginalFieldMeta()->getOnionMeta(o)->getSecLevel();
+        FieldMeta *k = tfds[i].getOriginalFieldMeta();
+        OLK curOLK(o,l,k);
+        bool use_salt = false;
+        if(needsSalt(curOLK))
+            use_salt = true;
+	addToReturn(myReturnMeta.get(),pos++,curOLK,use_salt,k->getFieldName());
+
+        if(use_salt)
+            addSaltToReturn(myReturnMeta.get(),pos++);
+        //used to record choosen field lengths, onion names , and field types
+        ggbt.field_types.push_back(tfds[i].getChoosenFieldTypes()[index]);
+        ggbt.field_names.push_back(tfds[i].getChoosenOnionName()[index]);
+        ggbt.field_lengths.push_back(tfds[i].getChoosenFieldLengths()[index]);
+
+        if(use_salt){
+            ggbt.field_types.push_back(tfds[i].getSaltType());
+            ggbt.field_names.push_back(tfds[i].getSaltName());
+            ggbt.field_lengths.push_back(tfds[i].getSaltLength());
+        }
+    }
+    return myReturnMeta;
+}
+
+
 static ResType load_files_new(std::string db, std::string table){
     timer t_load_files;
 
@@ -114,19 +164,13 @@ static ResType load_files_new(std::string db, std::string table){
     }
     mf.show();
     load_columns(fmts,db,table);
-//    initGfb(fmts,db,table);//load global columns
-/* 
-    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,res);
 
-    *glog<<"getReturnMeta: "<<
-          std::to_string(t_load_files.lap()/1000000u)<<
-          "##"<<std::to_string(time(NULL))<<"\n";
+    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,fmts);
+    UNUSED(rm);
 
     vector<string> field_names = ggbt.field_names;
     vector<int> field_types = ggbt.field_types;
     vector<int> field_lengths = ggbt.field_lengths;
-
-    //why do we need this??
     create_embedded_thd(0);
     rawMySQLReturnValue resraw;
     vector<vector<string>> res_field;   
@@ -158,18 +202,17 @@ static ResType load_files_new(std::string db, std::string table){
     for(unsigned int i=0;i<field_types.size();++i){
 	resraw.fieldTypes.push_back(static_cast<enum_field_types>(field_types[i]));
     }
+
     ResType rawtorestype = rawMySQLReturnValue_to_ResType(false, &resraw);
-
-    *glog<<"transform: "<<
-          std::to_string(t_load_files.lap()/1000000u)<<
-          "##"<<std::to_string(time(NULL))<<"\n";
-
+    UNUSED(rawtorestype);
     auto finalresults = decryptResults(rawtorestype,*rm);
-
-    *glog<<"descryption: "<<
-           std::to_string(t_load_files.lap()/1000000u)<<
-           "##"<<std::to_string(time(NULL))<<"\n";
+    rawMySQLReturnValue MM;
+    ResTypeToRawMySQLReturnValue(MM,finalresults);
     return finalresults;
+
+/* 
+
+
 */
     return ResType(false, 0, 0);   
 }

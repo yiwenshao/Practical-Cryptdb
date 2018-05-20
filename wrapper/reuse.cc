@@ -132,6 +132,24 @@ itemNullVector(unsigned int count)
     return out;
 }
 
+void
+ResTypeToRawMySQLReturnValue(rawMySQLReturnValue& inraw,ResType& inres){
+    inraw.fieldNames = inres.names;
+    inraw.fieldTypes = inres.types;
+    for(auto &row : inres.rows){
+        std::vector<std::string> insertRow;
+        for(unsigned int i=0u;i<row.size();i++){
+            if(IS_NUM(inres.types[i])){
+                insertRow.push_back(std::to_string(row[i]->val_uint()));
+            }else{
+                insertRow.push_back(ItemToString(*row[i]));
+            }
+        }
+        inraw.rowValues.push_back(insertRow);
+    }
+    
+}
+
 ResType rawMySQLReturnValue_to_ResType(bool isNULL,rawMySQLReturnValue *inRow,int in_last_insert_id){
     std::vector<std::string> names;
     std::vector<enum_field_types> types;

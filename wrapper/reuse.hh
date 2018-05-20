@@ -270,4 +270,5 @@ void
 loadFileNoEscapeLimitCount(std::string filename,
                  std::vector<std::string> &res,int limit);
 
-
+void
+ResTypeToRawMySQLReturnValue(rawMySQLReturnValue& inraw,ResType& inres);
