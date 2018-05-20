@@ -103,18 +103,13 @@ load_columns(std::vector<FieldMetaTrans> &fmts,std::string db,std::string table)
 
 }
 
-struct batch{
-    vector<string> field_names;
-    vector<int> field_types;
-    vector<int> field_lengths;
-};
-
-batch ggbt;
-
 /*should choose the right decryption onion*/
 static
 std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
-                                      std::vector<FieldMetaTrans> &tfds){
+                                      std::vector<FieldMetaTrans> &tfds,
+                                      vector<string> &field_names,
+                                      vector<int> &field_types,
+                                      vector<int> &field_lengths){
     assert(fms.size()==tfds.size());
     std::shared_ptr<ReturnMeta> myReturnMeta = std::make_shared<ReturnMeta>();
     int pos=0;
@@ -139,14 +134,14 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
         if(use_salt)
             addSaltToReturn(myReturnMeta.get(),pos++);
         //used to record choosen field lengths, onion names , and field types
-        ggbt.field_types.push_back(tfds[i].getChoosenFieldTypes()[index]);
-        ggbt.field_names.push_back(tfds[i].getChoosenOnionName()[index]);
-        ggbt.field_lengths.push_back(tfds[i].getChoosenFieldLengths()[index]);
+        field_types.push_back(tfds[i].getChoosenFieldTypes()[index]);
+        field_names.push_back(tfds[i].getChoosenOnionName()[index]);
+        field_lengths.push_back(tfds[i].getChoosenFieldLengths()[index]);
 
         if(use_salt){
-            ggbt.field_types.push_back(tfds[i].getSaltType());
-            ggbt.field_names.push_back(tfds[i].getSaltName());
-            ggbt.field_lengths.push_back(tfds[i].getSaltLength());
+            field_types.push_back(tfds[i].getSaltType());
+            field_names.push_back(tfds[i].getSaltName());
+            field_lengths.push_back(tfds[i].getSaltLength());
         }
     }
     return myReturnMeta;
@@ -170,12 +165,14 @@ static ResType load_files_new(std::string db, std::string table){
     mf.show();
     load_columns(fmts,db,table);
 
-    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,fmts);
+
+    vector<string> field_names;
+    vector<int> field_types;
+    vector<int> field_lengths;
+    std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,fmts,field_names,field_types,field_lengths);
     UNUSED(rm);
 
-    vector<string> field_names = ggbt.field_names;
-    vector<int> field_types = ggbt.field_types;
-    vector<int> field_lengths = ggbt.field_lengths;
+
     create_embedded_thd(0);
     rawMySQLReturnValue resraw;
     vector<vector<string>> res_field;   
