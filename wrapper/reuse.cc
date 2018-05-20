@@ -649,13 +649,38 @@ static
 void
 integerStrategy(FieldMetaTrans &item){
     std::vector<onion> select;
+    if(constGlobalConstants.BS_IA==0){
+        INT_ASHE_STRATEGY = STORE_STRATEGY::INVALID;
+        if(constGlobalConstants.BS_IH == 1) INT_HOM_STRATEGY =  STORE_STRATEGY::MIN;
+        else if(constGlobalConstants.BS_IH == 2) INT_HOM_STRATEGY =  STORE_STRATEGY::MEDIAN;
+        else if(constGlobalConstants.BS_IH == 3) INT_HOM_STRATEGY =  STORE_STRATEGY::FULL;
+        else{
+            POINT
+            assert(0);
+        }
+    }else if(constGlobalConstants.BS_IH==0){
+        INT_HOM_STRATEGY = STORE_STRATEGY::INVALID;
+        if(constGlobalConstants.BS_IA==1) INT_ASHE_STRATEGY = STORE_STRATEGY::MIN;
+        else if(constGlobalConstants.BS_IA==2) INT_ASHE_STRATEGY = STORE_STRATEGY::MEDIAN;
+        else if(constGlobalConstants.BS_IA==3) INT_ASHE_STRATEGY = STORE_STRATEGY::FULL;
+        else{
+            POINT
+            assert(0);
+        }
+    }else{
+        POINT
+        assert(0);
+    }
     if(INT_HOM_STRATEGY == STORE_STRATEGY::INVALID){//ashe
         if(INT_ASHE_STRATEGY == STORE_STRATEGY::MIN){
+            std::cout<<"Aback DET"<<std::endl;
             select.push_back(oDET);
         }else if(INT_ASHE_STRATEGY == STORE_STRATEGY::MEDIAN){
+            std::cout<<"Aback DET OPE"<<std::endl;
             select.push_back(oDET);
             select.push_back(oOPE);
         }else if(INT_ASHE_STRATEGY == STORE_STRATEGY::FULL){
+            std::cout<<"Aback DET OPE ASHE"<<std::endl;
             select.push_back(oDET);
             select.push_back(oOPE);
             select.push_back(oASHE);
@@ -666,13 +691,16 @@ integerStrategy(FieldMetaTrans &item){
     }else{//hom
         if(INT_HOM_STRATEGY == STORE_STRATEGY::MIN){
             select.push_back(oDET);
+            std::cout<<"Hback DET"<<std::endl;
         }else if(INT_HOM_STRATEGY == STORE_STRATEGY::MEDIAN){
             select.push_back(oDET);
             select.push_back(oAGG);
+            std::cout<<"Hback DET AGG"<<std::endl;
         }else if(INT_HOM_STRATEGY == STORE_STRATEGY::FULL){
             select.push_back(oDET);
             select.push_back(oAGG);
             select.push_back(oOPE);
+            std::cout<<"Hback DET AGG OPE"<<std::endl;
         }else{
             POINT
             assert(0);
@@ -687,15 +715,28 @@ static
 void
 stringStrategy(FieldMetaTrans &item){
     std::vector<onion> select;
+    if(constGlobalConstants.BS_STR==1){
+        STR_STRATEGY = STORE_STRATEGY::MIN;
+    }else if(constGlobalConstants.BS_STR==2){
+        STR_STRATEGY = STORE_STRATEGY::MEDIAN;
+    }else if(constGlobalConstants.BS_STR==3){
+        STR_STRATEGY = STORE_STRATEGY::FULL;
+    }else{
+        POINT
+        assert(0);
+    }
     if(STR_STRATEGY == STORE_STRATEGY::MIN){
         select.push_back(oDET);
+        std::cout<<"Sback DET"<<std::endl;
     }else if(STR_STRATEGY == STORE_STRATEGY::MEDIAN){
         select.push_back(oDET);
         select.push_back(oOPE);
+        std::cout<<"Sback DET OPE"<<std::endl;
     }else if(STR_STRATEGY == STORE_STRATEGY::FULL){
         select.push_back(oDET);
         select.push_back(oOPE);
         select.push_back(oSWP);
+        std::cout<<"Sback DET OPE SWP"<<std::endl;
     }else{
         POINT
         assert(0);
@@ -704,8 +745,9 @@ stringStrategy(FieldMetaTrans &item){
 }
 
 void
-storeStrategyNew(std::vector<FieldMetaTrans>& res){
+storeStrategyNew(std::vector<FieldMetaTrans>& res){    
     for(auto &item:res){
+        std::cout<<"backUpfield: "<<item.getOriginalFieldMeta()->getFieldName()<<std::endl;
         if(IS_NUM(item.getOriginalFieldMeta()->getSqlType())){//integer field
             integerStrategy(item);            
         }else{//string field
