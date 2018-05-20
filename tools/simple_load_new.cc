@@ -171,10 +171,9 @@ static ResType load_files_new(std::string db, std::string table){
     vector<int> field_lengths;
     std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,fmts,field_names,field_types,field_lengths);
     UNUSED(rm);
-
-
     create_embedded_thd(0);
     rawMySQLReturnValue resraw;
+
     vector<vector<string>> res_field;   
     for(auto item:field_names){
         res_field.push_back(gfb.annoOnionNameToFileVector[item]);
@@ -211,12 +210,7 @@ static ResType load_files_new(std::string db, std::string table){
     rawMySQLReturnValue MM;
     ResTypeToRawMySQLReturnValue(MM,finalresults);
     return finalresults;
-
-/* 
-
-
-*/
-    return ResType(false, 0, 0);   
+    //return ResType(false, 0, 0);   
 }
 
 std::map<onion,unsigned long> gcountMap;
