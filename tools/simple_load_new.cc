@@ -121,7 +121,8 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
 
         onion o = tfds[i].getChoosenOnionO()[index];
 
-        *glog<<"choosenDecryptionOnion: "<<TypeText<onion>::toText(o)<<"\n";
+        *glog<<"field: "<<tfds[i].getOriginalFieldMeta()->getFieldName()
+                <<" choosenDecryptionOnion: "<<TypeText<onion>::toText(o)<<"\n";
 
         SECLEVEL l = tfds[i].getOriginalFieldMeta()->getOnionMeta(o)->getSecLevel();
         FieldMeta *k = tfds[i].getOriginalFieldMeta();
@@ -160,13 +161,23 @@ static ResType load_files_new(std::string db, std::string table){
     for(unsigned int i=0;i<fms.size();i++){
         fmts[i].trans(fms[i]);
     }
-    mf.show();
+    *glog<<"loadtablemeta: "<<
+          std::to_string(t_load_files.lap()/1000000u)<<
+          " "<<std::to_string(time(NULL))<<"\n";
+
+//    mf.show();
     load_columns(fmts,db,table);
+    *glog<<"loadcolumns: "<<
+          std::to_string(t_load_files.lap()/1000000u)<<
+          " "<<std::to_string(time(NULL))<<"\n";
+
     vector<string> field_names;
     vector<int> field_types;
     vector<int> field_lengths;
     std::shared_ptr<ReturnMeta> rm = getReturnMeta(fms,fmts,field_names,field_types,field_lengths);
-    UNUSED(rm);
+    *glog<<"getreturnmeta: "<<
+          std::to_string(t_load_files.lap()/1000000u)<<
+          " "<<std::to_string(time(NULL))<<"\n";
     create_embedded_thd(0);
     rawMySQLReturnValue resraw;
     vector<vector<string>> res_field;   
@@ -197,10 +208,17 @@ static ResType load_files_new(std::string db, std::string table){
     }
 
     ResType rawtorestype = rawMySQLReturnValue_to_ResType(false, &resraw);
-    UNUSED(rawtorestype);
+
+    *glog<<"transform: "<<
+          std::to_string(t_load_files.lap()/1000000u)<<
+          " "<<std::to_string(time(NULL))<<"\n";
+
     auto finalresults = decryptResults(rawtorestype,*rm);
-    rawMySQLReturnValue MM;
-    ResTypeToRawMySQLReturnValue(MM,finalresults);
+    *glog<<"decryption: "<<
+          std::to_string(t_load_files.lap()/1000000u)<<
+          " "<<std::to_string(time(NULL))<<"\n";
+//    rawMySQLReturnValue MM;
+//    ResTypeToRawMySQLReturnValue(MM,finalresults);
     return finalresults;
     //return ResType(false, 0, 0);   
 }
@@ -281,7 +299,7 @@ List<Item> * processRow(const std::vector<Item *> &row,
 static
 std::map<std::string,std::string>
 parseArgv(int argc, char* argv[]){
-    POINT
+    //POINT
     assert(argc%2==1);
     std::map<std::string,std::string> res;
     for(int i=1;i<argc;){
@@ -312,7 +330,15 @@ main(int argc, char* argv[]){
     Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);
     logToFile ll(table+logfileName);
     glog = &ll;
+    *glog<<"loadSchema: "<<
+          std::to_string(t_init.lap()/1000000u)<<
+          " "<<std::to_string(time(NULL))<<"\n";
+
     ResType res =  load_files_new(db,table);
+   *glog<<"loadFile: "<<
+          std::to_string(t_init.lap()/1000000u)<<
+          " "<<std::to_string(time(NULL))<<"\n";
+
     if(!res.success()){
         *glog<<"empty table \n";
         return 0;
@@ -320,7 +346,7 @@ main(int argc, char* argv[]){
     std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
     unsigned int i=0u;
-    UNUSED(i);
+   
     while(true){
         List<List_item> newList;
         int localCount=0;
@@ -347,8 +373,16 @@ main(int argc, char* argv[]){
             break;
         }
     }
-    UNUSED(load_files_new);
-    UNUSED(processRow);
+    *glog<<"construct: "<<
+          std::to_string(t_init.lap()/1000000u)<<
+          " "<<std::to_string(time(NULL))<<"\n";
+    for(auto item:gcountMap) {
+        *glog<<"onionComputed: "<<
+              TypeText<onion>::toText(item.first)<<"::"<<
+              std::to_string(item.second)<<"\n";
+    }
+
+
     return 0;
 }
 

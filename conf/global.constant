@@ -7,9 +7,9 @@ useSWP:true
 useDET:true
 useSalt:true
 #NA,MIN,MIDEAN,FULL
-BS_STR:MIN
+BS_STR:FULL
 BS_IA:NA
-BS_IH:MIN
+BS_IH:FULL
 #true or false
 USE_ASHE:true
 other:1
