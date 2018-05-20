@@ -72,7 +72,7 @@ fullBackUp gfb;
 
 static
 void
-load_columns(std::vector<FieldMetaTrans> &fmts,std::string db,std::string table){
+load_columns(std::vector<FieldMetaTrans> &fmts,std::string db,std::string table) {
     for(auto &item:fmts){
         std::string prefix = std::string("data/")+db+"/"+table+"/"
                              + item.getOriginalFieldMeta()->getFieldName()+"/";
@@ -99,8 +99,6 @@ load_columns(std::vector<FieldMetaTrans> &fmts,std::string db,std::string table)
     for(unsigned int i=0;i<gfb.field_names.size();i++){
         gfb.annoOnionNameToType[gfb.field_names[i]] = gfb.field_types[i];
     }
-
-
 }
 
 /*should choose the right decryption onion*/
@@ -130,14 +128,12 @@ std::shared_ptr<ReturnMeta> getReturnMeta(std::vector<FieldMeta*> fms,
         if(needsSalt(curOLK))
             use_salt = true;
 	addToReturn(myReturnMeta.get(),pos++,curOLK,use_salt,k->getFieldName());
-
         if(use_salt)
             addSaltToReturn(myReturnMeta.get(),pos++);
         //used to record choosen field lengths, onion names , and field types
         field_types.push_back(tfds[i].getChoosenFieldTypes()[index]);
         field_names.push_back(tfds[i].getChoosenOnionName()[index]);
         field_lengths.push_back(tfds[i].getChoosenFieldLengths()[index]);
-
         if(use_salt){
             field_types.push_back(tfds[i].getSaltType());
             field_names.push_back(tfds[i].getSaltName());
@@ -184,11 +180,8 @@ static ResType load_files_new(std::string db, std::string table){
             return ResType(false, 0, 0);
         }
     }
-
-
     //then transform it to ress_fields
     unsigned int length = res_field[0].size();
-
     vector<vector<string>> ress_field;
     for(unsigned int i=0u;i<length;i++){
         vector<string> row;
@@ -314,7 +307,8 @@ main(int argc, char* argv[]){
     std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
     unsigned int i=0u;
-    while(true){
+    UNUSED(i);
+/*    while(true){
         List<List_item> newList;
         int localCount=0;
         for(;i<res.rows.size();i++){
@@ -339,7 +333,7 @@ main(int argc, char* argv[]){
             }
             break;
         }
-    }
+    }*/
     UNUSED(load_files_new);
     UNUSED(processRow);
     return 0;
