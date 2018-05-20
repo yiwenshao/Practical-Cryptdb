@@ -26,6 +26,9 @@ using std::vector;
 using std::string;
 using std::to_string;
 static std::string embeddedDir="/t/cryt/shadow";
+std::string base_embedded="shadow";
+std::string base_read="data";
+
 char * globalEsp=NULL;
 int num_of_pipe = 4;
 //global map, for each client, we have one WrapperState which contains ProxyState.
@@ -53,7 +56,7 @@ static void init(){
     if((buffer = getcwd(NULL, 0)) == NULL){  
         perror("getcwd error");  
     }
-    embeddedDir = std::string(buffer)+"/shadow";
+    embeddedDir = std::string(buffer)+std::string("/")+base_embedded;
     SharedProxyState *shared_ps = 
 			new SharedProxyState(ci, embeddedDir , master_key, 
                                             determineSecurityRating());
@@ -74,7 +77,7 @@ static
 void
 load_columns(std::vector<FieldMetaTrans> &fmts,std::string db,std::string table) {
     for(auto &item:fmts){
-        std::string prefix = std::string("data/")+db+"/"+table+"/"
+        std::string prefix = base_read+std::string("/")+db+"/"+table+"/"
                              + item.getOriginalFieldMeta()->getFieldName()+"/";
         //load onions for each field
         for(unsigned int i=0u;i<item.getChoosenOnionName().size();i++){
@@ -280,19 +283,34 @@ List<Item> * processRow(const std::vector<Item *> &row,
     return newList0;
 }
 
+static
+std::map<std::string,std::string>
+parseArgv(int argc, char* argv[]){
+    POINT
+    assert(argc%2==1);
+    std::map<std::string,std::string> res;
+    for(int i=1;i<argc;){
+        res[std::string(argv[i]+2)]=std::string(argv[i+1]);
+        i+=2;
+    }
+    return res;
+}
 
 int
 main(int argc, char* argv[]){
+    if(argc<2){
+        std::cout<<"--db tdb --table student --base_embedded shadow --base_read data"<<std::endl;
+        return 0;
+    }
+    std::map<std::string,std::string> params = parseArgv(argc,argv);
+    std::string db=params["db"],table=params["table"];
+    std::string ip="localhost";
+    base_embedded = params["base_embedded"];
+    base_read = params["base_read"];
+
     timer t_init;
     init();
     create_embedded_thd(0);
-    std::string db="tdb",table="student";
-    std::string ip="localhost";
-    if(argc==4){
-        ip = std::string(argv[1]);
-        db = std::string(argv[2]);
-        table = std::string(argv[3]);
-    }
     std::unique_ptr<SchemaInfo> schema =  myLoadSchemaInfo(embeddedDir);
     schema.get();
     const std::unique_ptr<AES_KEY> &TK = std::unique_ptr<AES_KEY>(getKey(std::string("113341234")));
@@ -308,7 +326,7 @@ main(int argc, char* argv[]){
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
     unsigned int i=0u;
     UNUSED(i);
-/*    while(true){
+    while(true){
         List<List_item> newList;
         int localCount=0;
         for(;i<res.rows.size();i++){
@@ -333,7 +351,7 @@ main(int argc, char* argv[]){
             }
             break;
         }
-    }*/
+    }
     UNUSED(load_files_new);
     UNUSED(processRow);
     return 0;
