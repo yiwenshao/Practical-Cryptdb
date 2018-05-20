@@ -91,16 +91,15 @@ load_columns(std::vector<FieldMetaTrans> &fmts,std::string db,std::string table)
                                          constGlobalConstants.loadCount);
             }
             gfb.annoOnionNameToFileVector[item.getChoosenOnionName()[i]]=std::move(column);
-        }  
+            gfb.annoOnionNameToType[item.getChoosenOnionName()[i]]= item.getChoosenFieldTypes()[i];
+        }
         if(item.getHasSalt()) {
             std::vector<std::string> column;
             std::string filename = prefix + item.getSaltName();
             loadFileNoEscapeLimitCount(filename,column,constGlobalConstants.loadCount);
             gfb.annoOnionNameToFileVector[item.getSaltName()] = std::move(column);
+            gfb.annoOnionNameToType[item.getSaltName()]=item.getSaltType();
         }
-    }
-    for(unsigned int i=0;i<gfb.field_names.size();i++){
-        gfb.annoOnionNameToType[gfb.field_names[i]] = gfb.field_types[i];
     }
 }
 
@@ -163,8 +162,6 @@ static ResType load_files_new(std::string db, std::string table){
     }
     mf.show();
     load_columns(fmts,db,table);
-
-
     vector<string> field_names;
     vector<int> field_types;
     vector<int> field_lengths;
@@ -172,7 +169,6 @@ static ResType load_files_new(std::string db, std::string table){
     UNUSED(rm);
     create_embedded_thd(0);
     rawMySQLReturnValue resraw;
-
     vector<vector<string>> res_field;   
     for(auto item:field_names){
         res_field.push_back(gfb.annoOnionNameToFileVector[item]);
@@ -262,7 +258,6 @@ void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
             l.push_back(new Item_int(static_cast<ulonglong>(salt)));
         }
     }
-
     for (auto it : l) {
         append_list->push_back(it);
     }

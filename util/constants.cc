@@ -126,6 +126,11 @@ globalConstants initGlobalConstants(){
     /* the following values need not be determined 
        at runtime.*/
     res.logFile="LOG.TXT";
+
+    if(res.BS_IA!=0&&res.BS_IH!=0){
+        POINT
+        assert(0);
+    }
     infile.close(); 
     return res;
 }

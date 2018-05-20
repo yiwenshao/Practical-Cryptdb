@@ -8,7 +8,7 @@ useDET:true
 useSalt:true
 #NA,MIN,MIDEAN,FULL
 BS_STR:MIN
-BS_IA:MIN
+BS_IA:NA
 BS_IH:MIN
 #true or false
 USE_ASHE:true

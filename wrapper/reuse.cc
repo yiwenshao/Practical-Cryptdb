@@ -168,8 +168,9 @@ ResType rawMySQLReturnValue_to_ResType(bool isNULL,rawMySQLReturnValue *inRow,in
         for(auto inRows:inRow->rowValues) {
             std::vector<Item *> curTempRow = itemNullVector(types.size());
             for(int i=0;i< (int)(inRows.size());i++){
-                if(inRows[i]!="NULL")
-                    curTempRow[i] = (MySQLFieldTypeToItem(types[i],inRows[i]));//why unsinged processing is not needed here?
+                if(inRows[i]!="NULL"&&inRows[i]!="\"NULL\"")
+                    curTempRow[i] = (MySQLFieldTypeToItem(types[i],inRows[i]));
+                    //why unsinged processing is not needed here?
             }
             rows.push_back(curTempRow);
         }

@@ -59,34 +59,6 @@ std::string getSelectQuery(SchemaInfo &schema, std::vector<FieldMetaTrans> &tfds
     return res;
 }
 
-static void write_meta(std::vector<FieldMetaTrans> &res,string db,string table){
-    TableMetaTrans mf(db,table,res);
-    mf.set_db_table(db,table);
-    mf.serialize();
-}
-
-static
-void write_raw_data_to_files(MySQLColumnData& resraw,std::vector<FieldMetaTrans> &res ,string db,string table){
-    //write metafiles
-    write_meta(res,db,table);
-    //write datafiles
-    std::string prefix = std::string("data/") +db+"/"+table+"/";
-    std::vector<std::string> filenames;
-    for(auto item:resraw.fieldNames){
-        item=prefix+item;
-        filenames.push_back(item);
-    }
-    int len = resraw.fieldNames.size();
-
-    for(int i=0;i<len;i++){
-        if(IS_NUM(resraw.fieldTypes[i])){
-            writeColumndataNum(resraw.columnData[i],filenames[i]);
-        }else{
-            writeColumndataEscapeString(resraw.columnData[i],filenames[i],resraw.maxLengths[i]);
-        }
-    }
-}
-
 static void 
 write_meta_new(std::vector<FieldMetaTrans> &res,string db,string table){
     std::string filename = std::string("data/") +db+"/"+table+"/metadata.data";
@@ -178,8 +150,6 @@ static void store(std::string db, std::string table){
 /*
     write_raw_data_to_files(resraw,res,db,table);
 */
-    (void)executeAndGetColumnData;
-    (void)write_raw_data_to_files;
 
 }
 
