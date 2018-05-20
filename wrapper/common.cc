@@ -303,6 +303,90 @@ TableMetaTrans::serializeNew(std::string fullpath){
     fclose(localmeta);
 }
 
+void
+TableMetaTrans::show(){
+    std::cout<<db<<","<<table<<std::endl;
+    for(auto &item:fts){
+        item.show();
+    }
+}
+
+void
+TableMetaTrans::deserializeNew(std::string filename, std::string prefix){
+    filename = prefix+db+"/"+table+"/"+filename;
+    ifstream infile(filename);
+    string line;
+    while(getline(infile,line)){
+        if(line.size()==0) continue;
+        if(line[0]=='*'||line[0]=='\n') continue;
+        int index = line.find(":");
+        string head = line.substr(0,index);        
+        if(head == "INDEX"){
+            FieldMetaTrans ft;
+            fts.push_back(ft);
+        }else if(head=="database"){
+            set_db(line.substr(index+1));
+        }else if(head=="table"){
+            set_table(line.substr(index+1));
+        }else if(head=="choosenOnionO"){
+            string onionO=line.substr(index+1);
+            auto res = string_to_vec_int(onionO);
+            std::vector<onion> tmp;
+            for(auto item:res){
+                tmp.push_back(static_cast<onion>(item));
+            }
+            fts.back().setChoosenOnionO(tmp);
+        }else if(head=="ChoosenOnionName"){
+            string names = line.substr(index+1);
+            auto res = string_to_vec_str(names);
+            fts.back().setChoosenOnionName(res);
+        }else if(head=="choosenFieldTypes"){
+            string fieldTypes = line.substr(index+1);
+            auto res = string_to_vec_int(fieldTypes);
+            fts.back().setChoosenFieldTypes(res);
+        }else if(head=="choosenFieldLengths"){
+            string fieldLengths = line.substr(index+1);
+            auto res = string_to_vec_int(fieldLengths);
+            fts.back().setChoosenFieldLengths(res);
+        }else if(head=="hasSalt"){
+            std::string hasSaltStr = line.substr(index+1);
+            if(hasSaltStr=="true"){
+                fts.back().setHasSalt(true);
+            }else{
+                fts.back().setHasSalt(false);
+            }
+        }else if(head=="saltName"){
+            std::string saltName = line.substr(index+1);
+            fts.back().setSaltName(saltName);
+        }else if(head=="saltType"){
+            std::string saltTypeStr = line.substr(index+1);
+            fts.back().setSaltType(std::stoi(saltTypeStr));
+        }else if(head=="saltLength"){
+            std::string saltLengthStr = line.substr(index+1);
+            fts.back().setSaltLength(std::stoi(saltLengthStr));
+        }else if(head=="fieldFileFormat"){
+            std::string sub = line.substr(index+1);
+            if(sub=="NA"){
+                fts.back().setFieldStoreFormat(FieldMetaTrans::FILEFORMAT::NA);
+            }else if(sub == "ESP_STRING"){
+                fts.back().setFieldStoreFormat(FieldMetaTrans::FILEFORMAT::ESP_STRING);
+            }else if(sub == "NUM_STRING"){
+                fts.back().setFieldStoreFormat(FieldMetaTrans::FILEFORMAT::NUM_STRING);
+            }else if(sub == "NUM_BINARY"){
+                fts.back().setFieldStoreFormat(FieldMetaTrans::FILEFORMAT::NUM_BINARY);
+            }else{
+                POINT
+                assert(0);
+            }
+        }else{
+            POINT
+            assert(0);
+        }
+    }
+    infile.close();
+}
+
+
 void TableMetaTrans::serialize(std::string filename,std::string prefix){
     FILE * localmeta = NULL;
     prefix = prefix+db+"/"+table+"/";

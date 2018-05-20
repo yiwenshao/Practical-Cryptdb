@@ -21,7 +21,7 @@ globalConstants initGlobalConstants(){
     std::string line;
     while(std::getline(infile,line)) {
         if(line.size()==0) continue;
-        if(line[0]=='#') continue;
+        if(line[0]=='#'||line[0]=='\n') continue;
         int index = line.find(":");
         std::string head = line.substr(0,index);
         if(head=="loadCount") {

@@ -74,6 +74,7 @@ struct FieldMeta_Wrapper{
 class FieldMetaTrans{
 public://??
     enum class FILEFORMAT{
+        NA,
         ESP_STRING,
         NUM_STRING,
         NUM_BINARY
@@ -108,6 +109,7 @@ public:
         }
         std::cout<<std::endl;
     }
+    void show();
     void trans(FieldMeta *fm); 
     void choose(std::vector<onion> onionSet);
     void choose(std::vector<int> onionIndexSet);

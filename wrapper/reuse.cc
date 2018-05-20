@@ -46,7 +46,32 @@ void FieldMeta_Wrapper::show(){
         }else cout<<"do not have salt"<<endl;
 }
 
+void FieldMetaTrans::show(){
+    std::cout<<"hasSalt:";
+    if(hasSalt){
+        std::cout<<"true\n";
+        std::cout<<"saltType:"<<saltType<<std::endl;
+        std::cout<<"saltLength:"<<saltLength<<std::endl;       
+    }else{
+        std::cout<<"false\n";
+    }
+    std::cout<<"onionNames:";
+    for(auto item:onionsName) std::cout<<item<<" ";
+    std::cout<<std::endl;
 
+    std::cout<<"choosenOnionName:";
+    for(auto item:choosenOnionName) std::cout<<item<<" ";
+    std::cout<<std::endl;
+
+    std::cout<<"choosenFieldTypes:";
+    for(auto item:choosenFieldTypes) std::cout<<item<<" ";
+    std::cout<<std::endl;
+
+    std::cout<<"choosenFieldLengths:";
+    for(auto item:choosenFieldLengths) std::cout<<item<<" ";
+    std::cout<<std::endl;
+
+}
 void FieldMetaTrans::trans(FieldMeta *fm) {
     originalFm=fm;
     if(fm->getHasSalt()){

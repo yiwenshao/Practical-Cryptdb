@@ -1,6 +1,7 @@
 #include "wrapper/common.hh"
 #include "wrapper/reuse.hh"
 #include "util/util.hh"
+#include "util/constants.hh"
 static std::string embeddedDir="/t/cryt/shadow";
 //global map, for each client, we have one WrapperState which contains ProxyState.
 static std::map<std::string, WrapperState*> clients;

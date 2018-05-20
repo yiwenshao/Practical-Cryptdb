@@ -69,14 +69,14 @@ public:
 class TableMetaTrans{
     string db,table;/*plain name*/
     std::vector<FieldMetaTrans> fts;
-
     string serialize_vec_int(string s,vector<int> vec_int);
     string serialize_vec_str(string s,vector<string> vec_str);
     vector<string> string_to_vec_str(string line);
     vector<int> string_to_vec_int(string line);
     static bool make_path(string directory);
 public:
-    TableMetaTrans(std::string idb,std::string itable,std::vector<FieldMetaTrans> ifts):db(idb),table(itable),fts(ifts){}
+    TableMetaTrans(std::string idb,std::string itable,
+                   std::vector<FieldMetaTrans> ifts):db(idb),table(itable),fts(ifts){}
     TableMetaTrans(){}
     void set_db(std::string idb){db=idb;}
     string get_db(){return db;}
@@ -84,11 +84,14 @@ public:
     void set_table(string itable){table=itable;}
     string get_table(){return table;}
     std::vector<FieldMetaTrans> getFts(){return fts;}
+    std::vector<FieldMetaTrans>& getFtsRef(){return fts;}
 
     void set_db_table(string idb,string itable){db=idb;table=itable;}
     void serialize(std::string filename="metadata.data", std::string prefix="data/");
     void serializeNew(std::string fullpath);
+    void deserializeNew(std::string filename="metadata.data", std::string prefix="data/");
     void deserialize(std::string filename="metadata.data", std::string prefix="data/");
+    void show();
 };
 
 
