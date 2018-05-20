@@ -96,6 +96,11 @@ load_columns(std::vector<FieldMetaTrans> &fmts,std::string db,std::string table)
             gfb.annoOnionNameToFileVector[item.getSaltName()] = std::move(column);
         }
     }
+    for(unsigned int i=0;i<gfb.field_names.size();i++){
+        gfb.annoOnionNameToType[gfb.field_names[i]] = gfb.field_types[i];
+    }
+
+
 }
 
 struct batch{
@@ -217,11 +222,8 @@ static ResType load_files_new(std::string db, std::string table){
     return ResType(false, 0, 0);   
 }
 
-
-
-
 std::map<onion,unsigned long> gcountMap;
-
+//encrypt and append list
 static
 void local_wrapper(const Item &i, const FieldMeta &fm, Analysis &a,
                            List<Item> * append_list) {
@@ -313,24 +315,13 @@ main(int argc, char* argv[]){
     Analysis analysis(db, *schema, TK, SECURITY_RATING::SENSITIVE);
     logToFile ll(table+logfileName);
     glog = &ll;
-    *glog<<"loadSchema: "<<
-          std::to_string(t_init.lap()/1000000u)<<
-          "##"<<std::to_string(time(NULL))<<"\n";
     ResType res =  load_files_new(db,table);
     if(!res.success()){
         *glog<<"empty table \n";
         return 0;
     }
-
-/*
-    *glog<<"load_files: "<<
-          std::to_string(t_init.lap()/1000000u)<<
-          "##"<<std::to_string(time(NULL))<<"\n";
-
     std::string annoTableName = analysis.getTableMeta(db,table).getAnonTableName();
     const std::string head = std::string("INSERT INTO `")+db+"`.`"+annoTableName+"` ";
-
-
     unsigned int i=0u;
     while(true){
         List<List_item> newList;
@@ -358,14 +349,6 @@ main(int argc, char* argv[]){
             break;
         }
     }
-    *glog<<"reencryptionAndInsert: "<<
-        std::to_string(t_init.lap()/1000000u)<<
-        "##"<<std::to_string(time(NULL))<<"\n";
-    for(auto item:gcountMap) {
-        *glog<<"onionComputed: "<<
-              TypeText<onion>::toText(item.first)<<"::"<<
-              std::to_string(item.second)<<"\n";
-    }*/
     UNUSED(load_files_new);
     UNUSED(processRow);
     return 0;
