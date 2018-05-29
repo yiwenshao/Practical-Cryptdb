@@ -67,22 +67,25 @@ getSelectField(SchemaInfo &schema, FieldMetaTrans &tf,std::string db,std::string
 
 static
 void
-write_field_data_to_files(MySQLColumnData& resraw, FieldMetaTrans &res, string db, string table,string field) {
-    std::string numprefix = std::string("data/") +db+"/"+table+std::string("/")+"NUMF/"+field+"/";
-    std::string strprefix = std::string("data/") +db+"/"+table+std::string("/")+"STRF/"+field+"/";
-    g_make_path(numprefix);
-    g_make_path(strprefix);
+write_field_data_to_files(MySQLColumnData& resraw, FieldMetaTrans &res, 
+                          string db, string table,string field,enum enum_field_types oft) {
+    std::string prefix;
+    if(IS_NUM(oft)){
+        prefix = std::string("data/") +db+"/"+table+std::string("/")+"NUMF/"+field+"/";
+    }else {
+        prefix = std::string("data/") +db+"/"+table+std::string("/")+"STRF/"+field+"/";
+    } 
+    g_make_path(prefix);
     std::vector<std::string> filenames;
     for(auto item:resraw.fieldNames){
-        filenames.push_back(item);
+        auto temp = prefix+item;
+        filenames.push_back(temp);
     }
     int len = resraw.fieldNames.size();
     for(int i=0;i<len;i++){
         if(IS_NUM(resraw.fieldTypes[i])){
-            filenames[i] = numprefix+filenames[i];
             writeColumndataNum(resraw.columnData[i],filenames[i]);
         }else{
-            filenames[i] = strprefix+filenames[i];
             writeColumndataEscapeString(resraw.columnData[i],filenames[i],resraw.maxLengths[i]);
         }
     }
@@ -118,7 +121,8 @@ static void store(std::string db, std::string table){
         tf.setChoosenFieldLengths(lengths);
         tf.setSaltType(stype);
         tf.setSaltLength(slength);
-        write_field_data_to_files(resraw,tf,db,table,tf.getOriginalFieldMeta()->getFieldName());
+        write_field_data_to_files(resraw,tf,db,table,tf.getOriginalFieldMeta()->getFieldName(),
+                                  tf.getOriginalFieldMeta()->getSqlType());
     }
     write_meta_new(res,db,table);
     //generate the backup query and then fetch the tuples
