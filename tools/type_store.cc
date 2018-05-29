@@ -68,20 +68,21 @@ getSelectField(SchemaInfo &schema, FieldMetaTrans &tf,std::string db,std::string
 static
 void
 write_field_data_to_files(MySQLColumnData& resraw, FieldMetaTrans &res, string db, string table,string field) {
-    std::string prefix = std::string("data/") +db+"/"+table+"/"+field+"/";
-    g_make_path(prefix);
+    std::string numprefix = std::string("data/") +db+"/"+table+std::string("/")+"NUMF/"+field+"/";
+    std::string strprefix = std::string("data/") +db+"/"+table+std::string("/")+"STRF/"+field+"/";
+    g_make_path(numprefix);
+    g_make_path(strprefix);
     std::vector<std::string> filenames;
     for(auto item:resraw.fieldNames){
-        item=prefix+item;
         filenames.push_back(item);
     }
     int len = resraw.fieldNames.size();
     for(int i=0;i<len;i++){
         if(IS_NUM(resraw.fieldTypes[i])){
-            filenames[i]+="NUMF/";
+            filenames[i] = numprefix+filenames[i];
             writeColumndataNum(resraw.columnData[i],filenames[i]);
         }else{
-            filenames[i]+="STRF/";
+            filenames[i] = strprefix+filenames[i];
             writeColumndataEscapeString(resraw.columnData[i],filenames[i],resraw.maxLengths[i]);
         }
     }
